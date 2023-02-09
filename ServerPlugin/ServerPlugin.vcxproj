@@ -85,6 +85,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ServerPlugin.cpp" />
+    <ClCompile Include="sourcesdk\tier1\bitbuf.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ServerPlugin.h" />
@@ -96,6 +97,9 @@
     <ClInclude Include="sourcesdk\public\inetmessage.h" />
     <ClInclude Include="sourcesdk\public\inetmsghandler.h" />
     <ClInclude Include="sourcesdk\public\iserver.h" />
+    <ClInclude Include="sourcesdk\public\tier1\bitbuf.h" />
+    <ClInclude Include="sourcesdk\public\tier1\valve_support.h" />
+    <ClInclude Include="sourcesdk\public\tier1\vector.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

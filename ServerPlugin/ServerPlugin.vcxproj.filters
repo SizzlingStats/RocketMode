@@ -10,6 +10,12 @@
     <Filter Include="sourcesdk\common">
       <UniqueIdentifier>{3e3bd0c1-c845-4c8f-b0d9-9c214cdb22a8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sourcesdk\public\tier1">
+      <UniqueIdentifier>{31ac16fe-fb88-4d34-a6c6-8056ab2e0207}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sourcesdk\tier1">
+      <UniqueIdentifier>{e9d34ba9-7522-4c06-84c4-6acdf06f6972}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sourcesdk\public\eiface.h">
@@ -37,8 +43,20 @@
     <ClInclude Include="sourcesdk\common\protocol.h">
       <Filter>sourcesdk\common</Filter>
     </ClInclude>
+    <ClInclude Include="sourcesdk\public\tier1\bitbuf.h">
+      <Filter>sourcesdk\public\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="sourcesdk\public\tier1\valve_support.h">
+      <Filter>sourcesdk\public\tier1</Filter>
+    </ClInclude>
+    <ClInclude Include="sourcesdk\public\tier1\vector.h">
+      <Filter>sourcesdk\public\tier1</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ServerPlugin.cpp" />
+    <ClCompile Include="sourcesdk\tier1\bitbuf.cpp">
+      <Filter>sourcesdk\tier1</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>
