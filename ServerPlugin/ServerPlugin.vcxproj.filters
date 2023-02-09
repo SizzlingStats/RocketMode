@@ -7,6 +7,9 @@
     <Filter Include="sourcesdk\public">
       <UniqueIdentifier>{b532b36c-85ef-44ae-8202-658a930e18e1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sourcesdk\common">
+      <UniqueIdentifier>{3e3bd0c1-c845-4c8f-b0d9-9c214cdb22a8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sourcesdk\public\eiface.h">
@@ -30,6 +33,9 @@
     </ClInclude>
     <ClInclude Include="sourcesdk\public\inetmessage.h">
       <Filter>sourcesdk\public</Filter>
+    </ClInclude>
+    <ClInclude Include="sourcesdk\common\protocol.h">
+      <Filter>sourcesdk\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

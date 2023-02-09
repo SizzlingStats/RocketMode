@@ -5,6 +5,7 @@
 #include "sourcesdk/public/iclient.h"
 #include "sourcesdk/public/inetchannel.h"
 #include "sourcesdk/public/inetmessage.h"
+#include "sourcesdk/common/protocol.h"
 #include <string.h>
 
 class ServerPlugin : public IServerPluginCallbacks
@@ -184,8 +185,8 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
             for (int i = 0; i < pNetMessages->m_Size; ++i)
             {
                 INetMessage* msg = pNetMessages->m_pElements[i];
-                const char* name = msg->GetName();
-                if (!strcmp(name, "clc_VoiceData"))
+                const int type = msg->GetType();
+                if (type == clc_VoiceData)
                 {
                     IVoiceDataHook::RegisterProcessHook(msg);
                 }
