@@ -22,6 +22,15 @@
     <ClInclude Include="sourcesdk\public\iclient.h">
       <Filter>sourcesdk\public</Filter>
     </ClInclude>
+    <ClInclude Include="sourcesdk\public\inetchannelinfo.h">
+      <Filter>sourcesdk\public</Filter>
+    </ClInclude>
+    <ClInclude Include="sourcesdk\public\inetchannel.h">
+      <Filter>sourcesdk\public</Filter>
+    </ClInclude>
+    <ClInclude Include="sourcesdk\public\inetmessage.h">
+      <Filter>sourcesdk\public</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ServerPlugin.cpp" />

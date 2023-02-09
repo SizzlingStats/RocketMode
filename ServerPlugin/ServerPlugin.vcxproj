@@ -90,6 +90,9 @@
     <ClInclude Include="ServerPlugin.h" />
     <ClInclude Include="sourcesdk\public\eiface.h" />
     <ClInclude Include="sourcesdk\public\iclient.h" />
+    <ClInclude Include="sourcesdk\public\inetchannel.h" />
+    <ClInclude Include="sourcesdk\public\inetchannelinfo.h" />
+    <ClInclude Include="sourcesdk\public\inetmessage.h" />
     <ClInclude Include="sourcesdk\public\inetmsghandler.h" />
     <ClInclude Include="sourcesdk\public\iserver.h" />
   </ItemGroup>
