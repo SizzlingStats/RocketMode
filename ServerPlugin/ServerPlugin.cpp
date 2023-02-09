@@ -122,16 +122,16 @@ public:
         if (!sVoiceDataProcessFn)
         {
             void** voiceDataVtable = *(void***)NetMsg;
+            void* processSlot = &voiceDataVtable[ProcessOffset];
 
-            
-            INetMessage_ProcessPtr ProcessPtr = (INetMessage_ProcessPtr&)voiceDataVtable[ProcessOffset];
+            INetMessage_ProcessPtr ProcessPtr = *(INetMessage_ProcessPtr*)processSlot;
             IVoiceDataHook_ProcessPtr NewProcessPtr = &IVoiceDataHook::ProcessHook;
 
             DWORD oldProtect;
             DWORD tempProtect;
-            int ret = VirtualProtect(&voiceDataVtable[ProcessOffset], 4, PAGE_EXECUTE_READWRITE, &oldProtect);
-            memcpy(&voiceDataVtable[ProcessOffset], &NewProcessPtr, 4);
-            VirtualProtect(&voiceDataVtable[ProcessOffset], 4, oldProtect, &tempProtect);
+            int ret = VirtualProtect(processSlot, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
+            memcpy(processSlot, &NewProcessPtr, 4);
+            VirtualProtect(processSlot, 4, oldProtect, &tempProtect);
 
             sVoiceDataVTable = voiceDataVtable;
             sVoiceDataProcessFn = ProcessPtr;
