@@ -7,6 +7,8 @@
 #include <string.h>
 #include "vector.h"
 
+#define VALVE_LITTLE_ENDIAN 1
+
 using uint64 = std::uint64_t;
 using uint32 = std::uint32_t;
 using uint16 = std::uint16_t;

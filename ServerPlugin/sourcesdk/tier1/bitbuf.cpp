@@ -7,9 +7,10 @@
 //=============================================================================//
 
 #include "../public/tier1/bitbuf.h"
-#include <string.h>
 #include <cmath>
-#include <cstdlib>
+
+#define abs std::abs
+#define sqrt std::sqrt
 
 // FIXME: Can't use this until we get multithreaded allocations in tier0 working for tools
 // This is used by VVIS and fails to link
@@ -58,10 +59,26 @@ inline unsigned int CountTrailingZeros(unsigned int elem)
 #define FAST_BIT_SCAN 0
 #endif
 
+
+static BitBufErrorHandler g_BitBufErrorHandler = 0;
+
 inline int BitForBitnum(int bitnum)
 {
 	return GetBitForBitnum(bitnum);
 }
+
+void InternalBitBufErrorHandler( BitBufErrorType errorType, const char *pDebugName )
+{
+	if ( g_BitBufErrorHandler )
+		g_BitBufErrorHandler( errorType, pDebugName );
+}
+
+
+void SetBitBufErrorHandler( BitBufErrorHandler fn )
+{
+	g_BitBufErrorHandler = fn;
+}
+
 
 // #define BB_PROFILING
 
@@ -114,23 +131,20 @@ bf_write::bf_write()
 	m_bOverflow = false;
 	m_bAssertOnOverflow = true;
 	m_pDebugName = NULL;
-	m_errorHandler = NULL;
-}
-
-bf_write::bf_write( void *pData, int nBytes, int nBits )
-{
-	StartWriting( pData, nBytes, 0, nBits );
-	m_bAssertOnOverflow = true;
-	m_pDebugName = NULL;
-	m_errorHandler = NULL;
 }
 
 bf_write::bf_write( const char *pDebugName, void *pData, int nBytes, int nBits )
 {
-	StartWriting( pData, nBytes, 0, nBits );
 	m_bAssertOnOverflow = true;
 	m_pDebugName = pDebugName;
-	m_errorHandler = NULL;
+	StartWriting( pData, nBytes, 0, nBits );
+}
+
+bf_write::bf_write( void *pData, int nBytes, int nBits )
+{
+	m_bAssertOnOverflow = true;
+	m_pDebugName = NULL;
+	StartWriting( pData, nBytes, 0, nBits );
 }
 
 void bf_write::StartWriting( void *pData, int nBytes, int iStartBit, int nBits )
@@ -183,19 +197,6 @@ void bf_write::SetDebugName( const char *pDebugName )
 	m_pDebugName = pDebugName;
 }
 
-void bf_write::SetErrorHandler(IBitBufErrorHandler* handler)
-{
-	m_errorHandler = handler;
-}
-
-bool bf_write::CallErrorHandler(BitBufErrorType errorType)
-{
-	if (m_errorHandler)
-	{
-		return m_errorHandler->HandleError(errorType, GetDebugName());
-	}
-	return false;
-}
 
 void bf_write::SeekToBit( int bitPos )
 {
@@ -452,14 +453,11 @@ bool bf_write::WriteBits(const void *pInData, int nBits)
 	int nBitsLeft = nBits;
 
 	// Bounds checking..
-	if (GetNumBitsLeft() < nBits)
+	if ( (m_iCurBit+nBits) > m_nDataBits )
 	{
-		const bool recovered = CallErrorHandler(BITBUFERROR_BUFFER_OVERRUN);
-		if (!recovered || (recovered && (GetNumBitsLeft() < nBits)))
-		{
-			SetOverflowFlag();
-			return false;
-		}
+		SetOverflowFlag();
+		CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
+		return false;
 	}
 
 	// Align output to dword boundary
@@ -477,7 +475,7 @@ bool bf_write::WriteBits(const void *pInData, int nBits)
 		int numbytes = nBitsLeft >> 3; 
 		int numbits = numbytes << 3;
 		
-		memcpy( (char*)m_pData+(m_iCurBit>>3), pOut, numbytes );
+		Q_memcpy( (char*)m_pData+(m_iCurBit>>3), pOut, numbytes );
 		pOut += numbytes;
 		nBitsLeft -= numbits;
 		m_iCurBit += numbits;
@@ -570,10 +568,10 @@ void bf_write::WriteBitCoordMP( const float f, bool bIntegral, bool bLowPrecisio
 	VPROF( "bf_write::WriteBitCoordMP" );
 #endif
 	int		signbit = (f <= -( bLowPrecision ? COORD_RESOLUTION_LOWPRECISION : COORD_RESOLUTION ));
-	int		intval = (int)std::abs(f);
+	int		intval = (int)abs(f);
 	int		fractval = bLowPrecision ? 
-		( std::abs((int)(f*COORD_DENOMINATOR_LOWPRECISION)) & (COORD_DENOMINATOR_LOWPRECISION-1) ) :
-		( std::abs((int)(f*COORD_DENOMINATOR)) & (COORD_DENOMINATOR-1) );
+		( abs((int)(f*COORD_DENOMINATOR_LOWPRECISION)) & (COORD_DENOMINATOR_LOWPRECISION-1) ) :
+		( abs((int)(f*COORD_DENOMINATOR)) & (COORD_DENOMINATOR-1) );
 
 	bool    bInBounds = intval < (1 << COORD_INTEGER_BITS_MP );
 
@@ -623,8 +621,8 @@ void bf_write::WriteBitCoord (const float f)
 	VPROF( "bf_write::WriteBitCoord" );
 #endif
 	int		signbit = (f <= -COORD_RESOLUTION);
-	int		intval = (int)std::abs(f);
-	int		fractval = std::abs((int)(f*COORD_DENOMINATOR)) & (COORD_DENOMINATOR-1);
+	int		intval = (int)abs(f);
+	int		fractval = abs((int)(f*COORD_DENOMINATOR)) & (COORD_DENOMINATOR-1);
 
 
 	// Send the bit flags that indicate whether we have an integer part and/or a fraction part.
@@ -677,7 +675,7 @@ void bf_write::WriteBitNormal( float f )
 	int	signbit = (f <= -NORMAL_RESOLUTION);
 
 	// NOTE: Since +/-1 are valid values for a normal, I'm going to encode that as all ones
-	unsigned int fractval = std::abs( (int)(f*NORMAL_DENOMINATOR) );
+	unsigned int fractval = abs( (int)(f*NORMAL_DENOMINATOR) );
 
 	// clamp..
 	if (fractval > NORMAL_DENOMINATOR)
@@ -797,23 +795,19 @@ bf_read::bf_read()
 	m_bOverflow = false;
 	m_bAssertOnOverflow = true;
 	m_pDebugName = NULL;
-	m_errorHandler = NULL;
 }
 
 bf_read::bf_read( const void *pData, int nBytes, int nBits )
 {
-	StartReading( pData, nBytes, 0, nBits );
 	m_bAssertOnOverflow = true;
-	m_pDebugName = NULL;
-	m_errorHandler = NULL;
+	StartReading( pData, nBytes, 0, nBits );
 }
 
 bf_read::bf_read( const char *pDebugName, const void *pData, int nBytes, int nBits )
 {
-	StartReading( pData, nBytes, 0, nBits );
 	m_bAssertOnOverflow = true;
 	m_pDebugName = pDebugName;
-	m_errorHandler = NULL;
+	StartReading( pData, nBytes, 0, nBits );
 }
 
 void bf_read::StartReading( const void *pData, int nBytes, int iStartBit, int nBits )
@@ -852,20 +846,6 @@ void bf_read::SetAssertOnOverflow( bool bAssert )
 void bf_read::SetDebugName( const char *pName )
 {
 	m_pDebugName = pName;
-}
-
-void bf_read::SetErrorHandler(IBitBufErrorHandler* handler)
-{
-	m_errorHandler = handler;
-}
-
-bool bf_read::CallErrorHandler(BitBufErrorType errorType)
-{
-	if (m_errorHandler)
-	{
-		return m_errorHandler->HandleError(errorType, GetDebugName());
-	}
-	return false;
 }
 
 void bf_read::SetOverflowFlag()
@@ -973,7 +953,7 @@ float bf_read::ReadBitAngle( int numbits )
 	shift = (float)( BitForBitnum(numbits) );
 
 	i = ReadUBitLong( numbits );
-    fReturn = static_cast<float>(i * (360.0 / shift));
+	fReturn = (float)((float)i * (360.0 / shift));
 
 	return fReturn;
 }
@@ -1132,7 +1112,7 @@ float bf_read::ReadBitCoord (void)
 		}
 
 		// Calculate the correct floating point value
-		value = intval + static_cast<float>((float)fractval * COORD_RESOLUTION);
+		value = (float)(intval + ((float)fractval * COORD_RESOLUTION));
 
 		// Fixup the sign if negative.
 		if ( signbit )
@@ -1163,7 +1143,7 @@ float bf_read::ReadBitCoordMP( bool bIntegral, bool bLowPrecision )
 			unsigned int bits = ReadUBitLong( (flags & INBOUNDS) ? COORD_INTEGER_BITS_MP+1 : COORD_INTEGER_BITS+1 );
 			// Remap from [0,N] to [1,N+1]
 			int intval = (bits >> 1) + 1;
-            return static_cast<float>((bits & 1) ? -intval : intval);
+			return (float)((bits & 1) ? -intval : intval);
 		}
 		return 0.f;
 	}
@@ -1316,7 +1296,7 @@ float bf_read::ReadBitNormal (void)
 	unsigned int fractval = ReadUBitLong( NORMAL_FRACTIONAL_BITS );
 
 	// Calculate the correct floating point value
-    float value = static_cast<float>((float)fractval * NORMAL_RESOLUTION);
+	float value = (float)((float)fractval * NORMAL_RESOLUTION);
 
 	// Fixup the sign if negative.
 	if ( signbit )
@@ -1345,7 +1325,7 @@ void bf_read::ReadBitVec3Normal( Vector& fa )
 
 	float fafafbfb = fa[0] * fa[0] + fa[1] * fa[1];
 	if (fafafbfb < 1.0f)
-		fa[2] = std::sqrt( 1.0f - fafafbfb );
+		fa[2] = sqrt( 1.0f - fafafbfb );
 	else
 		fa[2] = 0.0f;
 
@@ -1465,7 +1445,7 @@ void bf_read::ExciseBits( int startbit, int bitstoremove )
 	m_nDataBytes = m_nDataBits >> 3;
 }
 
-int bf_read::CompareBitsAt( int offset, bf_read * __restrict other, int otherOffset, int numbits )
+int bf_read::CompareBitsAt( int offset, bf_read * RESTRICT other, int otherOffset, int numbits ) RESTRICT
 {
 	extern unsigned long g_ExtraMasks[33];
 

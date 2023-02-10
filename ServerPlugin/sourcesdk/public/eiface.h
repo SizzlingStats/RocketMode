@@ -9,7 +9,7 @@
 // Max # of edicts in a level
 #define	MAX_EDICTS					(1<<MAX_EDICT_BITS)
 
-typedef unsigned char byte;
+typedef char byte;
 typedef int QueryCvarCookie_t;
 template <int NUM_BITS> class CBitVec;
 

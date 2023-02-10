@@ -12,6 +12,14 @@
 
 #include "valve_support.h"
 
+#define RESTRICT
+
+#if _DEBUG
+#define BITBUF_INLINE inline
+#else
+#define BITBUF_INLINE FORCEINLINE
+#endif
+
 //-----------------------------------------------------------------------------
 // Forward declarations.
 //-----------------------------------------------------------------------------
@@ -36,11 +44,21 @@ typedef enum
 	BITBUFERROR_NUM_ERRORS
 } BitBufErrorType;
 
-class IBitBufErrorHandler
-{
-public:
-	virtual bool HandleError(BitBufErrorType errorType, const char *pDebugName) = 0;
-};
+
+typedef void (*BitBufErrorHandler)( BitBufErrorType errorType, const char *pDebugName );
+
+
+#if defined( _DEBUG )
+	extern void InternalBitBufErrorHandler( BitBufErrorType errorType, const char *pDebugName );
+	#define CallErrorHandler( errorType, pDebugName ) InternalBitBufErrorHandler( errorType, pDebugName );
+#else
+	#define CallErrorHandler( errorType, pDebugName )
+#endif
+
+
+// Use this to install the error handler. Call with NULL to uninstall your error handler.
+void SetBitBufErrorHandler( BitBufErrorHandler fn );
+
 
 //-----------------------------------------------------------------------------
 // Helpers.
@@ -140,8 +158,6 @@ public:
 	const char*		GetDebugName();
 	void			SetDebugName( const char *pDebugName );
 
-	void			SetErrorHandler(IBitBufErrorHandler* handler);
-	bool			CallErrorHandler(BitBufErrorType errorType);
 
 // Seek to a specific position.
 public:
@@ -216,9 +232,9 @@ public:
 	// How many bytes are filled in?
 	int				GetNumBytesWritten() const;
 	int				GetNumBitsWritten() const;
-	int				GetMaxNumBits() const;
-	int				GetNumBitsLeft() const;
-	int				GetNumBytesLeft() const;
+	int				GetMaxNumBits();
+	int				GetNumBitsLeft();
+	int				GetNumBytesLeft();
 	unsigned char*	GetData();
 	const unsigned char*	GetData() const;
 
@@ -231,7 +247,7 @@ public:
 
 public:
 	// The current buffer.
-	unsigned long* __restrict m_pData;
+	unsigned long* RESTRICT m_pData;
 	int				m_nDataBytes;
 	int				m_nDataBits;
 	
@@ -245,7 +261,6 @@ private:
 
 	bool			m_bAssertOnOverflow;
 	const char		*m_pDebugName;
-	IBitBufErrorHandler* m_errorHandler;
 };
 
 
@@ -254,32 +269,32 @@ private:
 //-----------------------------------------------------------------------------
 
 // How many bytes are filled in?
-inline int bf_write::GetNumBytesWritten() const
+inline int bf_write::GetNumBytesWritten() const	
 {
 	return BitByte(m_iCurBit);
 }
 
-inline int bf_write::GetNumBitsWritten() const
+inline int bf_write::GetNumBitsWritten() const	
 {
 	return m_iCurBit;
 }
 
-inline int bf_write::GetMaxNumBits() const
+inline int bf_write::GetMaxNumBits()		
 {
 	return m_nDataBits;
 }
 
-inline int bf_write::GetNumBitsLeft() const
+inline int bf_write::GetNumBitsLeft()	
 {
 	return m_nDataBits - m_iCurBit;
 }
 
-inline int bf_write::GetNumBytesLeft() const
+inline int bf_write::GetNumBytesLeft()	
 {
 	return GetNumBitsLeft() >> 3;
 }
 
-inline unsigned char* bf_write::GetData()
+inline unsigned char* bf_write::GetData()			
 {
 	return (unsigned char*) m_pData;
 }
@@ -289,21 +304,18 @@ inline const unsigned char* bf_write::GetData()	const
 	return (unsigned char*) m_pData;
 }
 
-inline bool bf_write::CheckForOverflow(int nBits)
+BITBUF_INLINE bool bf_write::CheckForOverflow(int nBits)
 {
-	if (GetNumBitsLeft() < nBits)
+	if ( m_iCurBit + nBits > m_nDataBits )
 	{
-		const bool recovered = CallErrorHandler(BITBUFERROR_BUFFER_OVERRUN);
-		if (!recovered || (recovered && GetNumBitsLeft() < nBits))
-		{
-			SetOverflowFlag();
-		}
+		SetOverflowFlag();
+		CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
 	}
 	
 	return m_bOverflow;
 }
 
-inline void bf_write::SetOverflowFlag()
+BITBUF_INLINE void bf_write::SetOverflowFlag()
 {
 #ifdef DBGFLAG_ASSERT
 	if ( m_bAssertOnOverflow )
@@ -314,7 +326,7 @@ inline void bf_write::SetOverflowFlag()
 	m_bOverflow = true;
 }
 
-inline void bf_write::WriteOneBitNoCheck(int nValue)
+BITBUF_INLINE void bf_write::WriteOneBitNoCheck(int nValue)
 {
 #if __i386__
 	if(nValue)
@@ -336,12 +348,9 @@ inline void bf_write::WriteOneBit(int nValue)
 {
 	if( m_iCurBit >= m_nDataBits )
 	{
-		const bool recovered = CallErrorHandler(BITBUFERROR_BUFFER_OVERRUN);
-		if (!recovered || (recovered && (m_iCurBit >= m_nDataBits)))
-		{
-			SetOverflowFlag();
-			return;
-		}
+		SetOverflowFlag();
+		CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
+		return;
 	}
 	WriteOneBitNoCheck( nValue );
 }
@@ -351,12 +360,9 @@ inline void	bf_write::WriteOneBitAt( int iBit, int nValue )
 {
 	if( iBit >= m_nDataBits )
 	{
-		const bool recovered = CallErrorHandler(BITBUFERROR_BUFFER_OVERRUN);
-		if (!recovered || (recovered && (iBit >= m_nDataBits)))
-		{
-			SetOverflowFlag();
-			return;
-		}
+		SetOverflowFlag();
+		CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
+		return;
 	}
 
 #if __i386__
@@ -373,7 +379,7 @@ inline void	bf_write::WriteOneBitAt( int iBit, int nValue )
 #endif
 }
 
-inline void bf_write::WriteUBitLong( unsigned int curData, int numbits, bool bCheckRange )
+BITBUF_INLINE void bf_write::WriteUBitLong( unsigned int curData, int numbits, bool bCheckRange ) RESTRICT
 {
 #ifdef _DEBUG
 	// Make sure it doesn't overflow.
@@ -381,7 +387,7 @@ inline void bf_write::WriteUBitLong( unsigned int curData, int numbits, bool bCh
 	{
 		if ( curData >= (unsigned long)(1 << numbits) )
 		{
-			CallErrorHandler(BITBUFERROR_VALUE_OUT_OF_RANGE);
+			CallErrorHandler( BITBUFERROR_VALUE_OUT_OF_RANGE, GetDebugName() );
 		}
 	}
 	Assert( numbits >= 0 && numbits <= 32 );
@@ -389,12 +395,10 @@ inline void bf_write::WriteUBitLong( unsigned int curData, int numbits, bool bCh
 
 	if ( GetNumBitsLeft() < numbits )
 	{
-		const bool recovered = CallErrorHandler(BITBUFERROR_BUFFER_OVERRUN);
-		if (!recovered || (recovered && (GetNumBitsLeft() < numbits)))
-		{
-			SetOverflowFlag();
-			return;
-		}
+		m_iCurBit = m_nDataBits;
+		SetOverflowFlag();
+		CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
+		return;
 	}
 
 	int iCurBitMasked = m_iCurBit & 31;
@@ -402,8 +406,8 @@ inline void bf_write::WriteUBitLong( unsigned int curData, int numbits, bool bCh
 	m_iCurBit += numbits;
 
 	// Mask in a dword.
-	assert( (iDWord*4 + sizeof(long)) <= (unsigned int)m_nDataBytes );
-	unsigned long * __restrict pOut = &m_pData[iDWord];
+	Assert( (iDWord*4 + sizeof(long)) <= (unsigned int)m_nDataBytes );
+	unsigned long * RESTRICT pOut = &m_pData[iDWord];
 
 	// Rotate data into dword alignment
 	curData = (curData << iCurBitMasked) | (curData >> (32 - iCurBitMasked));
@@ -428,7 +432,7 @@ inline void bf_write::WriteUBitLong( unsigned int curData, int numbits, bool bCh
 }
 
 // writes an unsigned integer with variable bit length
-inline void bf_write::WriteUBitVar( unsigned int data )
+BITBUF_INLINE void bf_write::WriteUBitVar( unsigned int data )
 {
 	/* Reference:
 	if ( data < 0x10u )
@@ -451,11 +455,10 @@ inline void bf_write::WriteUBitVar( unsigned int data )
 }
 
 // write raw IEEE float bits in little endian form
-inline void bf_write::WriteBitFloat(float val)
+BITBUF_INLINE void bf_write::WriteBitFloat(float val)
 {
 	long intVal;
 
-	static_assert(sizeof(long) == sizeof(float), "");
 	Assert(sizeof(long) == sizeof(float));
 	Assert(sizeof(float) == 4);
 
@@ -509,9 +512,6 @@ public:
 	const char*		GetDebugName() const { return m_pDebugName; }
 	void			SetDebugName( const char *pName );
 
-	void			SetErrorHandler(IBitBufErrorHandler* handler);
-	bool			CallErrorHandler(BitBufErrorType errorType);
-
 	void			ExciseBits( int startbit, int bitstoremove );
 
 
@@ -534,7 +534,7 @@ public:
 	// Get the base pointer.
 	const unsigned char*	GetBasePointer() { return m_pData; }
 
-	inline int TotalBytesAvailable( void ) const
+	BITBUF_INLINE int TotalBytesAvailable( void ) const
 	{
 		return m_nDataBytes;
 	}
@@ -557,8 +557,8 @@ public:
 	
 	float			ReadBitAngle( int numbits );
 
-	unsigned int	ReadUBitLong( int numbits );
-	unsigned int	ReadUBitLongNoInline( int numbits );
+	unsigned int	ReadUBitLong( int numbits ) RESTRICT;
+	unsigned int	ReadUBitLongNoInline( int numbits ) RESTRICT;
 	unsigned int	PeekUBitLong( int numbits );
 	int				ReadSBitLong( int numbits );
 
@@ -591,11 +591,11 @@ public:
 // Byte functions (these still read data in bit-by-bit).
 public:
 	
-	inline int	ReadChar() { return (char)ReadUBitLong(8); }
-	inline int	ReadByte() { return ReadUBitLong(8); }
-	inline int	ReadShort() { return (short)ReadUBitLong(16); }
-	inline int	ReadWord() { return ReadUBitLong(16); }
-	inline long ReadLong() { return ReadUBitLong(32); }
+	BITBUF_INLINE int	ReadChar() { return (char)ReadUBitLong(8); }
+	BITBUF_INLINE int	ReadByte() { return ReadUBitLong(8); }
+	BITBUF_INLINE int	ReadShort() { return (short)ReadUBitLong(16); }
+	BITBUF_INLINE int	ReadWord() { return ReadUBitLong(16); }
+	BITBUF_INLINE long ReadLong() { return ReadUBitLong(32); }
 	int64			ReadLongLong();
 	float			ReadFloat();
 	bool			ReadBytes(void *pOut, int nBytes);
@@ -620,14 +620,14 @@ public:
 	char*			ReadAndAllocateString( bool *pOverflow = 0 );
 
 	// Returns nonzero if any bits differ
-	int				CompareBits( bf_read * __restrict other, int bits );
-	int				CompareBitsAt( int offset, bf_read * __restrict other, int otherOffset, int bits );
+	int				CompareBits( bf_read * RESTRICT other, int bits ) RESTRICT;
+	int				CompareBitsAt( int offset, bf_read * RESTRICT other, int otherOffset, int bits ) RESTRICT;
 
 // Status.
 public:
-	int				GetNumBytesLeft() const;
-	int				GetNumBytesRead() const;
-	int				GetNumBitsLeft() const;
+	int				GetNumBytesLeft();
+	int				GetNumBytesRead();
+	int				GetNumBitsLeft();
 	int				GetNumBitsRead() const;
 
 	// Has the buffer overflowed?
@@ -643,7 +643,7 @@ public:
 public:
 
 	// The current buffer.
-	const unsigned char* __restrict m_pData;
+	const unsigned char* RESTRICT m_pData;
 	int						m_nDataBytes;
 	int						m_nDataBits;
 	
@@ -659,24 +659,23 @@ private:
 	bool			m_bAssertOnOverflow;
 
 	const char		*m_pDebugName;
-	IBitBufErrorHandler* m_errorHandler;
 };
 
 //-----------------------------------------------------------------------------
 // Inlines.
 //-----------------------------------------------------------------------------
 
-inline int bf_read::GetNumBytesRead() const
+inline int bf_read::GetNumBytesRead()	
 {
 	return BitByte(m_iCurBit);
 }
 
-inline int bf_read::GetNumBitsLeft() const
+inline int bf_read::GetNumBitsLeft()	
 {
 	return m_nDataBits - m_iCurBit;
 }
 
-inline int bf_read::GetNumBytesLeft() const
+inline int bf_read::GetNumBytesLeft()	
 {
 	return GetNumBitsLeft() >> 3;
 }
@@ -709,13 +708,10 @@ inline bool	bf_read::SeekRelative(int iBitDelta)
 
 inline bool bf_read::CheckForOverflow(int nBits)
 {
-	if (GetNumBitsLeft() < nBits)
+	if( m_iCurBit + nBits > m_nDataBits )
 	{
-		const bool recovered = CallErrorHandler(BITBUFERROR_BUFFER_OVERRUN);
-		if (!recovered || (recovered && (GetNumBitsLeft() < nBits)))
-		{
-			SetOverflowFlag();
-		}
+		SetOverflowFlag();
+		CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
 	}
 
 	return m_bOverflow;
@@ -723,31 +719,22 @@ inline bool bf_read::CheckForOverflow(int nBits)
 
 inline int bf_read::ReadOneBitNoCheck()
 {
-	int ret;
-	if (is_little_endian())
-	{
-		unsigned int value = ((unsigned long * __restrict)m_pData)[m_iCurBit >> 5] >> (m_iCurBit & 31);
-		ret = value & 1;
-	}
-	else
-	{
-		unsigned char value = m_pData[m_iCurBit >> 3] >> (m_iCurBit & 7);
-		ret = value & 1;
-	}
+#if VALVE_LITTLE_ENDIAN
+	unsigned int value = ((unsigned long * RESTRICT)m_pData)[m_iCurBit >> 5] >> (m_iCurBit & 31);
+#else
+	unsigned char value = m_pData[m_iCurBit >> 3] >> (m_iCurBit & 7);
+#endif
 	++m_iCurBit;
-	return ret;
+	return value & 1;
 }
 
 inline int bf_read::ReadOneBit()
 {
 	if( GetNumBitsLeft() <= 0 )
 	{
-		const bool recovered = CallErrorHandler(BITBUFERROR_BUFFER_OVERRUN);
-		if (!recovered || (recovered && (GetNumBitsLeft() <= 0)))
-		{
-			SetOverflowFlag();
-			return 0;
-		}
+		SetOverflowFlag();
+		CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
+		return 0;
 	}
 	return ReadOneBitNoCheck();
 }
@@ -758,7 +745,7 @@ inline float bf_read::ReadBitFloat()
 	return c.f;
 }
 
-inline unsigned int bf_read::ReadUBitVar()
+BITBUF_INLINE unsigned int bf_read::ReadUBitVar()
 {
 	// six bits: low 2 bits for encoding + first 4 bits of value
 	unsigned int sixbits = ReadUBitLong(6);
@@ -771,18 +758,16 @@ inline unsigned int bf_read::ReadUBitVar()
 	return sixbits >> 2;
 }
 
-inline unsigned int bf_read::ReadUBitLong( int numbits )
+BITBUF_INLINE unsigned int bf_read::ReadUBitLong( int numbits ) RESTRICT
 {
 	Assert( numbits > 0 && numbits <= 32 );
 
 	if ( GetNumBitsLeft() < numbits )
 	{
-		const bool recovered = CallErrorHandler(BITBUFERROR_BUFFER_OVERRUN);
-		if (!recovered || (recovered && (GetNumBitsLeft() < numbits)))
-		{
-			SetOverflowFlag();
-			return 0;
-		}
+		m_iCurBit = m_nDataBits;
+		SetOverflowFlag();
+		CallErrorHandler( BITBUFERROR_BUFFER_OVERRUN, GetDebugName() );
+		return 0;
 	}
 
 	unsigned int iStartBit = m_iCurBit & 31u;
@@ -798,13 +783,13 @@ inline unsigned int bf_read::ReadUBitLong( int numbits )
 	unsigned int bitmask = g_ExtraMasks[numbits];
 #endif
 
-	unsigned int dw1 = LoadLittleDWord( (unsigned long* __restrict)m_pData, iWordOffset1 ) >> iStartBit;
-	unsigned int dw2 = LoadLittleDWord( (unsigned long* __restrict)m_pData, iWordOffset2 ) << (32 - iStartBit);
+	unsigned int dw1 = LoadLittleDWord( (unsigned long* RESTRICT)m_pData, iWordOffset1 ) >> iStartBit;
+	unsigned int dw2 = LoadLittleDWord( (unsigned long* RESTRICT)m_pData, iWordOffset2 ) << (32 - iStartBit);
 
 	return (dw1 | dw2) & bitmask;
 }
 
-inline int bf_read::CompareBits( bf_read * __restrict other, int numbits )
+BITBUF_INLINE int bf_read::CompareBits( bf_read * RESTRICT other, int numbits ) RESTRICT
 {
 	return (ReadUBitLong(numbits) != other->ReadUBitLong(numbits));
 }
