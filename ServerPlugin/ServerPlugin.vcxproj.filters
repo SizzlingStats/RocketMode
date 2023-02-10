@@ -40,6 +40,9 @@
     <ClInclude Include="sourcesdk\public\inetmessage.h">
       <Filter>sourcesdk\public</Filter>
     </ClInclude>
+    <ClInclude Include="sourcesdk\common\netmessages.h">
+      <Filter>sourcesdk\common</Filter>
+    </ClInclude>
     <ClInclude Include="sourcesdk\common\protocol.h">
       <Filter>sourcesdk\common</Filter>
     </ClInclude>

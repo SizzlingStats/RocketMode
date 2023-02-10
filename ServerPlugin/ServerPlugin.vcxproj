@@ -89,6 +89,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ServerPlugin.h" />
+    <ClInclude Include="sourcesdk\common\netmessages.h" />
     <ClInclude Include="sourcesdk\common\protocol.h" />
     <ClInclude Include="sourcesdk\public\eiface.h" />
     <ClInclude Include="sourcesdk\public\iclient.h" />

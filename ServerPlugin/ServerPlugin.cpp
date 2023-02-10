@@ -6,6 +6,7 @@
 #include "sourcesdk/public/inetchannel.h"
 #include "sourcesdk/public/inetmessage.h"
 #include "sourcesdk/common/protocol.h"
+#include "sourcesdk/common/netmessages.h"
 #include <string.h>
 
 class ServerPlugin : public IServerPluginCallbacks
@@ -109,6 +110,9 @@ class IVoiceDataHook : public INetMessage
 public:
     bool ProcessHook()
     {
+        INetChannel* netChannel = GetNetChannel();
+        INetChannelHandler* handler = netChannel->GetMsgHandler();
+        CLC_VoiceData* voiceData = (CLC_VoiceData*)this;
         return (this->*sVoiceDataProcessFn)();
     }
 
