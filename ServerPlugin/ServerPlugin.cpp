@@ -133,17 +133,16 @@ public:
     {
         if (!sVoiceDataProcessFn)
         {
-            void** voiceDataVtable = *(void***)NetMsg;
-            void* processSlot = &voiceDataVtable[ProcessOffset];
+            unsigned char** voiceDataVtable = *(unsigned char***)NetMsg;
+            unsigned char** processSlot = &voiceDataVtable[ProcessOffset];
 
             INetMessage_ProcessPtr ProcessPtr = *(INetMessage_ProcessPtr*)processSlot;
             IVoiceDataHook_ProcessPtr NewProcessPtr = &IVoiceDataHook::ProcessHook;
 
             DWORD oldProtect;
-            DWORD tempProtect;
-            int ret = VirtualProtect(processSlot, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
+            VirtualProtect(processSlot, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
             memcpy(processSlot, &NewProcessPtr, 4);
-            VirtualProtect(processSlot, 4, oldProtect, &tempProtect);
+            VirtualProtect(processSlot, 4, oldProtect, &oldProtect);
 
             sVoiceDataVTable = voiceDataVtable;
             sVoiceDataProcessFn = ProcessPtr;
@@ -154,14 +153,13 @@ public:
     {
         if (sVoiceDataProcessFn)
         {
-            void** voiceDataVtable = sVoiceDataVTable;
-            void* processSlot = &voiceDataVtable[ProcessOffset];
+            unsigned char** voiceDataVtable = sVoiceDataVTable;
+            unsigned char** processSlot = &voiceDataVtable[ProcessOffset];
 
             DWORD oldProtect;
-            DWORD tempProtect;
             VirtualProtect(processSlot, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
             memcpy(processSlot, &sVoiceDataProcessFn, 4);
-            VirtualProtect(processSlot, 4, oldProtect, &tempProtect);
+            VirtualProtect(processSlot, 4, oldProtect, &oldProtect);
 
             sVoiceDataProcessFn = nullptr;
             sVoiceDataVTable = nullptr;
@@ -170,11 +168,11 @@ public:
 
 private:
     static constexpr int ProcessOffset = 3;
-    static void** sVoiceDataVTable;
+    static unsigned char** sVoiceDataVTable;
     static INetMessage_ProcessPtr sVoiceDataProcessFn;
 };
 
-void** IVoiceDataHook::sVoiceDataVTable = nullptr;
+unsigned char** IVoiceDataHook::sVoiceDataVTable = nullptr;
 INetMessage_ProcessPtr IVoiceDataHook::sVoiceDataProcessFn = nullptr;
 
 void ServerPlugin::Unload(void)
