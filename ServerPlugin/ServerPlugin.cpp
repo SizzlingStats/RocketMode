@@ -113,14 +113,36 @@ class IVoiceDataHook;
 using INetMessage_ProcessPtr = bool (INetMessage::*)();
 using IVoiceDataHook_ProcessPtr = bool (IVoiceDataHook::*)();
 
+#define Bits2Bytes(b) ((b+7)>>3)
 class IVoiceDataHook : public INetMessage
 {
 public:
+    static IVAudioVoiceCodec* sVoiceCodec;
+
     bool ProcessHook()
     {
-        INetChannel* netChannel = GetNetChannel();
-        INetChannelHandler* handler = netChannel->GetMsgHandler();
         CLC_VoiceData* voiceData = (CLC_VoiceData*)this;
+        bf_read dataInCopy = voiceData->m_DataIn;
+
+        char compressedData[4096];
+        int bitsRead = dataInCopy.ReadBitsClamped(compressedData, voiceData->m_nLength);
+        if (bitsRead == 0)
+        {
+            return (this->*sVoiceDataProcessFn)();
+        }
+        assert(bitsRead == voiceData->m_nLength);
+
+        int16_t uncompressedData[2048];
+        const int compressedBytes = Bits2Bytes(bitsRead);
+        const int numSamples = sVoiceCodec->Decompress(compressedData, compressedBytes, (char*)uncompressedData, sizeof(uncompressedData));
+
+        char recompressedData[4096];
+        int bytesWritten = sVoiceCodec->Compress((const char*)uncompressedData, numSamples, recompressedData, sizeof(recompressedData), false);
+        assert(bytesWritten == compressedBytes);
+
+        voiceData->m_DataIn.StartReading(recompressedData, bytesWritten);
+        voiceData->m_nLength = bytesWritten * 8;
+
         return (this->*sVoiceDataProcessFn)();
     }
 
@@ -172,20 +194,31 @@ private:
     static INetMessage_ProcessPtr sVoiceDataProcessFn;
 };
 
+IVAudioVoiceCodec* IVoiceDataHook::sVoiceCodec = nullptr;
 unsigned char** IVoiceDataHook::sVoiceDataVTable = nullptr;
 INetMessage_ProcessPtr IVoiceDataHook::sVoiceDataProcessFn = nullptr;
 
 void ServerPlugin::Unload(void)
 {
+    if (IVoiceDataHook::sVoiceCodec)
+    {
+        IVoiceDataHook::sVoiceCodec->Release();
+        IVoiceDataHook::sVoiceCodec = nullptr;
+    }
     mCeltCodecManager.Release();
 
     IVoiceDataHook::UnregisterProcessHook();
 }
 
+constexpr int gCeltQuality = 3;
+
 void ServerPlugin::ClientActive(edict_t* pEntity)
 {
     if (!IVoiceDataHook::IsVoiceDataHooked())
     {
+        IVoiceDataHook::sVoiceCodec = mCeltCodecManager.CreateVoiceCodec();
+        IVoiceDataHook::sVoiceCodec->Init(gCeltQuality);
+
         const int entIndex = mVEngineServer->IndexOfEdict(pEntity);
         IClient* client = mServer->GetClient(entIndex - 1);
         INetChannel* netChannel = client->GetNetChannel();
