@@ -13,6 +13,7 @@
 #include "valve_support.h"
 
 #define RESTRICT
+#define FORCEINLINE __forceinline
 
 #if _DEBUG
 #define BITBUF_INLINE inline
