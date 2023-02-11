@@ -8,6 +8,7 @@
 #include "sourcesdk/common/protocol.h"
 #include "sourcesdk/common/netmessages.h"
 #include "VAudioCeltCodecManager.h"
+#include "dsp/phaser.h"
 #include <string.h>
 
 class ServerPlugin : public IServerPluginCallbacks
@@ -114,6 +115,9 @@ using INetMessage_ProcessPtr = bool (INetMessage::*)();
 using IVoiceDataHook_ProcessPtr = bool (IVoiceDataHook::*)();
 
 #define Bits2Bytes(b) ((b+7)>>3)
+
+static Phaser sPhaser;
+
 class IVoiceDataHook : public INetMessage
 {
 public:
@@ -135,6 +139,16 @@ public:
         int16_t uncompressedData[2048];
         const int compressedBytes = Bits2Bytes(bitsRead);
         const int numSamples = sVoiceCodec->Decompress(compressedData, compressedBytes, (char*)uncompressedData, sizeof(uncompressedData));
+
+        // process
+        for (int i = 0; i < numSamples; ++i)
+        {
+            float sample = uncompressedData[i] / 32768.0f;
+            sample = sPhaser.Update(sample);
+
+            const int32_t expandedSample = static_cast<int32_t>(sample * 32768.0f);
+            uncompressedData[i] = static_cast<int16_t>(max(-32768, min(expandedSample, 32767)));
+        }
 
         char recompressedData[4096];
         int bytesWritten = sVoiceCodec->Compress((const char*)uncompressedData, numSamples, recompressedData, sizeof(recompressedData), false);
@@ -216,6 +230,9 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
 {
     if (!IVoiceDataHook::IsVoiceDataHooked())
     {
+        sPhaser.Rate(5.0f);
+        sPhaser.Depth(0.3f);
+
         IVoiceDataHook::sVoiceCodec = mCeltCodecManager.CreateVoiceCodec();
         IVoiceDataHook::sVoiceCodec->Init(gCeltQuality);
 

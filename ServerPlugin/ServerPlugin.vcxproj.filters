@@ -16,6 +16,9 @@
     <Filter Include="sourcesdk\tier1">
       <UniqueIdentifier>{e9d34ba9-7522-4c06-84c4-6acdf06f6972}</UniqueIdentifier>
     </Filter>
+    <Filter Include="dsp">
+      <UniqueIdentifier>{944be66c-aa11-451d-98e4-8b8d6e4f38e0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="sourcesdk\public\eiface.h">
@@ -56,6 +59,9 @@
       <Filter>sourcesdk\public\tier1</Filter>
     </ClInclude>
     <ClInclude Include="VAudioCeltCodecManager.h" />
+    <ClInclude Include="dsp\phaser.h">
+      <Filter>dsp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ServerPlugin.cpp" />

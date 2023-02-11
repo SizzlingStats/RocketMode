@@ -96,6 +96,7 @@
     <ClCompile Include="VAudioCeltCodecManager.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="dsp\phaser.h" />
     <ClInclude Include="ServerPlugin.h" />
     <ClInclude Include="sourcesdk\common\netmessages.h" />
     <ClInclude Include="sourcesdk\common\protocol.h" />
