@@ -7,6 +7,7 @@
 #include "sourcesdk/public/inetmessage.h"
 #include "sourcesdk/common/protocol.h"
 #include "sourcesdk/common/netmessages.h"
+#include "VAudioCeltCodecManager.h"
 #include <string.h>
 
 class ServerPlugin : public IServerPluginCallbacks
@@ -38,6 +39,7 @@ public:
 private:
     IVEngineServer* mVEngineServer;
     IServer* mServer;
+    VAudioCeltCodecManager mCeltCodecManager;
 };
 
 static ServerPlugin sServerPlugin;
@@ -61,18 +63,24 @@ void* CreateInterface(const char* pName, int* pReturnCode)
 
 ServerPlugin::ServerPlugin() :
     mVEngineServer(nullptr),
-    mServer(nullptr)
+    mServer(nullptr),
+    mCeltCodecManager()
 {
 }
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory)
 {
+    if (!mCeltCodecManager.Init())
+    {
+        return false;
+    }
+
     mVEngineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, NULL);
     if (mVEngineServer)
     {
         mServer = mVEngineServer->GetIServer();
     }
-    return mVEngineServer && mServer;
+    return mServer;
 }
 
 template<typename T, typename U>
@@ -171,6 +179,8 @@ INetMessage_ProcessPtr IVoiceDataHook::sVoiceDataProcessFn = nullptr;
 
 void ServerPlugin::Unload(void)
 {
+    mCeltCodecManager.Release();
+
     IVoiceDataHook::UnregisterProcessHook();
 }
 

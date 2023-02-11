@@ -55,11 +55,13 @@
     <ClInclude Include="sourcesdk\public\tier1\vector.h">
       <Filter>sourcesdk\public\tier1</Filter>
     </ClInclude>
+    <ClInclude Include="VAudioCeltCodecManager.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ServerPlugin.cpp" />
     <ClCompile Include="sourcesdk\tier1\bitbuf.cpp">
       <Filter>sourcesdk\tier1</Filter>
     </ClCompile>
+    <ClCompile Include="VAudioCeltCodecManager.cpp" />
   </ItemGroup>
 </Project>
