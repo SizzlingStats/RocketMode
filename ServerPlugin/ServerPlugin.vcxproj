@@ -100,6 +100,7 @@
     <ClCompile Include="ServerPlugin.cpp" />
     <ClCompile Include="sourcesdk\tier1\bitbuf.cpp" />
     <ClCompile Include="VAudioCeltCodecManager.cpp" />
+    <ClCompile Include="VoiceDataHook.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="dsp\bitcrush.h" />
@@ -118,6 +119,7 @@
     <ClInclude Include="sourcesdk\public\tier1\valve_support.h" />
     <ClInclude Include="sourcesdk\public\tier1\vector.h" />
     <ClInclude Include="VAudioCeltCodecManager.h" />
+    <ClInclude Include="VoiceDataHook.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

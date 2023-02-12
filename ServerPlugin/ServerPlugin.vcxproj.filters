@@ -65,6 +65,7 @@
     <ClInclude Include="dsp\bitcrush.h">
       <Filter>dsp</Filter>
     </ClInclude>
+    <ClInclude Include="VoiceDataHook.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ServerPlugin.cpp" />
@@ -72,5 +73,6 @@
       <Filter>sourcesdk\tier1</Filter>
     </ClCompile>
     <ClCompile Include="VAudioCeltCodecManager.cpp" />
+    <ClCompile Include="VoiceDataHook.cpp" />
   </ItemGroup>
 </Project>

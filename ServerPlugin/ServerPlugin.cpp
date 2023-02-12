@@ -7,12 +7,19 @@
 #include "sourcesdk/public/inetmessage.h"
 #include "sourcesdk/common/protocol.h"
 #include "sourcesdk/common/netmessages.h"
+#include "VoiceDataHook.h"
 #include "VAudioCeltCodecManager.h"
 #include "dsp/phaser.h"
 #include "dsp/bitcrush.h"
 #include <string.h>
 
-class ServerPlugin : public IServerPluginCallbacks
+template<typename T>
+inline T Min(T a, T b) { return a <= b ? a : b;  }
+
+template<typename T>
+inline T Max(T a, T b) { return a >= b ? a : b; }
+
+class ServerPlugin : public IServerPluginCallbacks, public IVoiceDataHook
 {
 public:
     ServerPlugin();
@@ -37,10 +44,14 @@ public:
     virtual void OnEdictAllocated(edict_t* edict) {}
     virtual void OnEdictFreed(const edict_t* edict) {}
 
+    virtual void ProcessVoiceData(INetMessage* VoiceDataNetMsg);
+    void ApplyFx(float* samples, int numSamples);
+
 private:
     IVEngineServer* mVEngineServer;
     IServer* mServer;
     VAudioCeltCodecManager mCeltCodecManager;
+    IVAudioVoiceCodec* mVoiceCodec;
 };
 
 static ServerPlugin sServerPlugin;
@@ -65,7 +76,8 @@ void* CreateInterface(const char* pName, int* pReturnCode)
 ServerPlugin::ServerPlugin() :
     mVEngineServer(nullptr),
     mServer(nullptr),
-    mCeltCodecManager()
+    mCeltCodecManager(),
+    mVoiceCodec(nullptr)
 {
 }
 
@@ -82,6 +94,17 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         mServer = mVEngineServer->GetIServer();
     }
     return mServer;
+}
+
+void ServerPlugin::Unload(void)
+{
+    if (mVoiceCodec)
+    {
+        mVoiceCodec->Release();
+        mVoiceCodec = nullptr;
+    }
+    mCeltCodecManager.Release();
+    VoiceDataHook::Unhook();
 }
 
 template<typename T, typename U>
@@ -106,187 +129,22 @@ struct CUtlVector
     T* m_pElements;
 };
 
-#define VC_EXTRALEAN
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
-class IVoiceDataHook;
-using INetMessage_ProcessPtr = bool (INetMessage::*)();
-using IVoiceDataHook_ProcessPtr = bool (IVoiceDataHook::*)();
-
-#define Bits2Bytes(b) ((b+7)>>3)
-
 static Phaser sPhaser;
 static BitCrush sBitCrush(4500.0f, 22050.0f, 7.0f);
 static float sBitsRadians = 0.0f;
 static float sRateRadians = 0.0f;
 
-class IVoiceDataHook : public INetMessage
-{
-public:
-    static IVAudioVoiceCodec* sVoiceCodec;
-
-    bool ProcessHook()
-    {
-        CLC_VoiceData* voiceData = (CLC_VoiceData*)this;
-        bf_read dataInCopy = voiceData->m_DataIn;
-
-        char compressedData[4096];
-        int bitsRead = dataInCopy.ReadBitsClamped(compressedData, voiceData->m_nLength);
-        if (bitsRead == 0)
-        {
-            return (this->*sVoiceDataProcessFn)();
-        }
-        assert(bitsRead == voiceData->m_nLength);
-
-        int16_t uncompressedData[2048];
-        const int compressedBytes = Bits2Bytes(bitsRead);
-        const int numSamples = sVoiceCodec->Decompress(compressedData, compressedBytes, (char*)uncompressedData, sizeof(uncompressedData));
-
-        // process
-        for (int i = 0; i < numSamples; ++i)
-        {
-            float sample = uncompressedData[i] / 32768.0f;
-            sample = sPhaser.Update(sample);
-            const int32_t expandedSample = static_cast<int32_t>(sample * 32768.0f);
-            uncompressedData[i] = static_cast<int16_t>(max(-32768, min(expandedSample, 32767)));
-        }
-
-        {
-            sBitsRadians += 0.05f;
-            constexpr float PI_2 = (2.0f * 3.14159f);
-            if (sBitsRadians >= PI_2)
-            {
-                sBitsRadians -= PI_2;
-            }
-            float lfo = (sinf(sBitsRadians) * 0.5f) + 0.5f;
-            if (lfo < 0.0f)
-            {
-                lfo = 0.0f;
-            }
-            if (lfo > 1.0f)
-            {
-                lfo = 1.0f;
-            }
-            float value = (lfo * 4.0f) + 3.0f;
-            sBitCrush.Bits(value);
-        }
-        {
-            sRateRadians += 0.07f;
-            constexpr float PI_2 = (2.0f * 3.14159f);
-            if (sRateRadians >= PI_2)
-            {
-                sRateRadians -= PI_2;
-            }
-            float lfo = (sinf(sRateRadians) * 0.5f) + 0.5f;
-            if (lfo < 0.0f)
-            {
-                lfo = 0.0f;
-            }
-            if (lfo > 1.0f)
-            {
-                lfo = 1.0f;
-            }
-            float value = (lfo * 500.0f) + 4500.0f;
-            sBitCrush.Rate(value);
-        }
-
-        for (int i = 0; i < numSamples; ++i)
-        {
-            const int32_t normalizedSample = uncompressedData[i] + 32768;
-            float sample = normalizedSample / 65535.0f;
-
-            sample = sBitCrush.Process(sample);
-
-            const int32_t expandedSample = static_cast<int32_t>(sample * 65535.0f) - 32768;
-            uncompressedData[i] = static_cast<int16_t>(max(-32768, min(expandedSample, 32767)));
-        }
-
-        char recompressedData[4096];
-        int bytesWritten = sVoiceCodec->Compress((const char*)uncompressedData, numSamples, recompressedData, sizeof(recompressedData), false);
-        assert(bytesWritten == compressedBytes);
-
-        voiceData->m_DataIn.StartReading(recompressedData, bytesWritten);
-        voiceData->m_nLength = bytesWritten * 8;
-
-        return (this->*sVoiceDataProcessFn)();
-    }
-
-    static bool IsVoiceDataHooked()
-    {
-        return sVoiceDataProcessFn;
-    }
-
-    static void RegisterProcessHook(INetMessage* NetMsg)
-    {
-        if (!sVoiceDataProcessFn)
-        {
-            unsigned char** voiceDataVtable = *(unsigned char***)NetMsg;
-            unsigned char** processSlot = &voiceDataVtable[ProcessOffset];
-
-            INetMessage_ProcessPtr ProcessPtr = *(INetMessage_ProcessPtr*)processSlot;
-            IVoiceDataHook_ProcessPtr NewProcessPtr = &IVoiceDataHook::ProcessHook;
-
-            DWORD oldProtect;
-            VirtualProtect(processSlot, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
-            memcpy(processSlot, &NewProcessPtr, 4);
-            VirtualProtect(processSlot, 4, oldProtect, &oldProtect);
-
-            sVoiceDataVTable = voiceDataVtable;
-            sVoiceDataProcessFn = ProcessPtr;
-        }
-    }
-
-    static void UnregisterProcessHook()
-    {
-        if (sVoiceDataProcessFn)
-        {
-            unsigned char** voiceDataVtable = sVoiceDataVTable;
-            unsigned char** processSlot = &voiceDataVtable[ProcessOffset];
-
-            DWORD oldProtect;
-            VirtualProtect(processSlot, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
-            memcpy(processSlot, &sVoiceDataProcessFn, 4);
-            VirtualProtect(processSlot, 4, oldProtect, &oldProtect);
-
-            sVoiceDataProcessFn = nullptr;
-            sVoiceDataVTable = nullptr;
-        }
-    }
-
-private:
-    static constexpr int ProcessOffset = 3;
-    static unsigned char** sVoiceDataVTable;
-    static INetMessage_ProcessPtr sVoiceDataProcessFn;
-};
-
-IVAudioVoiceCodec* IVoiceDataHook::sVoiceCodec = nullptr;
-unsigned char** IVoiceDataHook::sVoiceDataVTable = nullptr;
-INetMessage_ProcessPtr IVoiceDataHook::sVoiceDataProcessFn = nullptr;
-
-void ServerPlugin::Unload(void)
-{
-    if (IVoiceDataHook::sVoiceCodec)
-    {
-        IVoiceDataHook::sVoiceCodec->Release();
-        IVoiceDataHook::sVoiceCodec = nullptr;
-    }
-    mCeltCodecManager.Release();
-
-    IVoiceDataHook::UnregisterProcessHook();
-}
-
 constexpr int gCeltQuality = 3;
 
 void ServerPlugin::ClientActive(edict_t* pEntity)
 {
-    if (!IVoiceDataHook::IsVoiceDataHooked())
+    if (!VoiceDataHook::IsHooked())
     {
         sPhaser.Rate(5.0f);
         sPhaser.Depth(0.3f);
 
-        IVoiceDataHook::sVoiceCodec = mCeltCodecManager.CreateVoiceCodec();
-        IVoiceDataHook::sVoiceCodec->Init(gCeltQuality);
+        mVoiceCodec = mCeltCodecManager.CreateVoiceCodec();
+        mVoiceCodec->Init(gCeltQuality);
 
         const int entIndex = mVEngineServer->IndexOfEdict(pEntity);
         IClient* client = mServer->GetClient(entIndex - 1);
@@ -302,9 +160,111 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
                 const int type = msg->GetType();
                 if (type == clc_VoiceData)
                 {
-                    IVoiceDataHook::RegisterProcessHook(msg);
+                    VoiceDataHook::Hook(msg, this);
                 }
             }
         }
+    }
+}
+
+#define Bits2Bytes(b) ((b+7)>>3)
+
+void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
+{
+    CLC_VoiceData* voiceData = (CLC_VoiceData*)VoiceDataNetMsg;
+
+    char compressedData[4096];
+    {
+        bf_read dataInCopy = voiceData->m_DataIn;
+        int bitsRead = dataInCopy.ReadBitsClamped(compressedData, voiceData->m_nLength);
+        if (bitsRead == 0)
+        {
+            return;
+        }
+        assert(bitsRead == voiceData->m_nLength);
+    }
+
+    int16_t uncompressedData[2048];
+    const int compressedBytes = Bits2Bytes(voiceData->m_nLength);
+    const int numSamples = mVoiceCodec->Decompress(compressedData, compressedBytes, (char*)uncompressedData, sizeof(uncompressedData));
+
+    float samples[2048];
+    for (int i = 0; i < numSamples; ++i)
+    {
+        samples[i] = uncompressedData[i] / 32768.0f;
+    }
+
+    ApplyFx(samples, numSamples);
+
+    for (int i = 0; i < numSamples; ++i)
+    {
+        const int32_t expandedSample = static_cast<int32_t>(samples[i] * 32768.0f);
+        uncompressedData[i] = static_cast<int16_t>(Max(-32768, Min(expandedSample, 32767)));
+    }
+
+    int bytesWritten = mVoiceCodec->Compress((const char*)uncompressedData, numSamples, compressedData, sizeof(compressedData), false);
+    assert(bytesWritten == compressedBytes);
+
+    {
+        bf_write writer((void*)voiceData->m_DataIn.GetBasePointer(), voiceData->m_DataIn.TotalBytesAvailable());
+        writer.SeekToBit(voiceData->m_DataIn.GetNumBitsRead());
+        writer.WriteBits(compressedData, bytesWritten * 8);
+
+        assert(voiceData->m_nLength == writer.GetNumBitsWritten());
+    }
+}
+
+void ServerPlugin::ApplyFx(float* samples, int numSamples)
+{
+    // process
+    for (int i = 0; i < numSamples; ++i)
+    {
+        samples[i] = sPhaser.Update(samples[i]);
+    }
+
+    {
+        sBitsRadians += 0.05f;
+        constexpr float PI_2 = (2.0f * 3.14159f);
+        if (sBitsRadians >= PI_2)
+        {
+            sBitsRadians -= PI_2;
+        }
+        float lfo = (sinf(sBitsRadians) * 0.5f) + 0.5f;
+        if (lfo < 0.0f)
+        {
+            lfo = 0.0f;
+        }
+        if (lfo > 1.0f)
+        {
+            lfo = 1.0f;
+        }
+        float value = (lfo * 4.0f) + 3.0f;
+        sBitCrush.Bits(value);
+    }
+    {
+        sRateRadians += 0.07f;
+        constexpr float PI_2 = (2.0f * 3.14159f);
+        if (sRateRadians >= PI_2)
+        {
+            sRateRadians -= PI_2;
+        }
+        float lfo = (sinf(sRateRadians) * 0.5f) + 0.5f;
+        if (lfo < 0.0f)
+        {
+            lfo = 0.0f;
+        }
+        if (lfo > 1.0f)
+        {
+            lfo = 1.0f;
+        }
+        float value = (lfo * 500.0f) + 4500.0f;
+        sBitCrush.Rate(value);
+    }
+
+    for (int i = 0; i < numSamples; ++i)
+    {
+        float normalizedSample = (samples[i] * 0.5f) + 0.5f;
+        normalizedSample = sBitCrush.Process(normalizedSample);
+        samples[i] = (normalizedSample - 0.5f) * 2.0f;
     }
 }
