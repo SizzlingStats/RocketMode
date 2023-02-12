@@ -53,12 +53,12 @@ solution "sizzlingvoice"
         configuration {}
         files
         {
-            "../ServerPlugin/**.h",
-            "../ServerPlugin/**.cpp"
+            "../sizzlingvoice/**.h",
+            "../sizzlingvoice/**.cpp"
         }
         includedirs
         {
-            "../ServerPlugin"
+            "../sizzlingvoice"
         }
         add_tag("SupportJustMyCode", "false", "sizzlingvoice")
         add_tag("LanguageStandard", "stdcpp17", "sizzlingvoice")
