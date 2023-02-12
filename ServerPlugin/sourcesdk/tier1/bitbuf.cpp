@@ -1403,24 +1403,6 @@ bool bf_read::ReadString( char *pStr, int maxLen, bool bLine, int *pOutNumChars 
 	return !IsOverflowed() && !bTooSmall;
 }
 
-
-char* bf_read::ReadAndAllocateString( bool *pOverflow )
-{
-	char str[2048];
-	
-	int nChars;
-	bool bOverflow = !ReadString( str, sizeof( str ), false, &nChars );
-	if ( pOverflow )
-		*pOverflow = bOverflow;
-
-	// Now copy into the output and return it;
-	char *pRet = new char[ nChars + 1 ];
-	for ( int i=0; i <= nChars; i++ )
-		pRet[i] = str[i];
-
-	return pRet;
-}
-
 void bf_read::ExciseBits( int startbit, int bitstoremove )
 {
 	int endbit = startbit + bitstoremove;

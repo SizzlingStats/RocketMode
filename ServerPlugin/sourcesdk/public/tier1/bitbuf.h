@@ -616,10 +616,6 @@ public:
 	//
 	bool			ReadString( char *pStr, int bufLen, bool bLine=false, int *pOutNumChars=NULL );
 
-	// Reads a string and allocates memory for it. If the string in the buffer
-	// is > 2048 bytes, then pOverflow is set to true (if it's not NULL).
-	char*			ReadAndAllocateString( bool *pOverflow = 0 );
-
 	// Returns nonzero if any bits differ
 	int				CompareBits( bf_read * RESTRICT other, int bits ) RESTRICT;
 	int				CompareBitsAt( int offset, bf_read * RESTRICT other, int otherOffset, int bits ) RESTRICT;
