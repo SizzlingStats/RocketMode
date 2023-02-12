@@ -15,11 +15,11 @@ local function add_tag(tag, value, project_name)
     end
 end
 
-solution "SizzlingVoice"
+solution "sizzlingvoice"
     basedir ".."
     location (_ACTION)
     targetdir "../addons"
-    startproject "SizzlingVoice"
+    startproject "sizzlingvoice"
     debugdir "../addons"
     configurations { "Debug", "Release" }
     debugargs
@@ -45,7 +45,7 @@ solution "SizzlingVoice"
         linkoptions { "/LTCG" }
     configuration {}
 
-    project "SizzlingVoice"
+    project "sizzlingvoice"
         kind "SharedLib"
         language "C++"
         configuration "gmake"
@@ -60,8 +60,8 @@ solution "SizzlingVoice"
         {
             "../ServerPlugin"
         }
-        add_tag("SupportJustMyCode", "false", "SizzlingVoice")
-        add_tag("LanguageStandard", "stdcpp17", "SizzlingVoice")
-        add_tag("SDLCheck", "false", "SizzlingVoice")
-        add_tag("ControlFlowGuard", "false", "SizzlingVoice")
+        add_tag("SupportJustMyCode", "false", "sizzlingvoice")
+        add_tag("LanguageStandard", "stdcpp17", "sizzlingvoice")
+        add_tag("SDLCheck", "false", "sizzlingvoice")
+        add_tag("ControlFlowGuard", "false", "sizzlingvoice")
     project "*"
