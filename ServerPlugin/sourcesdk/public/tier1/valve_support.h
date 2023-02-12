@@ -2,9 +2,7 @@
 #pragma once
 
 #include <stdint.h>
-#include <stddef.h>
 #include <assert.h>
-#include "vector.h"
 
 using uint64 = uint64_t;
 using uint32 = uint32_t;

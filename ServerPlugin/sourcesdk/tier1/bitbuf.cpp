@@ -7,6 +7,7 @@
 //=============================================================================//
 
 #include "../public/tier1/bitbuf.h"
+#include "../public/tier1/vector.h"
 #include <math.h>
 #include <string.h>
 
