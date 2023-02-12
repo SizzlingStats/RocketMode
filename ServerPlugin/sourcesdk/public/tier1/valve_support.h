@@ -7,8 +7,6 @@
 #include <string.h>
 #include "vector.h"
 
-#define VALVE_LITTLE_ENDIAN 1
-
 using uint64 = uint64_t;
 using uint32 = uint32_t;
 using uint16 = uint16_t;
@@ -35,16 +33,6 @@ using byte = char;
 #define AssertFatalMsg(x, ...) assert(x)
 
 #define Q_memcpy memcpy
-
-inline bool is_little_endian()
-{
-    union {
-        uint32 i;
-        uint8 c[4];
-    } bint = { 0x01020304 };
-
-    return bint.c[0] == 4;
-}
 
 // OVERALL Coordinate Size Limits used in COMMON.C MSG_*BitCoord() Routines (and someday the HUD)
 #define	COORD_INTEGER_BITS			14
@@ -93,33 +81,22 @@ inline T DWordSwapC( T dw )
 
 inline unsigned long LoadLittleDWord(const unsigned long *base, unsigned int dwordIndex)
 {
-    return (is_little_endian() ? base[dwordIndex] : (DWordSwap(base[dwordIndex])));
+    return base[dwordIndex];
 }
 
 inline void StoreLittleDWord(unsigned long *base, unsigned int dwordIndex, unsigned long dword)
 {
-    base[dwordIndex] = (is_little_endian() ? dword : (DWordSwap(dword)));
+    base[dwordIndex] = dword;
 }
-
-// If a swapped float passes through the fpu, the bytes may get changed.
-// Prevent this by swapping floats as DWORDs.
-#define SafeSwapFloat( pOut, pIn ) (*((uint*)pOut) = DWordSwap( *((uint*)pIn) ))
 
 inline void LittleFloat(float* pOut, float* pIn)
 {
-    if (is_little_endian())
-    {
-        *pOut = *pIn;
-    }
-    else
-    {
-        SafeSwapFloat(pOut, pIn);
-    }
+    *pOut = *pIn;
 }
 
 inline long BigLong(long val)
 {
-    return is_little_endian() ? DWordSwap(val) : val;
+    return DWordSwap(val);
 }
 
 #define BITS_PER_INT 32
