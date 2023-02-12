@@ -15,7 +15,6 @@ class ServerPlugin : public IServerPluginCallbacks
 {
 public:
     ServerPlugin();
-    virtual ~ServerPlugin() {}
     virtual bool Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory);
     virtual void Unload(void);
     virtual void Pause(void) {}
