@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <assert.h>
-#include <string.h>
 #include "vector.h"
 
 using uint64 = uint64_t;
@@ -31,8 +30,6 @@ using byte = char;
 #define AssertMsg(x, ...) assert(x)
 #define AssertMsg2(x, ...) assert(x)
 #define AssertFatalMsg(x, ...) assert(x)
-
-#define Q_memcpy memcpy
 
 // OVERALL Coordinate Size Limits used in COMMON.C MSG_*BitCoord() Routines (and someday the HUD)
 #define	COORD_INTEGER_BITS			14
