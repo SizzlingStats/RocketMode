@@ -64,6 +64,7 @@
       <FloatingPointExceptions>false</FloatingPointExceptions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <ControlFlowGuard>false</ControlFlowGuard>
+      <FloatingPointModel>Fast</FloatingPointModel>
       <BufferSecurityCheck>false</BufferSecurityCheck>
     </ClCompile>
     <Link>
@@ -86,6 +87,7 @@
       <RuntimeTypeInfo>false</RuntimeTypeInfo>
       <FloatingPointExceptions>false</FloatingPointExceptions>
       <ControlFlowGuard>false</ControlFlowGuard>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
