@@ -3,8 +3,10 @@
 
 #ifdef _MSC_VER
 #define NO_VTABLE __declspec( novtable )
+#define DLL_EXPORT extern "C" __declspec( dllexport )
 #else
 #define NO_VTABLE
+#define DLL_EXPORT extern "C" __attribute__ ((visibility("default")))
 #endif
 
 typedef void* (*CreateInterfaceFn)(const char* pName, int* pReturnCode);
@@ -52,8 +54,6 @@ public:
     virtual void OnEdictAllocated(edict_t* edict) = 0;
     virtual void OnEdictFreed(const edict_t* edict) = 0;
 };
-
-#define DLL_EXPORT extern "C" __declspec( dllexport )
 
 // interface return status
 enum
