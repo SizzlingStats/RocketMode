@@ -15,6 +15,29 @@ local function add_tag(tag, value, project_name)
     end
 end
 
+newoption
+{
+    trigger     = "srcds-path",
+    value       = "path",
+    description = "Path to your srcds installation. Used for debugging and binary deployment."
+}
+
+local srcds_path = _OPTIONS["srcds-path"]
+local srcds_exe = nil
+local postbuild_move = nil
+local postbuild_move_vdf = nil
+if srcds_path ~= nil then
+    srcds_exe = srcds_path .. "srcds.exe"
+    
+    local target_name = "$(TargetName)$(TargetExt)"
+    local mklink_dll = "copy /Y \"$(TargetDir)" .. target_name .. "\" "
+    postbuild_link_dll = mklink_dll .. "\"" .. srcds_path .. "tf/addons/" .. target_name .. "\""
+    
+    local vdf_name = "sizzlingvoice.vdf"
+    local mklink_vdf = "copy /Y \"$(TargetDir)" .. vdf_name .. "\" "
+    postbuild_link_vdf = mklink_vdf .. "\"" .. srcds_path .. "tf/addons/" .. vdf_name .. "\""
+end
+
 solution "sizzlingvoice"
     basedir ".."
     location (_ACTION)
@@ -22,9 +45,6 @@ solution "sizzlingvoice"
     startproject "sizzlingvoice"
     debugdir "../addons"
     configurations { "Debug", "Release" }
-    debugargs
-    {
-    }
 
     platforms "x32"
     flags { "MultiProcessorCompile", "Symbols" }
@@ -48,6 +68,11 @@ solution "sizzlingvoice"
     project "sizzlingvoice"
         kind "SharedLib"
         language "C++"
+
+        configuration "vs*"
+            debugcommand (srcds_exe)
+            debugargs "-console -game tf +sv_voicecodec vaudio_celt +map cp_granary"
+            postbuildcommands { postbuild_link_dll, postbuild_link_vdf }
         configuration "gmake"
             buildoptions { "-std=c++17" }
         configuration {}
