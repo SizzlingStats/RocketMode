@@ -62,6 +62,9 @@
     <ClInclude Include="dsp\phaser.h">
       <Filter>dsp</Filter>
     </ClInclude>
+    <ClInclude Include="dsp\bitcrush.h">
+      <Filter>dsp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ServerPlugin.cpp" />

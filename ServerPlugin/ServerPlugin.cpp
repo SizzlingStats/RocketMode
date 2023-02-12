@@ -9,6 +9,7 @@
 #include "sourcesdk/common/netmessages.h"
 #include "VAudioCeltCodecManager.h"
 #include "dsp/phaser.h"
+#include "dsp/bitcrush.h"
 #include <string.h>
 
 class ServerPlugin : public IServerPluginCallbacks
@@ -116,6 +117,9 @@ using IVoiceDataHook_ProcessPtr = bool (IVoiceDataHook::*)();
 #define Bits2Bytes(b) ((b+7)>>3)
 
 static Phaser sPhaser;
+static BitCrush sBitCrush(4500.0f, 22050.0f, 7.0f);
+static float sBitsRadians = 0.0f;
+static float sRateRadians = 0.0f;
 
 class IVoiceDataHook : public INetMessage
 {
@@ -144,8 +148,57 @@ public:
         {
             float sample = uncompressedData[i] / 32768.0f;
             sample = sPhaser.Update(sample);
-
             const int32_t expandedSample = static_cast<int32_t>(sample * 32768.0f);
+            uncompressedData[i] = static_cast<int16_t>(max(-32768, min(expandedSample, 32767)));
+        }
+
+        {
+            sBitsRadians += 0.05f;
+            constexpr float PI_2 = (2.0f * 3.14159f);
+            if (sBitsRadians >= PI_2)
+            {
+                sBitsRadians -= PI_2;
+            }
+            float lfo = (sinf(sBitsRadians) * 0.5f) + 0.5f;
+            if (lfo < 0.0f)
+            {
+                lfo = 0.0f;
+            }
+            if (lfo > 1.0f)
+            {
+                lfo = 1.0f;
+            }
+            float value = (lfo * 4.0f) + 3.0f;
+            sBitCrush.Bits(value);
+        }
+        {
+            sRateRadians += 0.07f;
+            constexpr float PI_2 = (2.0f * 3.14159f);
+            if (sRateRadians >= PI_2)
+            {
+                sRateRadians -= PI_2;
+            }
+            float lfo = (sinf(sRateRadians) * 0.5f) + 0.5f;
+            if (lfo < 0.0f)
+            {
+                lfo = 0.0f;
+            }
+            if (lfo > 1.0f)
+            {
+                lfo = 1.0f;
+            }
+            float value = (lfo * 500.0f) + 4500.0f;
+            sBitCrush.Rate(value);
+        }
+
+        for (int i = 0; i < numSamples; ++i)
+        {
+            const int32_t normalizedSample = uncompressedData[i] + 32768;
+            float sample = normalizedSample / 65535.0f;
+
+            sample = sBitCrush.Process(sample);
+
+            const int32_t expandedSample = static_cast<int32_t>(sample * 65535.0f) - 32768;
             uncompressedData[i] = static_cast<int16_t>(max(-32768, min(expandedSample, 32767)));
         }
 
