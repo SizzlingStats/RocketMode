@@ -1,6 +1,12 @@
 
 #pragma once
 
+#ifdef _MSC_VER
+#define NO_VTABLE __declspec( novtable )
+#else
+#define NO_VTABLE
+#endif
+
 typedef void* (*CreateInterfaceFn)(const char* pName, int* pReturnCode);
 
 typedef enum
@@ -22,7 +28,7 @@ struct edict_t;
 class CCommand;
 typedef int QueryCvarCookie_t;
 
-class IServerPluginCallbacks
+class NO_VTABLE IServerPluginCallbacks
 {
 public:
     virtual bool Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory) = 0;
