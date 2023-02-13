@@ -47,7 +47,7 @@ public:
     void Bits(float bits)
     {
         assert(bits >= 1.0f && bits <= 16.0f);
-        const float powBits = powf(2.0f, bits);
+        const float powBits = exp2f(bits);
         mStep = 1.0f / powBits;
         mInvStep = powBits;
     }
