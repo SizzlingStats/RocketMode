@@ -8,11 +8,24 @@
 
 using INetMessage_ProcessPtr = bool (INetMessage::*)();
 
+static unsigned char* EditVTable(unsigned char** vtable, int slot, unsigned char* replacementFn)
+{
+    unsigned char** entry = &vtable[slot];
+    unsigned char* prevFn = vtable[slot];
+
+    DWORD oldProtect;
+    VirtualProtect(entry, sizeof(unsigned char*), PAGE_EXECUTE_READWRITE, &oldProtect);
+    memcpy(entry, &replacementFn, sizeof(unsigned char*));
+    VirtualProtect(entry, sizeof(unsigned char*), oldProtect, &oldProtect);
+
+    return prevFn;
+}
+
 namespace VoiceDataHook
 {
     static constexpr int ProcessOffset = 3;
     static unsigned char** sVoiceDataVTable;
-    static INetMessage_ProcessPtr sVoiceDataProcessFn;
+    static unsigned char* sVoiceDataProcessFn;
     IVoiceDataHook* sVoiceDataHook;
 
     class HookInternal : public INetMessage
@@ -21,7 +34,7 @@ namespace VoiceDataHook
         bool ProcessHook()
         {
             VoiceDataHook::sVoiceDataHook->ProcessVoiceData(this);
-            return (this->*sVoiceDataProcessFn)();
+            return (this->*((INetMessage_ProcessPtr&)sVoiceDataProcessFn))();
         }
     };
 
@@ -32,18 +45,12 @@ namespace VoiceDataHook
             return;
         }
 
-        unsigned char** voiceDataVtable = *(unsigned char***)VoiceDataNetMsg;
-        unsigned char** processSlot = &voiceDataVtable[ProcessOffset];
-
-        sVoiceDataVTable = voiceDataVtable;
-        sVoiceDataProcessFn = *(INetMessage_ProcessPtr*)processSlot;
-        sVoiceDataHook = hook;
-
-        DWORD oldProtect;
-        VirtualProtect(processSlot, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
         auto NewProcessPtr = &HookInternal::ProcessHook;
-        memcpy(processSlot, &NewProcessPtr, 4);
-        VirtualProtect(processSlot, 4, oldProtect, &oldProtect);
+        unsigned char** vtable = *(unsigned char***)VoiceDataNetMsg;
+        sVoiceDataProcessFn = EditVTable(vtable, ProcessOffset, (unsigned char*&)NewProcessPtr);
+
+        sVoiceDataVTable = vtable;
+        sVoiceDataHook = hook;
     }
 
     void Unhook()
@@ -53,12 +60,7 @@ namespace VoiceDataHook
             return;
         }
 
-        unsigned char** processSlot = &sVoiceDataVTable[ProcessOffset];
-
-        DWORD oldProtect;
-        VirtualProtect(processSlot, 4, PAGE_EXECUTE_READWRITE, &oldProtect);
-        memcpy(processSlot, &sVoiceDataProcessFn, 4);
-        VirtualProtect(processSlot, 4, oldProtect, &oldProtect);
+        EditVTable(sVoiceDataVTable, ProcessOffset, sVoiceDataProcessFn);
 
         sVoiceDataVTable = nullptr;
         sVoiceDataProcessFn = nullptr;
