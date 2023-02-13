@@ -206,11 +206,16 @@ void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
     assert(bytesWritten == compressedBytes);
 
     {
-        bf_write writer((void*)voiceData->m_DataIn.GetBasePointer(), voiceData->m_DataIn.TotalBytesAvailable());
+        int totalBytesAvailable = voiceData->m_DataIn.TotalBytesAvailable();
+
+        // Pad up to 4 byte boundary.
+        // bf_write complains if totalBytesAvailable is not dword aligned because it writes in dwords.
+        // TODO fix this
+        totalBytesAvailable = (totalBytesAvailable + 3) & ~3;
+
+        bf_write writer((void*)voiceData->m_DataIn.GetBasePointer(), totalBytesAvailable);
         writer.SeekToBit(voiceData->m_DataIn.GetNumBitsRead());
         writer.WriteBits(compressedData, bytesWritten * 8);
-
-        assert(voiceData->m_nLength == writer.GetNumBitsWritten());
     }
 }
 
