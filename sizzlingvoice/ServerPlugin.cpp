@@ -7,7 +7,7 @@
 #include "sourcesdk/public/inetmessage.h"
 #include "sourcesdk/common/protocol.h"
 #include "sourcesdk/common/netmessages.h"
-#include "VoiceDataHook.h"
+#include "VTableHook.h"
 #include "VAudioCeltCodecManager.h"
 #include "dsp/phaser.h"
 #include "dsp/bitcrush.h"
@@ -19,7 +19,7 @@ inline T Min(T a, T b) { return a <= b ? a : b;  }
 template<typename T>
 inline T Max(T a, T b) { return a >= b ? a : b; }
 
-class ServerPlugin : public IServerPluginCallbacks, public IVoiceDataHook
+class ServerPlugin : public IServerPluginCallbacks
 {
 public:
     ServerPlugin();
@@ -44,7 +44,15 @@ public:
     virtual void OnEdictAllocated(edict_t* edict) {}
     virtual void OnEdictFreed(const edict_t* edict) {}
 
-    virtual void ProcessVoiceData(INetMessage* VoiceDataNetMsg);
+    bool ProcessVoiceDataHook()
+    {
+        ServerPlugin* thisPtr = sProcessVoiceDataHook.GetThisPtr();
+        thisPtr->ProcessVoiceData(reinterpret_cast<INetMessage*>(this));
+
+        return sProcessVoiceDataHook.CallOriginalFn(this);
+    }
+
+    void ProcessVoiceData(INetMessage* VoiceDataNetMsg);
     void ApplyFx(float* samples, int numSamples);
 
 private:
@@ -52,7 +60,11 @@ private:
     IServer* mServer;
     VAudioCeltCodecManager mCeltCodecManager;
     IVAudioVoiceCodec* mVoiceCodec;
+
+    static VTableHook<decltype(&ProcessVoiceDataHook)> sProcessVoiceDataHook;
 };
+
+VTableHook<decltype(&ServerPlugin::ProcessVoiceDataHook)> ServerPlugin::sProcessVoiceDataHook;
 
 static ServerPlugin sServerPlugin;
 
@@ -104,7 +116,7 @@ void ServerPlugin::Unload(void)
         mVoiceCodec = nullptr;
     }
     mCeltCodecManager.Release();
-    VoiceDataHook::Unhook();
+    sProcessVoiceDataHook.Unhook();
 }
 
 template<typename T, typename U>
@@ -138,7 +150,7 @@ constexpr int gCeltQuality = 3;
 
 void ServerPlugin::ClientActive(edict_t* pEntity)
 {
-    if (!VoiceDataHook::IsHooked())
+    if (!sProcessVoiceDataHook.GetThisPtr())
     {
         sPhaser.Rate(5.0f);
         sPhaser.Depth(0.3f);
@@ -160,7 +172,8 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
                 const int type = msg->GetType();
                 if (type == clc_VoiceData)
                 {
-                    VoiceDataHook::Hook(msg, this);
+                    constexpr int ProcessOffset = 3;
+                    sProcessVoiceDataHook.Hook((unsigned char*)msg, 3, this, &ServerPlugin::ProcessVoiceDataHook);
                 }
             }
         }
