@@ -150,6 +150,11 @@ int main()
 class AlienWah
 {
 public:
+    ~AlienWah()
+    {
+        delete[] mState.delaybuf;
+    }
+
     void Init(float freq, float startphase, float feedback, int delay, int sampleRate = 44100, int lfoSkipSamples = 25)
     {
         delay = (int)(delay / 44100.0f * sampleRate);
@@ -164,6 +169,7 @@ public:
         mParams.delay = delay;
         mParams.lfoSkipSamples = lfoSkipSamples;
 
+        delete[] mState.delaybuf;
         mState.delaybuf = new std::complex<float>[delay]();
         mState.lfoskip = freq * 2.0f * 3.141592653589f / sampleRate;
         mState.t = 0;
