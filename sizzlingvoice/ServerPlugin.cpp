@@ -11,6 +11,7 @@
 #include "VAudioCeltCodecManager.h"
 #include "dsp/phaser.h"
 #include "dsp/bitcrush.h"
+#include "dsp/alienwah.h"
 #include <string.h>
 
 template<typename T>
@@ -150,6 +151,7 @@ struct CUtlVector
     T* m_pElements;
 };
 
+static AlienWah sAlienWah;
 static Phaser sPhaser;
 static BitCrush sBitCrush(4500.0f, 22050.0f, 7.0f);
 static float sBitsRadians = 0.0f;
@@ -163,6 +165,8 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
     {
         sPhaser.Rate(5.0f);
         sPhaser.Depth(0.3f);
+
+        sAlienWah.Init(2.6f, 0.0f, 0.5f, 20);
 
         mVoiceCodec = mCeltCodecManager.CreateVoiceCodec();
         mVoiceCodec->Init(gCeltQuality);
@@ -251,7 +255,11 @@ void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
 
 void ServerPlugin::ApplyFx(float* samples, int numSamples)
 {
-    // process
+    for (int i = 0; i < numSamples; ++i)
+    {
+        samples[i] = sAlienWah.Process(samples[i]);
+    }
+
     for (int i = 0; i < numSamples; ++i)
     {
         samples[i] = sPhaser.Update(samples[i]);
