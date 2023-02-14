@@ -7,6 +7,7 @@
 #include "sourcesdk/public/inetmessage.h"
 #include "sourcesdk/common/protocol.h"
 #include "sourcesdk/common/netmessages.h"
+#include "sourcesdk/game/shared/shareddefs.h"
 #include "VTableHook.h"
 #include "VAudioCeltCodecManager.h"
 #include "dsp/phaser.h"
@@ -19,6 +20,42 @@ inline T Min(T a, T b) { return a <= b ? a : b;  }
 
 template<typename T>
 inline T Max(T a, T b) { return a >= b ? a : b; }
+
+struct ClientState
+{
+    ClientState(IVAudioVoiceCodec* codec) :
+        mAlienWah(),
+        mPhaser(),
+        mBitCrush(4500.0f, 22050.0f, 7.0f),
+        mBitsRadians(0.0f),
+        mRateRadians(0.0f),
+        mVoiceCodec(codec)
+    {
+        mAlienWah.Init(2.6f, 0.0f, 0.5f, 20);
+
+        mPhaser.Rate(5.0f);
+        mPhaser.Depth(0.3f);
+
+        // vaudio_celt 22050Hz 16-bit mono
+        constexpr int celtQuality = 3;
+        codec->Init(celtQuality);
+    }
+
+    ~ClientState()
+    {
+        mVoiceCodec->Release();
+    }
+
+    void ApplyFx(float* samples, int numSamples);
+
+    AlienWah mAlienWah;
+    Phaser mPhaser;
+    BitCrush mBitCrush;
+    float mBitsRadians = 0.0f;
+    float mRateRadians = 0.0f;
+
+    IVAudioVoiceCodec* mVoiceCodec;
+};
 
 class ServerPlugin : public IServerPluginCallbacks
 {
@@ -34,7 +71,7 @@ public:
     virtual void GameFrame(bool simulating) {}
     virtual void LevelShutdown(void) {}
     virtual void ClientActive(edict_t* pEntity);
-    virtual void ClientDisconnect(edict_t* pEntity) {}
+    virtual void ClientDisconnect(edict_t* pEntity);
     virtual void ClientPutInServer(edict_t* pEntity, char const* playername) {}
     virtual void SetCommandClient(int index) {}
     virtual void ClientSettingsChanged(edict_t* pEdict) {}
@@ -60,13 +97,12 @@ public:
         return sIsProximityHearingClientHook.CallOriginalFn(this, index);
     }
 
-    void ApplyFx(float* samples, int numSamples);
-
 private:
     IVEngineServer* mVEngineServer;
     IServer* mServer;
     VAudioCeltCodecManager mCeltCodecManager;
-    IVAudioVoiceCodec* mVoiceCodec;
+
+    ClientState* mClientState[MAX_PLAYERS];
 
     static VTableHook<decltype(&ProcessVoiceDataHook)> sProcessVoiceDataHook;
     static VTableHook<decltype(&IsProximityHearingClientHook)> sIsProximityHearingClientHook;
@@ -98,7 +134,7 @@ ServerPlugin::ServerPlugin() :
     mVEngineServer(nullptr),
     mServer(nullptr),
     mCeltCodecManager(),
-    mVoiceCodec(nullptr)
+    mClientState()
 {
 }
 
@@ -119,10 +155,10 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
 
 void ServerPlugin::Unload(void)
 {
-    if (mVoiceCodec)
+    for (ClientState*& state : mClientState)
     {
-        mVoiceCodec->Release();
-        mVoiceCodec = nullptr;
+        delete state;
+        state = nullptr;
     }
     mCeltCodecManager.Release();
     sIsProximityHearingClientHook.Unhook();
@@ -151,61 +187,77 @@ struct CUtlVector
     T* m_pElements;
 };
 
-static AlienWah sAlienWah;
-static Phaser sPhaser;
-static BitCrush sBitCrush(4500.0f, 22050.0f, 7.0f);
-static float sBitsRadians = 0.0f;
-static float sRateRadians = 0.0f;
-
-constexpr int gCeltQuality = 3;
+static const INetMessage* GetCLCVoiceData(INetChannel* channel)
+{
+    //channel->RegisterMessage(nullptr);
+    constexpr int NetMessagesOffset = 9000;
+    CUtlVector<INetMessage*>* pNetMessages = ByteOffsetFromPointer<CUtlVector<INetMessage*>*>(channel, NetMessagesOffset);
+    for (int i = 0; i < pNetMessages->m_Size; ++i)
+    {
+        const INetMessage* msg = pNetMessages->m_pElements[i];
+        const int type = msg->GetType();
+        if (type == clc_VoiceData)
+        {
+            return msg;
+        }
+    }
+    return nullptr;
+}
 
 void ServerPlugin::ClientActive(edict_t* pEntity)
 {
+    const int entIndex = mVEngineServer->IndexOfEdict(pEntity);
+    IClient* client = mServer->GetClient(entIndex - 1);
+
+    INetChannel* netChannel = client->GetNetChannel();
+    if (!netChannel)
+    {
+        return;
+    }
+
+    if (!sIsProximityHearingClientHook.GetThisPtr())
+    {
+        //client->IsProximityHearingClient(0);
+        constexpr int IsProximityHearingClientOffset = 38;
+        sIsProximityHearingClientHook.Hook(client, IsProximityHearingClientOffset, this, &ServerPlugin::IsProximityHearingClientHook);
+    }
+
     if (!sProcessVoiceDataHook.GetThisPtr())
     {
-        sPhaser.Rate(5.0f);
-        sPhaser.Depth(0.3f);
-
-        sAlienWah.Init(2.6f, 0.0f, 0.5f, 20);
-
-        mVoiceCodec = mCeltCodecManager.CreateVoiceCodec();
-        mVoiceCodec->Init(gCeltQuality);
-
-        const int entIndex = mVEngineServer->IndexOfEdict(pEntity);
-        IClient* client = mServer->GetClient(entIndex - 1);
-
-        if (!sIsProximityHearingClientHook.GetThisPtr())
-        {
-            //client->IsProximityHearingClient(0);
-            constexpr int IsProximityHearingClientOffset = 38;
-            sIsProximityHearingClientHook.Hook(client, IsProximityHearingClientOffset, this, &ServerPlugin::IsProximityHearingClientHook);
-        }
-
-        INetChannel* netChannel = client->GetNetChannel();
-        if (netChannel)
-        {
-            //netChannel->RegisterMessage(nullptr);
-
-            CUtlVector<INetMessage*>* pNetMessages = ByteOffsetFromPointer<CUtlVector<INetMessage*>*>(netChannel, 9000);
-            for (int i = 0; i < pNetMessages->m_Size; ++i)
-            {
-                const INetMessage* msg = pNetMessages->m_pElements[i];
-                const int type = msg->GetType();
-                if (type == clc_VoiceData)
-                {
-                    constexpr int ProcessOffset = 3;
-                    sProcessVoiceDataHook.Hook(msg, ProcessOffset, this, &ServerPlugin::ProcessVoiceDataHook);
-                }
-            }
-        }
+        const INetMessage* msg = GetCLCVoiceData(netChannel);
+        constexpr int ProcessOffset = 3;
+        sProcessVoiceDataHook.Hook(msg, ProcessOffset, this, &ServerPlugin::ProcessVoiceDataHook);
     }
+
+    const int playerSlot = client->GetPlayerSlot();
+    assert(!mClientState[playerSlot]);
+    delete mClientState[playerSlot];
+
+    mClientState[playerSlot] = new ClientState(mCeltCodecManager.CreateVoiceCodec());
+}
+
+void ServerPlugin::ClientDisconnect(edict_t* pEntity)
+{
+    const int entIndex = mVEngineServer->IndexOfEdict(pEntity);
+    IClient* client = mServer->GetClient(entIndex - 1);
+    const int playerSlot = client->GetPlayerSlot();
+
+    // can delete null here if the client had no net channel (bot/other).
+    delete mClientState[playerSlot];
+    mClientState[playerSlot] = nullptr;
 }
 
 #define Bits2Bytes(b) ((b+7)>>3)
 
 void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
 {
-    CLC_VoiceData* voiceData = (CLC_VoiceData*)VoiceDataNetMsg;
+    INetChannel* netChannel = VoiceDataNetMsg->GetNetChannel();
+    INetChannelHandler* msgHandler = netChannel->GetMsgHandler();
+    IClient* client = static_cast<IClient*>(msgHandler);
+    const int playerSlot = client->GetPlayerSlot();
+    ClientState* clientState = mClientState[playerSlot];
+
+    CLC_VoiceData* voiceData = static_cast<CLC_VoiceData*>(VoiceDataNetMsg);
 
     char compressedData[4096];
     {
@@ -220,7 +272,7 @@ void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
 
     int16_t uncompressedData[2048];
     const int compressedBytes = Bits2Bytes(voiceData->m_nLength);
-    const int numSamples = mVoiceCodec->Decompress(compressedData, compressedBytes, (char*)uncompressedData, sizeof(uncompressedData));
+    const int numSamples = clientState->mVoiceCodec->Decompress(compressedData, compressedBytes, (char*)uncompressedData, sizeof(uncompressedData));
 
     float samples[2048];
     for (int i = 0; i < numSamples; ++i)
@@ -228,7 +280,7 @@ void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
         samples[i] = uncompressedData[i] / 32768.0f;
     }
 
-    ApplyFx(samples, numSamples);
+    clientState->ApplyFx(samples, numSamples);
 
     for (int i = 0; i < numSamples; ++i)
     {
@@ -236,7 +288,8 @@ void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
         uncompressedData[i] = static_cast<int16_t>(Max(-32768, Min(expandedSample, 32767)));
     }
 
-    int bytesWritten = mVoiceCodec->Compress((const char*)uncompressedData, numSamples, compressedData, sizeof(compressedData), false);
+    // TODO: bFinal = true when the last byte of the sound data is a 0.
+    int bytesWritten = clientState->mVoiceCodec->Compress((const char*)uncompressedData, numSamples, compressedData, sizeof(compressedData), false);
     assert(bytesWritten == compressedBytes);
 
     {
@@ -253,26 +306,26 @@ void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
     }
 }
 
-void ServerPlugin::ApplyFx(float* samples, int numSamples)
+void ClientState::ApplyFx(float* samples, int numSamples)
 {
     for (int i = 0; i < numSamples; ++i)
     {
-        samples[i] = sAlienWah.Process(samples[i]);
+        samples[i] = mAlienWah.Process(samples[i]);
     }
 
     for (int i = 0; i < numSamples; ++i)
     {
-        samples[i] = sPhaser.Update(samples[i]);
+        samples[i] = mPhaser.Update(samples[i]);
     }
 
     {
-        sBitsRadians += 0.05f;
+        mBitsRadians += 0.05f;
         constexpr float PI_2 = (2.0f * 3.14159f);
-        if (sBitsRadians >= PI_2)
+        if (mBitsRadians >= PI_2)
         {
-            sBitsRadians -= PI_2;
+            mBitsRadians -= PI_2;
         }
-        float lfo = (sinf(sBitsRadians) * 0.5f) + 0.5f;
+        float lfo = (sinf(mBitsRadians) * 0.5f) + 0.5f;
         if (lfo < 0.0f)
         {
             lfo = 0.0f;
@@ -282,16 +335,16 @@ void ServerPlugin::ApplyFx(float* samples, int numSamples)
             lfo = 1.0f;
         }
         float value = (lfo * 4.0f) + 3.0f;
-        sBitCrush.Bits(value);
+        mBitCrush.Bits(value);
     }
     {
-        sRateRadians += 0.07f;
+        mRateRadians += 0.07f;
         constexpr float PI_2 = (2.0f * 3.14159f);
-        if (sRateRadians >= PI_2)
+        if (mRateRadians >= PI_2)
         {
-            sRateRadians -= PI_2;
+            mRateRadians -= PI_2;
         }
-        float lfo = (sinf(sRateRadians) * 0.5f) + 0.5f;
+        float lfo = (sinf(mRateRadians) * 0.5f) + 0.5f;
         if (lfo < 0.0f)
         {
             lfo = 0.0f;
@@ -301,13 +354,13 @@ void ServerPlugin::ApplyFx(float* samples, int numSamples)
             lfo = 1.0f;
         }
         float value = (lfo * 500.0f) + 7000.0f;
-        sBitCrush.Rate(value);
+        mBitCrush.Rate(value);
     }
 
     for (int i = 0; i < numSamples; ++i)
     {
         float normalizedSample = (samples[i] * 0.5f) + 0.5f;
-        normalizedSample = sBitCrush.Process(normalizedSample);
+        normalizedSample = mBitCrush.Process(normalizedSample);
         samples[i] = (normalizedSample - 0.5f) * 2.0f;
     }
 }
