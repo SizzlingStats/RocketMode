@@ -168,12 +168,12 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
             CUtlVector<INetMessage*>* pNetMessages = ByteOffsetFromPointer<CUtlVector<INetMessage*>*>(netChannel, 9000);
             for (int i = 0; i < pNetMessages->m_Size; ++i)
             {
-                INetMessage* msg = pNetMessages->m_pElements[i];
+                const INetMessage* msg = pNetMessages->m_pElements[i];
                 const int type = msg->GetType();
                 if (type == clc_VoiceData)
                 {
                     constexpr int ProcessOffset = 3;
-                    sProcessVoiceDataHook.Hook((unsigned char*)msg, 3, this, &ServerPlugin::ProcessVoiceDataHook);
+                    sProcessVoiceDataHook.Hook(msg, ProcessOffset, this, &ServerPlugin::ProcessVoiceDataHook);
                 }
             }
         }

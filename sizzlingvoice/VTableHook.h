@@ -21,7 +21,7 @@ public:
     // vtableSlot - vtable slot to replace.
     // hookThisPtr - instance of class to receive hooked call.
     // hookFn - function to call on hookThisPtr.
-    void Hook(unsigned char* thisPtr, int vtableSlot, HookClassType* hookThisPtr, HookMemberFnPtr hookFn)
+    void Hook(const void* thisPtr, int vtableSlot, HookClassType* hookThisPtr, HookMemberFnPtr hookFn)
     {
         if (mHookThisPtr)
         {
