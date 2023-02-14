@@ -53,6 +53,12 @@ public:
     }
 
     void ProcessVoiceData(INetMessage* VoiceDataNetMsg);
+
+    bool IsProximityHearingClientHook(int index)
+    {
+        return sIsProximityHearingClientHook.CallOriginalFn(this, index);
+    }
+
     void ApplyFx(float* samples, int numSamples);
 
 private:
@@ -62,9 +68,11 @@ private:
     IVAudioVoiceCodec* mVoiceCodec;
 
     static VTableHook<decltype(&ProcessVoiceDataHook)> sProcessVoiceDataHook;
+    static VTableHook<decltype(&IsProximityHearingClientHook)> sIsProximityHearingClientHook;
 };
 
 VTableHook<decltype(&ServerPlugin::ProcessVoiceDataHook)> ServerPlugin::sProcessVoiceDataHook;
+VTableHook<decltype(&ServerPlugin::IsProximityHearingClientHook)> ServerPlugin::sIsProximityHearingClientHook;
 
 static ServerPlugin sServerPlugin;
 
@@ -116,6 +124,7 @@ void ServerPlugin::Unload(void)
         mVoiceCodec = nullptr;
     }
     mCeltCodecManager.Release();
+    sIsProximityHearingClientHook.Unhook();
     sProcessVoiceDataHook.Unhook();
 }
 
@@ -160,6 +169,14 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
 
         const int entIndex = mVEngineServer->IndexOfEdict(pEntity);
         IClient* client = mServer->GetClient(entIndex - 1);
+
+        if (!sIsProximityHearingClientHook.GetThisPtr())
+        {
+            //client->IsProximityHearingClient(0);
+            constexpr int IsProximityHearingClientOffset = 38;
+            sIsProximityHearingClientHook.Hook(client, IsProximityHearingClientOffset, this, &ServerPlugin::IsProximityHearingClientHook);
+        }
+
         INetChannel* netChannel = client->GetNetChannel();
         if (netChannel)
         {
