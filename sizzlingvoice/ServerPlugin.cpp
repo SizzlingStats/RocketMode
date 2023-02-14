@@ -300,7 +300,7 @@ void ServerPlugin::ApplyFx(float* samples, int numSamples)
         {
             lfo = 1.0f;
         }
-        float value = (lfo * 500.0f) + 4500.0f;
+        float value = (lfo * 500.0f) + 7000.0f;
         sBitCrush.Rate(value);
     }
 
