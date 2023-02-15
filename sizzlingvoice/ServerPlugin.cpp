@@ -1,5 +1,6 @@
 
 #include "ServerPlugin.h"
+#include "sourcesdk/public/edict.h"
 #include "sourcesdk/public/eiface.h"
 #include "sourcesdk/public/iserver.h"
 #include "sourcesdk/public/iclient.h"
@@ -206,8 +207,9 @@ static const INetMessage* GetCLCVoiceData(INetChannel* channel)
 
 void ServerPlugin::ClientActive(edict_t* pEntity)
 {
-    const int entIndex = mVEngineServer->IndexOfEdict(pEntity);
-    IClient* client = mServer->GetClient(entIndex - 1);
+    const int entIndex = pEntity->m_EdictIndex;
+    const int clientIndex = entIndex - 1;
+    IClient* client = mServer->GetClient(clientIndex);
 
     INetChannel* netChannel = client->GetNetChannel();
     if (!netChannel)
@@ -229,22 +231,20 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
         sProcessVoiceDataHook.Hook(msg, ProcessOffset, this, &ServerPlugin::ProcessVoiceDataHook);
     }
 
-    const int playerSlot = client->GetPlayerSlot();
-    assert(!mClientState[playerSlot]);
-    delete mClientState[playerSlot];
+    assert(!mClientState[clientIndex]);
+    delete mClientState[clientIndex];
 
-    mClientState[playerSlot] = new ClientState(mCeltCodecManager.CreateVoiceCodec());
+    mClientState[clientIndex] = new ClientState(mCeltCodecManager.CreateVoiceCodec());
 }
 
 void ServerPlugin::ClientDisconnect(edict_t* pEntity)
 {
-    const int entIndex = mVEngineServer->IndexOfEdict(pEntity);
-    IClient* client = mServer->GetClient(entIndex - 1);
-    const int playerSlot = client->GetPlayerSlot();
+    const int entIndex = pEntity->m_EdictIndex;
+    const int clientIndex = entIndex - 1;
 
     // can delete null here if the client had no net channel (bot/other).
-    delete mClientState[playerSlot];
-    mClientState[playerSlot] = nullptr;
+    delete mClientState[clientIndex];
+    mClientState[clientIndex] = nullptr;
 }
 
 #define Bits2Bytes(b) ((b+7)>>3)
