@@ -144,7 +144,7 @@ int main()
 
 #pragma once
 
-#include <complex>
+#include "base/complex.h"
 #include <math.h>
 
 class AlienWah
@@ -170,7 +170,7 @@ public:
         mParams.lfoSkipSamples = lfoSkipSamples;
 
         delete[] mState.delaybuf;
-        mState.delaybuf = new std::complex<float>[delay]();
+        mState.delaybuf = new Complex[delay]();
         mState.lfoskip = freq * 2.0f * 3.141592653589f / sampleRate;
         mState.t = 0;
         mState.c = { 0.0f, 0.0f };
@@ -182,15 +182,15 @@ public:
         if (mState.t++ % mParams.lfoSkipSamples == 0)
         {
             float lfo = (1.0f + cosf(mState.t * mState.lfoskip + mParams.startphase));
-            mState.c = std::complex(cosf(lfo) * mParams.feedback, sinf(lfo) * mParams.feedback);
+            mState.c = Complex{ cosf(lfo) * mParams.feedback, sinf(lfo) * mParams.feedback };
         }
-        std::complex outc = mState.c * mState.delaybuf[mState.k] + (1.0f - mParams.feedback) * sample;
+        Complex outc = mState.c * mState.delaybuf[mState.k] + (1.0f - mParams.feedback) * sample;
         mState.delaybuf[mState.k] = outc;
         if ((++mState.k) >= mParams.delay)
         {
             mState.k = 0;
         }
-        float out = std::real(outc) * 3.0f;  //take real part of outc
+        float out = outc.real * 3.0f;  //take real part of outc
         if (out < -1.0f)
         {
             out = -1.0f;
@@ -215,10 +215,10 @@ private:
 
     struct State
     {
-        std::complex<float>* delaybuf;
+        Complex* delaybuf;
         float lfoskip;
         long int t;
-        std::complex<float> c;
+        Complex c;
         int k;
     };
     State mState;
