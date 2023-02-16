@@ -1,5 +1,5 @@
 
-local function add_tag(tag, value, project_name)
+function add_tag(tag, value, project_name)
     if string.find(_ACTION, "vs") then
         require "vstudio"
         premake.override(premake.vstudio.vc2010.elements, "clCompile",
@@ -53,6 +53,8 @@ solution "sizzlingvoice"
     floatingpointexceptions "off"
     rtti "Off"
     editandcontinue "Off"
+    justmycode "Off"
+    cppdialect "C++17"
 
     -- defines "_CRT_SECURE_NO_WARNINGS"
     configuration "Debug"
@@ -73,8 +75,6 @@ solution "sizzlingvoice"
             debugcommand (srcds_exe)
             debugargs "-console -game tf +sv_voicecodec vaudio_celt +map cp_granary"
             postbuildcommands { postbuild_link_dll, postbuild_link_vdf }
-        configuration "gmake"
-            buildoptions { "-std=c++17" }
         configuration {}
         files
         {
@@ -83,10 +83,15 @@ solution "sizzlingvoice"
         }
         includedirs
         {
-            "../sizzlingvoice"
+            "../sizzlingvoice",
+            "../external"
         }
-        add_tag("SupportJustMyCode", "false", "sizzlingvoice")
-        add_tag("LanguageStandard", "stdcpp17", "sizzlingvoice")
+        links
+        {
+            "sourcesdk"
+        }
         add_tag("SDLCheck", "false", "sizzlingvoice")
         add_tag("ControlFlowGuard", "false", "sizzlingvoice")
     project "*"
+
+    dofile "sourcesdk.lua"
