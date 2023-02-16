@@ -57,6 +57,7 @@ solution "sizzlingvoice"
     cppdialect "C++17"
 
     -- defines "_CRT_SECURE_NO_WARNINGS"
+    defines { "INSTRSET=2" }
     configuration "Debug"
         defines { "DEBUG" }
     configuration "Release"
