@@ -155,7 +155,7 @@ public:
         delete[] mState.delaybuf;
     }
 
-    void Init(float freq, float startphase, float feedback, int delay, int sampleRate = 44100, int lfoSkipSamples = 25)
+    void Init(float freq, float startphase, float feedback, int delay, int sampleRate = 44100, unsigned int lfoSkipSamples = 25)
     {
         delay = (int)(delay / 44100.0f * sampleRate);
         if (delay < 1)
@@ -209,7 +209,7 @@ private:
         float startphase;
         float feedback;
         int delay;
-        int lfoSkipSamples;
+        unsigned int lfoSkipSamples;
     };
     Params mParams;
 
@@ -217,7 +217,7 @@ private:
     {
         Complex* delaybuf;
         float lfoskip;
-        long int t;
+        unsigned int t;
         Complex c;
         int k;
     };
