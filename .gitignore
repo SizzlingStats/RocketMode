@@ -1,3 +1,9 @@
+# Generated Project Files
+premake/*/
+addons/*
+!addons/*.vdf
+scratch/*
+
 # Prerequisites
 *.d
 
