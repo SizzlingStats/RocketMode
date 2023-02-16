@@ -190,16 +190,7 @@ public:
         {
             mState.k = 0;
         }
-        float out = outc.real * 3.0f;  //take real part of outc
-        if (out < -1.0f)
-        {
-            out = -1.0f;
-        }
-        else if (out > 1.0f)
-        {
-            out = 1.0f;
-        }
-        return out;
+        return Math::Clamp(outc.real * 3.0f, -1.0f, 1.0f);
     }
 
 private:
