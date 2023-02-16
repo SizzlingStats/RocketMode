@@ -47,7 +47,7 @@ solution "sizzlingvoice"
     configurations { "Debug", "Release" }
 
     platforms "x32"
-    flags { "MultiProcessorCompile", "Symbols" }
+    flags { "MultiProcessorCompile" }
     exceptionhandling "Off"
     floatingpoint "Fast"
     floatingpointexceptions "off"
@@ -55,6 +55,7 @@ solution "sizzlingvoice"
     editandcontinue "Off"
     justmycode "Off"
     cppdialect "C++17"
+    symbols "On"
 
     -- defines "_CRT_SECURE_NO_WARNINGS"
     defines { "INSTRSET=2" }
