@@ -50,7 +50,7 @@ Ross B.
 
 #pragma once
 
-#include <math.h>
+#include "base/math.h"
 
 #define SR (22050.0f)  //sample rate
 #define F_PI (3.14159f)
@@ -86,7 +86,7 @@ public:
 
     float Update(float inSamp) {
         //calculate and update phaser sweep lfo...
-        float d = _dmin + (_dmax - _dmin) * ((sinf(_lfoPhase) + 1.f) / 2.f);
+        float d = _dmin + (_dmax - _dmin) * ((Math::Sin(_lfoPhase) + 1.f) / 2.f);
         _lfoPhase += _lfoInc;
         if (_lfoPhase >= F_PI * 2.f)
             _lfoPhase -= F_PI * 2.f;

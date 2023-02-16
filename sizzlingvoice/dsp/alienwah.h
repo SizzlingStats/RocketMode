@@ -145,7 +145,7 @@ int main()
 #pragma once
 
 #include "base/complex.h"
-#include <math.h>
+#include "base/math.h"
 
 class AlienWah
 {
@@ -181,8 +181,8 @@ public:
     {
         if (mState.t++ % mParams.lfoSkipSamples == 0)
         {
-            float lfo = (1.0f + cosf(mState.t * mState.lfoskip + mParams.startphase));
-            mState.c = Complex{ cosf(lfo) * mParams.feedback, sinf(lfo) * mParams.feedback };
+            float lfo = (1.0f + Math::Cos(mState.t * mState.lfoskip + mParams.startphase));
+            mState.c = Complex{ Math::Cos(lfo) * mParams.feedback, Math::Sin(lfo) * mParams.feedback };
         }
         Complex outc = mState.c * mState.delaybuf[mState.k] + (1.0f - mParams.feedback) * sample;
         mState.delaybuf[mState.k] = outc;

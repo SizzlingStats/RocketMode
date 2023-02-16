@@ -14,6 +14,7 @@
 #include "dsp/phaser.h"
 #include "dsp/bitcrush.h"
 #include "dsp/alienwah.h"
+#include "base/math.h"
 #include "MemoryOverride.h"
 #include <string.h>
 
@@ -330,7 +331,7 @@ void ClientState::ApplyFx(float* samples, int numSamples)
         {
             mBitsRadians -= PI_2;
         }
-        float lfo = (sinf(mBitsRadians) * 0.5f) + 0.5f;
+        float lfo = (Math::Sin(mBitsRadians) * 0.5f) + 0.5f;
         if (lfo < 0.0f)
         {
             lfo = 0.0f;
@@ -349,7 +350,7 @@ void ClientState::ApplyFx(float* samples, int numSamples)
         {
             mRateRadians -= PI_2;
         }
-        float lfo = (sinf(mRateRadians) * 0.5f) + 0.5f;
+        float lfo = (Math::Sin(mRateRadians) * 0.5f) + 0.5f;
         if (lfo < 0.0f)
         {
             lfo = 0.0f;
