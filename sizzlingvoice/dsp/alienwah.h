@@ -144,8 +144,8 @@ int main()
 
 #pragma once
 
-#include "base/complex.h"
 #include "base/math.h"
+#include "vectorclass/complexvec1.h"
 
 class AlienWah
 {
@@ -170,10 +170,10 @@ public:
         mParams.lfoSkipSamples = lfoSkipSamples;
 
         delete[] mState.delaybuf;
-        mState.delaybuf = new Complex[delay]();
+        mState.delaybuf = new Complex1f[delay]();
         mState.lfoskip = freq * 2.0f * 3.141592653589f / sampleRate;
         mState.t = 0;
-        mState.c = { 0.0f, 0.0f };
+        mState.c = Complex1f();
         mState.k = 0;
     }
 
@@ -182,15 +182,15 @@ public:
         if (mState.t++ % mParams.lfoSkipSamples == 0)
         {
             float lfo = (1.0f + Math::Cos(mState.t * mState.lfoskip + mParams.startphase));
-            mState.c = Complex{ Math::Cos(lfo) * mParams.feedback, Math::Sin(lfo) * mParams.feedback };
+            mState.c = Complex1f(Math::Cos(lfo) * mParams.feedback, Math::Sin(lfo) * mParams.feedback);
         }
-        Complex outc = mState.c * mState.delaybuf[mState.k] + (1.0f - mParams.feedback) * sample;
+        Complex1f outc = mState.c * mState.delaybuf[mState.k] + (1.0f - mParams.feedback) * sample;
         mState.delaybuf[mState.k] = outc;
         if ((++mState.k) >= mParams.delay)
         {
             mState.k = 0;
         }
-        return Math::Clamp(outc.real * 3.0f, -1.0f, 1.0f);
+        return Math::Clamp(outc.real() * 3.0f, -1.0f, 1.0f);
     }
 
 private:
@@ -206,10 +206,10 @@ private:
 
     struct State
     {
-        Complex* delaybuf;
+        Complex1f* delaybuf;
         float lfoskip;
         unsigned int t;
-        Complex c;
+        Complex1f c;
         int k;
     };
     State mState;
