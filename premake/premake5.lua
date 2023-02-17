@@ -99,3 +99,4 @@ solution "sizzlingvoice"
 
     dofile "sourcesdk.lua"
     dofile "vectorclass.lua"
+    dofile "imgui.lua"
