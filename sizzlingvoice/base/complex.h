@@ -18,7 +18,7 @@ struct Complex
 
     Complex& operator*(const Complex& other)
     {
-        const float temp = (real * other.real) - (imag - other.imag);
+        const float temp = (real * other.real) - (imag * other.imag);
         imag = (real * other.imag) + (imag * other.real);
         real = temp;
         return *this;
