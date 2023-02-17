@@ -15,7 +15,7 @@ group "external"
             base_dir .. "**.h",
             base_dir .. "**.cpp"
         }
-        add_tag("SDLCheck", "false", "sizzlingvoice")
-        add_tag("ControlFlowGuard", "false", "sizzlingvoice")
+        add_tag("SDLCheck", "false", "sourcesdk")
+        add_tag("ControlFlowGuard", "false", "sourcesdk")
     project "*"
 group ""
