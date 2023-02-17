@@ -90,10 +90,12 @@ solution "sizzlingvoice"
         }
         links
         {
-            "sourcesdk"
+            "sourcesdk",
+            "vectorclass"
         }
         add_tag("SDLCheck", "false", "sizzlingvoice")
         add_tag("ControlFlowGuard", "false", "sizzlingvoice")
     project "*"
 
     dofile "sourcesdk.lua"
+    dofile "vectorclass.lua"
