@@ -15,7 +15,6 @@
 #include "dsp/bitcrush.h"
 #include "dsp/alienwah.h"
 #include "base/math.h"
-#include "MemoryOverride.h"
 #include <string.h>
 
 template<typename T>
@@ -143,8 +142,6 @@ ServerPlugin::ServerPlugin() :
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory)
 {
-    MemoryOverride::Init();
-
     if (!mCeltCodecManager.Init())
     {
         return false;
@@ -168,8 +165,6 @@ void ServerPlugin::Unload(void)
     mCeltCodecManager.Release();
     sIsProximityHearingClientHook.Unhook();
     sProcessVoiceDataHook.Unhook();
-
-    MemoryOverride::Shutdown();
 }
 
 template<typename T, typename U>

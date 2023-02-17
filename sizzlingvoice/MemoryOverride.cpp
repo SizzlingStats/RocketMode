@@ -1,136 +1,108 @@
 
-#include "MemoryOverride.h"
-#include "sourcesdk/public/tier0/memalloc.h"
+#define MEMORY_OVERRIDE 1
+#if MEMORY_OVERRIDE
+
+#include <malloc.h>
 #include <new>
-#include <assert.h>
-
-#define VC_EXTRALEAN
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
-static HMODULE sTier0;
-static IMemAlloc* sMemAlloc;
-
-namespace MemoryOverride
-{
-    void Init()
-    {
-        assert(!sTier0);
-        sTier0 = LoadLibraryA("tier0");
-        assert(sTier0);
-
-        sMemAlloc = *(IMemAlloc**)GetProcAddress(sTier0, "g_pMemAlloc");
-        assert(sMemAlloc);
-    }
-
-    void Shutdown()
-    {
-        sMemAlloc = nullptr;
-        FreeLibrary(sTier0);
-        sTier0 = nullptr;
-    }
-}
 
 void* operator new(std::size_t count)
 {
-    return sMemAlloc->Alloc(count);
+    return malloc(count);
 }
 
 void* operator new[](std::size_t count)
 {
-    return sMemAlloc->Alloc(count);
+    return malloc(count);
 }
 
-void* operator new(std::size_t, std::align_val_t)
+void* operator new(std::size_t count, std::align_val_t align)
 {
-    assert(false);
-    return nullptr;
+    return _aligned_malloc(count, static_cast<std::size_t>(align));
 }
 
-void* operator new[](std::size_t, std::align_val_t)
+void* operator new[](std::size_t count, std::align_val_t align)
 {
-    assert(false);
-    return nullptr;
+    return _aligned_malloc(count, static_cast<std::size_t>(align));
 }
 
 void* operator new(std::size_t count, const std::nothrow_t&) noexcept
 {
-    return sMemAlloc->Alloc(count);
+    return malloc(count);
 }
 
 void* operator new[](std::size_t count, const std::nothrow_t&) noexcept
 {
-    return sMemAlloc->Alloc(count);
+    return malloc(count);
 }
 
-void* operator new(std::size_t, std::align_val_t, const std::nothrow_t&) noexcept
+void* operator new(std::size_t count, std::align_val_t align, const std::nothrow_t&) noexcept
 {
-    assert(false);
-    return nullptr;
+    return _aligned_malloc(count, static_cast<std::size_t>(align));
 }
 
-void* operator new[](std::size_t, std::align_val_t, const std::nothrow_t&) noexcept
+void* operator new[](std::size_t count, std::align_val_t align, const std::nothrow_t&) noexcept
 {
-    assert(false);
-    return nullptr;
+    return _aligned_malloc(count, static_cast<std::size_t>(align));
 }
 
 void operator delete(void* ptr) noexcept
 {
-    return sMemAlloc->Free(ptr);
+    free(ptr);
 }
 
 void operator delete[](void* ptr) noexcept
 {
-    return sMemAlloc->Free(ptr);
+    free(ptr);
 }
 
-void operator delete(void* ptr, std::align_val_t al) noexcept
+void operator delete(void* ptr, std::align_val_t) noexcept
 {
-    assert(false);
+    _aligned_free(ptr);
 }
 
-void operator delete[](void* ptr, std::align_val_t al) noexcept
+void operator delete[](void* ptr, std::align_val_t) noexcept
 {
-    assert(false);
+    _aligned_free(ptr);
 }
 
 void operator delete(void* ptr, std::size_t) noexcept
 {
-    return sMemAlloc->Free(ptr);
+    free(ptr);
 }
 
 void operator delete[](void* ptr, std::size_t) noexcept
 {
-    return sMemAlloc->Free(ptr);
+    free(ptr);
 }
 
-void operator delete(void* ptr, std::size_t sz, std::align_val_t al) noexcept
+void operator delete(void* ptr, std::size_t, std::align_val_t) noexcept
 {
-    assert(false);
+    _aligned_free(ptr);
 }
 
-void operator delete[](void* ptr, std::size_t sz, std::align_val_t al) noexcept
+void operator delete[](void* ptr, std::size_t, std::align_val_t) noexcept
 {
-    assert(false);
+    _aligned_free(ptr);
 }
 
 void operator delete(void* ptr, const std::nothrow_t&) noexcept
 {
-    return sMemAlloc->Free(ptr);
+    free(ptr);
 }
 
 void operator delete[](void* ptr, const std::nothrow_t&) noexcept
 {
-    return sMemAlloc->Free(ptr);
+    free(ptr);
 }
 
-void operator delete(void*, std::align_val_t, const std::nothrow_t&) noexcept
+void operator delete(void* ptr, std::align_val_t, const std::nothrow_t&) noexcept
 {
-    assert(false);
+    _aligned_free(ptr);
 }
 
-void operator delete[](void*, std::align_val_t, const std::nothrow_t&) noexcept
+void operator delete[](void* ptr, std::align_val_t, const std::nothrow_t&) noexcept
 {
-    assert(false);
+    _aligned_free(ptr);
 }
+
+#endif // MEMORY_OVERRIDE
