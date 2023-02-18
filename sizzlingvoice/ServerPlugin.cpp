@@ -93,6 +93,7 @@ public:
     }
 
     void ProcessVoiceData(INetMessage* VoiceDataNetMsg);
+    void ProcessVoiceData(ClientState* clientState, bf_read voiceData, int numEncodedBits);
 
     bool IsProximityHearingClientHook(int index)
     {
@@ -259,51 +260,57 @@ void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
 
     CLC_VoiceData* voiceData = static_cast<CLC_VoiceData*>(VoiceDataNetMsg);
 
-    char compressedData[4096];
+    ProcessVoiceData(clientState, voiceData->m_DataIn, voiceData->m_nLength);
+}
+
+void ServerPlugin::ProcessVoiceData(ClientState* clientState, bf_read voiceData, int numEncodedBits)
+{
+    assert(voiceData.GetNumBitsLeft() >= numEncodedBits);
+
+    // Pad up to 4 byte boundary.
+    // bf_write complains if totalBytesAvailable is not dword aligned because it writes in dwords.
+    // TODO fix this
+    const int totalBytesAvailable = (voiceData.TotalBytesAvailable() + 3) & ~3;
+    bf_write voiceOutputWriter((void*)voiceData.GetBasePointer(), totalBytesAvailable);
+    voiceOutputWriter.SeekToBit(voiceData.GetNumBitsRead());
+
+    constexpr int celtFrameSizeBytes = 64;
+    constexpr int celtFrameSizeBits = celtFrameSizeBytes * 8;
+    constexpr int celtDecodedFrameSizeSamples = 512;
+
+    char encodedFrame[celtFrameSizeBytes];
+    int16_t decodedFrame[celtDecodedFrameSizeSamples];
+    float samples[celtDecodedFrameSizeSamples];
+
+    IVAudioVoiceCodec* voiceCodec = clientState->mVoiceCodec;
+    while (numEncodedBits >= celtFrameSizeBits)
     {
-        bf_read dataInCopy = voiceData->m_DataIn;
-        int bitsRead = dataInCopy.ReadBitsClamped(compressedData, voiceData->m_nLength);
-        if (bitsRead == 0)
+        numEncodedBits -= celtFrameSizeBits;
+        voiceData.ReadBits(encodedFrame, celtFrameSizeBits);
+        assert(!voiceData.IsOverflowed());
+
+        const int numSamples = voiceCodec->Decompress(encodedFrame, sizeof(encodedFrame), (char*)decodedFrame, sizeof(decodedFrame));
+        assert(numSamples == celtDecodedFrameSizeSamples);
+
+        for (int i = 0; i < celtDecodedFrameSizeSamples; ++i)
         {
-            return;
+            samples[i] = decodedFrame[i] / 32768.0f;
         }
-        assert(bitsRead == voiceData->m_nLength);
+        clientState->ApplyFx(samples, celtDecodedFrameSizeSamples);
+        for (int i = 0; i < celtDecodedFrameSizeSamples; ++i)
+        {
+            const int32_t expandedSample = static_cast<int32_t>(samples[i] * 32768.0f);
+            decodedFrame[i] = static_cast<int16_t>(Max(-32768, Min(expandedSample, 32767)));
+        }
+
+        // TODO: bFinal = true when the last byte of the sound data is a 0?
+        const int bytesWritten = voiceCodec->Compress((char*)decodedFrame, celtDecodedFrameSizeSamples, encodedFrame, sizeof(encodedFrame), false);
+        assert(bytesWritten == celtFrameSizeBytes);
+
+        // write back to net message
+        voiceOutputWriter.WriteBits(encodedFrame, celtFrameSizeBits);
     }
-
-    int16_t uncompressedData[2048];
-    const int compressedBytes = Bits2Bytes(voiceData->m_nLength);
-    const int numSamples = clientState->mVoiceCodec->Decompress(compressedData, compressedBytes, (char*)uncompressedData, sizeof(uncompressedData));
-
-    float samples[2048];
-    for (int i = 0; i < numSamples; ++i)
-    {
-        samples[i] = uncompressedData[i] / 32768.0f;
-    }
-
-    clientState->ApplyFx(samples, numSamples);
-
-    for (int i = 0; i < numSamples; ++i)
-    {
-        const int32_t expandedSample = static_cast<int32_t>(samples[i] * 32768.0f);
-        uncompressedData[i] = static_cast<int16_t>(Max(-32768, Min(expandedSample, 32767)));
-    }
-
-    // TODO: bFinal = true when the last byte of the sound data is a 0.
-    int bytesWritten = clientState->mVoiceCodec->Compress((const char*)uncompressedData, numSamples, compressedData, sizeof(compressedData), false);
-    assert(bytesWritten == compressedBytes);
-
-    {
-        int totalBytesAvailable = voiceData->m_DataIn.TotalBytesAvailable();
-
-        // Pad up to 4 byte boundary.
-        // bf_write complains if totalBytesAvailable is not dword aligned because it writes in dwords.
-        // TODO fix this
-        totalBytesAvailable = (totalBytesAvailable + 3) & ~3;
-
-        bf_write writer((void*)voiceData->m_DataIn.GetBasePointer(), totalBytesAvailable);
-        writer.SeekToBit(voiceData->m_DataIn.GetNumBitsRead());
-        writer.WriteBits(compressedData, bytesWritten * 8);
-    }
+    assert(numEncodedBits == 0);
 }
 
 void ClientState::ApplyFx(float* samples, int numSamples)
