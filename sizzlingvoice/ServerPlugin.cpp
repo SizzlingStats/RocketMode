@@ -253,8 +253,7 @@ void ServerPlugin::ClientDisconnect(edict_t* pEntity)
 void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
 {
     INetChannel* netChannel = VoiceDataNetMsg->GetNetChannel();
-    INetChannelHandler* msgHandler = netChannel->GetMsgHandler();
-    IClient* client = static_cast<IClient*>(msgHandler);
+    IClient* client = static_cast<IClient*>(netChannel->GetMsgHandler());
     const int playerSlot = client->GetPlayerSlot();
     ClientState* clientState = mClientState[playerSlot];
 
