@@ -61,6 +61,7 @@ solution "sizzlingvoice"
     defines { "INSTRSET=2" }
     configuration "Debug"
         defines { "DEBUG" }
+        inlining "Explicit"
     configuration "Release"
         defines { "NDEBUG" }
         optimize "Full"
