@@ -4,6 +4,7 @@
 #include "sourcesdk/public/eiface.h"
 #include "sourcesdk/public/iserver.h"
 #include "sourcesdk/public/iclient.h"
+#include "sourcesdk/public/icvar.h"
 #include "sourcesdk/public/inetchannel.h"
 #include "sourcesdk/public/inetmessage.h"
 #include "sourcesdk/common/protocol.h"
@@ -103,6 +104,7 @@ public:
 private:
     IVEngineServer* mVEngineServer;
     IServer* mServer;
+    ICvar* mCvar;
     VAudioCeltCodecManager mCeltCodecManager;
 
     ClientState* mClientState[MAX_PLAYERS];
@@ -136,6 +138,7 @@ void* CreateInterface(const char* pName, int* pReturnCode)
 ServerPlugin::ServerPlugin() :
     mVEngineServer(nullptr),
     mServer(nullptr),
+    mCvar(nullptr),
     mCeltCodecManager(),
     mClientState()
 {
@@ -153,7 +156,10 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
     {
         mServer = mVEngineServer->GetIServer();
     }
-    return mServer;
+
+    mCvar = (ICvar*)interfaceFactory(CVAR_INTERFACE_VERSION, NULL);
+
+    return mServer && mCvar;
 }
 
 void ServerPlugin::Unload(void)
