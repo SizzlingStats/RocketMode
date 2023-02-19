@@ -72,7 +72,7 @@ public:
     virtual void Pause(void) {}
     virtual void UnPause(void) {}
     virtual const char* GetPluginDescription(void) { return "ServerPlugin"; }
-    virtual void LevelInit(char const* pMapName) {}
+    virtual void LevelInit(char const* pMapName);
     virtual void ServerActivate(edict_t* pEdictList, int edictCount, int clientMax) {}
     virtual void GameFrame(bool simulating) {}
     virtual void LevelShutdown(void) {}
@@ -187,6 +187,11 @@ void ServerPlugin::Unload(void)
     mCeltCodecManager.Release();
     sIsProximityHearingClientHook.Unhook();
     sProcessVoiceDataHook.Unhook();
+}
+
+void ServerPlugin::LevelInit(char const* pMapName)
+{
+    mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 }
 
 template<typename T, typename U>
