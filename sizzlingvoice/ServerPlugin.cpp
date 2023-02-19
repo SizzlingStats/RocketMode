@@ -91,12 +91,14 @@ public:
     bool ProcessVoiceDataHook()
     {
         ServerPlugin* thisPtr = sProcessVoiceDataHook.GetThisPtr();
-        thisPtr->ProcessVoiceData(reinterpret_cast<INetMessage*>(this));
-
-        return sProcessVoiceDataHook.CallOriginalFn(this);
+        if (thisPtr->ProcessVoiceData(reinterpret_cast<INetMessage*>(this)))
+        {
+            return sProcessVoiceDataHook.CallOriginalFn(this);
+        }
+        return true;
     }
 
-    void ProcessVoiceData(INetMessage* VoiceDataNetMsg);
+    bool ProcessVoiceData(INetMessage* VoiceDataNetMsg);
     void ProcessVoiceData(ClientState* clientState, bf_read voiceData, int numEncodedBits);
 
     bool IsProximityHearingClientHook(int index)
@@ -110,6 +112,8 @@ private:
 
     CVarHelper mCvarHelper;
     ConVar* mSizzVoiceEnabled;
+    ConVar* mSizzVoiceBotTalk;
+    ConVar* mSizzVoiceBotTalkSteamID;
 
     VAudioCeltCodecManager mCeltCodecManager;
 
@@ -146,6 +150,8 @@ ServerPlugin::ServerPlugin() :
     mServer(nullptr),
     mCvarHelper(),
     mSizzVoiceEnabled(nullptr),
+    mSizzVoiceBotTalk(nullptr),
+    mSizzVoiceBotTalkSteamID(nullptr),
     mCeltCodecManager(),
     mClientState()
 {
@@ -171,12 +177,16 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
     }
 
     mSizzVoiceEnabled = mCvarHelper.CreateConVar("sizz_voice_enabled", "1");
+    mSizzVoiceBotTalk = mCvarHelper.CreateConVar("sizz_voice_bottalk", "0");
+    mSizzVoiceBotTalkSteamID = mCvarHelper.CreateConVar("sizz_voice_bottalk_steamid", "");
 
     return mServer && mSizzVoiceEnabled;
 }
 
 void ServerPlugin::Unload(void)
 {
+    mCvarHelper.DestroyConVar(mSizzVoiceBotTalkSteamID);
+    mCvarHelper.DestroyConVar(mSizzVoiceBotTalk);
     mCvarHelper.DestroyConVar(mSizzVoiceEnabled);
 
     for (ClientState*& state : mClientState)
@@ -261,11 +271,28 @@ void ServerPlugin::ClientDisconnect(edict_t* pEntity)
 
 #define Bits2Bytes(b) ((b+7)>>3)
 
-void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
+static void BroadcastToAllPlayers(INetMessage& msg, IServer* server)
+{
+    const int numClients = server->GetClientCount();
+    for (int i = 0; i < numClients; ++i)
+    {
+        IClient* client = server->GetClient(i);
+        if (client && !client->IsFakeClient())
+        {
+            INetChannel* netChannel = client->GetNetChannel();
+            if (netChannel)
+            {
+                netChannel->SendNetMsg(msg);
+            }
+        }
+    }
+}
+
+bool ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
 {
     if (mSizzVoiceEnabled->m_nValue == 0)
     {
-        return;
+        return true;
     }
 
     INetChannel* netChannel = VoiceDataNetMsg->GetNetChannel();
@@ -276,6 +303,39 @@ void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
     CLC_VoiceData* voiceData = static_cast<CLC_VoiceData*>(VoiceDataNetMsg);
 
     ProcessVoiceData(clientState, voiceData->m_DataIn, voiceData->m_nLength);
+
+    if (mSizzVoiceBotTalk->m_nValue == 1)
+    {
+        bf_read dataCopy = voiceData->m_DataIn;
+
+        char voiceDataBuffer[4096];
+        int bitsRead = dataCopy.ReadBitsClamped(voiceDataBuffer, voiceData->m_nLength);
+
+        SVC_VoiceData svcVoiceData;
+        svcVoiceData.m_nFromClient = 0;
+        svcVoiceData.m_bProximity = true;
+        svcVoiceData.m_nLength = bitsRead;
+        svcVoiceData.m_DataOut = voiceDataBuffer;
+
+        const int entIndex = playerSlot + 1;
+        const CSteamID* steamId = mVEngineServer->GetClientSteamIDByPlayerIndex(entIndex);
+        const CSteamID bottalkSteamId = strtoull(mSizzVoiceBotTalkSteamID->m_pszString, nullptr, 10);
+        if (steamId && (*steamId == bottalkSteamId))
+        {
+            const int numClients = mServer->GetClientCount();
+            for (int i = 0; i < numClients; ++i)
+            {
+                IClient* client = mServer->GetClient(i);
+                if (client && client->IsFakeClient())
+                {
+                    svcVoiceData.m_nFromClient = i;
+                    BroadcastToAllPlayers(svcVoiceData, mServer);
+                }
+            }
+            return false;
+        }
+    }
+    return true;
 }
 
 void ServerPlugin::ProcessVoiceData(ClientState* clientState, bf_read voiceData, int numEncodedBits)

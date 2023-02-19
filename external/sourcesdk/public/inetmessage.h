@@ -9,10 +9,9 @@ class bf_write;
 class INetMessage
 {
 public:
-    virtual	~INetMessage() = 0;
-
-    // Use these to setup who can hear whose voice.
-    // Pass in client indices (which are their ent indices - 1).
+    // Workaround for derived classes trying to destruct.
+    // Pure virtual destructors still need a function body.
+    virtual	void Destructor() = 0;
 
     virtual void	SetNetChannel(INetChannel* netchan) = 0; // netchannel this message is from/for
     virtual void	SetReliable(bool state) = 0;	// set to true if it's a reliable message
