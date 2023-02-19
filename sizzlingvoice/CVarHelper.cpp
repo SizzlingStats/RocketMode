@@ -19,8 +19,6 @@ static ConVar* AllocConvar(ConVar* AnyExistingConVar)
     assert(!AnyExistingConVar->IsCommand());
 
     ConVar* convar = (ConVar*)calloc(1, sizeof(ConVar));
-    ConCommandBase* base = convar;
-    IConVar* iconvar = convar;
 
     unsigned char** ConVarVtable = *(unsigned char***)AnyExistingConVar;
     unsigned char** IConVarVtable = *(unsigned char***)(IConVar*)AnyExistingConVar;
