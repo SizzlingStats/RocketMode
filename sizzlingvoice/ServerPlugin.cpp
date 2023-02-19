@@ -7,6 +7,7 @@
 #include "sourcesdk/public/icvar.h"
 #include "sourcesdk/public/inetchannel.h"
 #include "sourcesdk/public/inetmessage.h"
+#include "sourcesdk/public/tier1/convar.h"
 #include "sourcesdk/common/protocol.h"
 #include "sourcesdk/common/netmessages.h"
 #include "sourcesdk/game/shared/shareddefs.h"
@@ -16,6 +17,7 @@
 #include "dsp/bitcrush.h"
 #include "dsp/alienwah.h"
 #include "base/math.h"
+#include "CVarHelper.h"
 #include <string.h>
 
 template<typename T>
@@ -104,7 +106,10 @@ public:
 private:
     IVEngineServer* mVEngineServer;
     IServer* mServer;
-    ICvar* mCvar;
+
+    CVarHelper mCvarHelper;
+    ConVar* mSizzVoiceEnabled;
+
     VAudioCeltCodecManager mCeltCodecManager;
 
     ClientState* mClientState[MAX_PLAYERS];
@@ -138,7 +143,8 @@ void* CreateInterface(const char* pName, int* pReturnCode)
 ServerPlugin::ServerPlugin() :
     mVEngineServer(nullptr),
     mServer(nullptr),
-    mCvar(nullptr),
+    mCvarHelper(),
+    mSizzVoiceEnabled(nullptr),
     mCeltCodecManager(),
     mClientState()
 {
@@ -157,13 +163,21 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         mServer = mVEngineServer->GetIServer();
     }
 
-    mCvar = (ICvar*)interfaceFactory(CVAR_INTERFACE_VERSION, NULL);
+    ICvar* cvar = (ICvar*)interfaceFactory(CVAR_INTERFACE_VERSION, NULL);
+    if (!cvar || !mCvarHelper.Init(cvar))
+    {
+        return false;
+    }
 
-    return mServer && mCvar;
+    mSizzVoiceEnabled = mCvarHelper.CreateConVar("sizz_voice_enabled", "1");
+
+    return mServer && mSizzVoiceEnabled;
 }
 
 void ServerPlugin::Unload(void)
 {
+    mCvarHelper.DestroyConVar(mSizzVoiceEnabled);
+
     for (ClientState*& state : mClientState)
     {
         delete state;
@@ -259,6 +273,11 @@ void ServerPlugin::ClientDisconnect(edict_t* pEntity)
 
 void ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
 {
+    if (mSizzVoiceEnabled->m_nValue == 0)
+    {
+        return;
+    }
+
     INetChannel* netChannel = VoiceDataNetMsg->GetNetChannel();
     IClient* client = static_cast<IClient*>(netChannel->GetMsgHandler());
     const int playerSlot = client->GetPlayerSlot();
