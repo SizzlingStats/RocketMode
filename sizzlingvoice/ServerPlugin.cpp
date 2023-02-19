@@ -8,6 +8,7 @@
 #include "sourcesdk/public/inetchannel.h"
 #include "sourcesdk/public/inetmessage.h"
 #include "sourcesdk/public/tier1/convar.h"
+#include "sourcesdk/public/tier1/utlvector.h"
 #include "sourcesdk/common/protocol.h"
 #include "sourcesdk/common/netmessages.h"
 #include "sourcesdk/game/shared/shareddefs.h"
@@ -193,22 +194,6 @@ inline T ByteOffsetFromPointer(U pBase, int byte_offset)
 {
     return reinterpret_cast<T>((reinterpret_cast<unsigned char*>(pBase) + byte_offset));
 }
-
-template<typename T>
-struct CUtlMemory
-{
-    T* m_pMemory;
-    int m_nAllocationCount;
-    int m_nGrowSize;
-};
-
-template<typename T>
-struct CUtlVector
-{
-    CUtlMemory<T> m_Memory;
-    int m_Size;
-    T* m_pElements;
-};
 
 static const INetMessage* GetCLCVoiceData(INetChannel* channel)
 {
