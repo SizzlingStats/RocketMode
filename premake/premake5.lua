@@ -92,7 +92,8 @@ solution "sizzlingvoice"
         links
         {
             "sourcesdk",
-            "vectorclass"
+            "vectorclass",
+            "autotalent"
         }
         add_tag("SDLCheck", "false", "sizzlingvoice")
         add_tag("ControlFlowGuard", "false", "sizzlingvoice")
@@ -100,5 +101,6 @@ solution "sizzlingvoice"
 
     dofile "sourcesdk.lua"
     dofile "vectorclass.lua"
+    dofile "autotalent.lua"
     dofile "imgui.lua"
     dofile "voiceviewer.lua"

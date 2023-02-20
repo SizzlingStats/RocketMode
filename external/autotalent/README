@@ -1,0 +1,15 @@
+Autotalent: pop music in a can!
+
+By Thomas A. Baran
+http://web.mit.edu/tbaran/www/autotalent.html
+
+This is Autotalent, a pitch correction plugin for LADSPA.
+
+To compile, type make.
+To install (in /usr/lib64/ladspa/), type make install.
+
+Keep in mind that you may need to change the install directory
+in the Makefile.
+
+Also note that you'll need to have LADSPA installed, in addition
+to the LADSPA devel packages.
