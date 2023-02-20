@@ -3,6 +3,8 @@
 
 #include <assert.h>
 
+#define FORCEINLINE __forceinline
+
 class QAngle
 {
 public:
@@ -49,5 +51,18 @@ public:
     {
         assert( (i >= 0) && (i < 3) );
         return ((float*)this)[i];
+    }
+    FORCEINLINE float LengthSqr(void) const
+    {
+        //CHECK_VALID(*this);
+        return (x * x + y * y + z * z);
+    }
+    FORCEINLINE float DistToSqr(const Vector& vOther) const
+    {
+        Vector delta;
+        delta.x = x - vOther.x;
+        delta.y = y - vOther.y;
+        delta.z = z - vOther.z;
+        return delta.LengthSqr();
     }
 };

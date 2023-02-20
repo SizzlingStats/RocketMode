@@ -38,6 +38,8 @@ class KeyValues;
 struct bbox_t;
 class IServer;
 class IReplaySystem;
+class CPlayerState;
+class bf_read;
 
 #define INTERFACEVERSION_VENGINESERVER "VEngineServer023"
 
@@ -398,4 +400,68 @@ public:
     virtual void SetPausedForced(bool bPaused, float flDuration = -1.f) = 0;
 
     virtual IReplaySystem* GetReplay() = 0;
+};
+
+#define INTERFACEVERSION_SERVERGAMECLIENTS				"ServerGameClients004"
+
+class IServerGameClients
+{
+public:
+    // Get server maxplayers and lower bound for same
+    virtual void			GetPlayerLimits(int& minplayers, int& maxplayers, int& defaultMaxPlayers) const = 0;
+
+    // Client is connecting to server ( return false to reject the connection )
+    //	You can specify a rejection message by writing it into reject
+    virtual bool			ClientConnect(edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen) = 0;
+
+    // Client is going active
+    // If bLoadGame is true, don't spawn the player because its state is already setup.
+    virtual void			ClientActive(edict_t* pEntity, bool bLoadGame) = 0;
+
+    // Client is disconnecting from server
+    virtual void			ClientDisconnect(edict_t* pEntity) = 0;
+
+    // Client is connected and should be put in the game
+    virtual void			ClientPutInServer(edict_t* pEntity, char const* playername) = 0;
+
+    // The client has typed a command at the console
+    virtual void			ClientCommand(edict_t* pEntity, const CCommand& args) = 0;
+
+    // Sets the client index for the client who typed the command into his/her console
+    virtual void			SetCommandClient(int index) = 0;
+
+    // A player changed one/several replicated cvars (name etc)
+    virtual void			ClientSettingsChanged(edict_t* pEdict) = 0;
+
+    // Determine PVS origin and set PVS for the player/viewentity
+    virtual void			ClientSetupVisibility(edict_t* pViewEntity, edict_t* pClient, unsigned char* pvs, int pvssize) = 0;
+
+    // A block of CUserCmds has arrived from the user, decode them and buffer for execution during player simulation
+    virtual float			ProcessUsercmds(edict_t* player, bf_read* buf, int numcmds, int totalcmds,
+                                int dropped_packets, bool ignore, bool paused) = 0;
+
+    // Let the game .dll do stuff after messages have been sent to all of the clients once the server frame is complete
+    virtual void			PostClientMessagesSent_DEPRECIATED(void) = 0;
+
+    // For players, looks up the CPlayerState structure corresponding to the player
+    virtual CPlayerState* GetPlayerState(edict_t* player) = 0;
+
+    // Get the ear position for a specified client
+    virtual void			ClientEarPosition(edict_t* pEntity, Vector* pEarOrigin) = 0;
+
+    // returns number of delay ticks if player is in Replay mode (0 = no delay)
+    virtual int				GetReplayDelay(edict_t* player, int& entity) = 0;
+
+    // Anything this game .dll wants to add to the bug reporter text (e.g., the entity/model under the picker crosshair)
+    //  can be added here
+    virtual void			GetBugReportInfo(char* buf, int buflen) = 0;
+
+    // A user has had their network id setup and validated 
+    virtual void			NetworkIDValidated(const char* pszUserName, const char* pszNetworkID) = 0;
+
+    // The client has submitted a keyvalues command
+    virtual void			ClientCommandKeyValues(edict_t* pEntity, KeyValues* pKeyValues) = 0;
+
+    // Hook for player spawning
+    virtual void			ClientSpawned(edict_t* pPlayer) = 0;
 };

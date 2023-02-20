@@ -1,5 +1,6 @@
 
 #include "ServerPlugin.h"
+#include "sourcesdk/public/bitvec.h"
 #include "sourcesdk/public/edict.h"
 #include "sourcesdk/public/eiface.h"
 #include "sourcesdk/public/iserver.h"
@@ -9,8 +10,10 @@
 #include "sourcesdk/public/inetmessage.h"
 #include "sourcesdk/public/tier1/convar.h"
 #include "sourcesdk/public/tier1/utlvector.h"
+#include "sourcesdk/public/mathlib/vector.h"
 #include "sourcesdk/common/protocol.h"
 #include "sourcesdk/common/netmessages.h"
+#include "sourcesdk/game/server/iplayerinfo.h"
 #include "sourcesdk/game/shared/shareddefs.h"
 #include "VTableHook.h"
 #include "VAudioCeltCodecManager.h"
@@ -20,6 +23,7 @@
 #include "base/math.h"
 #include "CVarHelper.h"
 #include <string.h>
+#include <float.h>
 
 template<typename T>
 inline T Min(T a, T b) { return a <= b ? a : b;  }
@@ -100,6 +104,7 @@ public:
 
     bool ProcessVoiceData(INetMessage* VoiceDataNetMsg);
     void ProcessVoiceData(ClientState* clientState, bf_read voiceData, int numEncodedBits);
+    int GetClosestBotSlot(const Vector& position);
 
     bool IsProximityHearingClientHook(int index)
     {
@@ -109,6 +114,8 @@ public:
 private:
     IVEngineServer* mVEngineServer;
     IServer* mServer;
+    IServerGameClients* mServerGameClients;
+    IPlayerInfoManager* mPlayerInfoManager;
 
     CVarHelper mCvarHelper;
     ConVar* mSizzVoiceEnabled;
@@ -148,6 +155,8 @@ void* CreateInterface(const char* pName, int* pReturnCode)
 ServerPlugin::ServerPlugin() :
     mVEngineServer(nullptr),
     mServer(nullptr),
+    mServerGameClients(nullptr),
+    mPlayerInfoManager(nullptr),
     mCvarHelper(),
     mSizzVoiceEnabled(nullptr),
     mSizzVoiceBotTalk(nullptr),
@@ -164,13 +173,25 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         return false;
     }
 
-    mVEngineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, NULL);
+    mVEngineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, nullptr);
     if (mVEngineServer)
     {
         mServer = mVEngineServer->GetIServer();
     }
 
-    ICvar* cvar = (ICvar*)interfaceFactory(CVAR_INTERFACE_VERSION, NULL);
+    mServerGameClients = (IServerGameClients*)gameServerFactory(INTERFACEVERSION_SERVERGAMECLIENTS, nullptr);
+    if (!mServerGameClients)
+    {
+        return false;
+    }
+
+    mPlayerInfoManager = (IPlayerInfoManager*)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, nullptr);
+    if (!mPlayerInfoManager)
+    {
+        return false;
+    }
+
+    ICvar* cvar = (ICvar*)interfaceFactory(CVAR_INTERFACE_VERSION, nullptr);
     if (!cvar || !mCvarHelper.Init(cvar))
     {
         return false;
@@ -271,21 +292,51 @@ void ServerPlugin::ClientDisconnect(edict_t* pEntity)
 
 #define Bits2Bytes(b) ((b+7)>>3)
 
-static void BroadcastToAllPlayers(INetMessage& msg, IServer* server)
+int ServerPlugin::GetClosestBotSlot(const Vector& position)
 {
-    const int numClients = server->GetClientCount();
+    CBitVec<ABSOLUTE_PLAYER_LIMIT> playerbits;
+    const bool usePotentialAudibleSet = true;
+    mVEngineServer->Message_DetermineMulticastRecipients(usePotentialAudibleSet, position, playerbits);
+
+    int slot = -1;
+    float shortestDistSqr = FLT_MAX;
+    const int numClients = mServer->GetClientCount();
     for (int i = 0; i < numClients; ++i)
     {
-        IClient* client = server->GetClient(i);
-        if (client && !client->IsFakeClient())
+        if (!playerbits.Get(i))
         {
-            INetChannel* netChannel = client->GetNetChannel();
-            if (netChannel)
-            {
-                netChannel->SendNetMsg(msg);
-            }
+            continue;
+        }
+
+        const int entIndex = i + 1;
+        edict_t* edict = mVEngineServer->PEntityOfEntIndex(entIndex);
+        IPlayerInfo* playerInfo = mPlayerInfoManager->GetPlayerInfo(edict);
+        if (!edict || !playerInfo)
+        {
+            continue;
+        }
+
+        if (!playerInfo->IsFakeClient())
+        {
+            continue;
+        }
+
+        if (playerInfo->IsDead())
+        {
+            continue;
+        }
+
+        Vector earPos;
+        mServerGameClients->ClientEarPosition(edict, &earPos);
+        const float distSqr = position.DistToSqr(earPos);
+        constexpr float maxAudibleDistanceSqr = 2800.0f * 2800.0f;
+        if ((distSqr < maxAudibleDistanceSqr) && (distSqr < shortestDistSqr))
+        {
+            shortestDistSqr = distSqr;
+            slot = i;
         }
     }
+    return slot;
 }
 
 bool ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
@@ -304,7 +355,7 @@ bool ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
 
     ProcessVoiceData(clientState, voiceData->m_DataIn, voiceData->m_nLength);
 
-    if (mSizzVoiceBotTalk->m_nValue == 1)
+    if ((mSizzVoiceBotTalk->m_nValue == 1) && (mSizzVoiceBotTalkSteamID->m_StringLength > 1))
     {
         bf_read dataCopy = voiceData->m_DataIn;
 
@@ -317,8 +368,8 @@ bool ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
         svcVoiceData.m_nLength = bitsRead;
         svcVoiceData.m_DataOut = voiceDataBuffer;
 
-        const int entIndex = playerSlot + 1;
-        const CSteamID* steamId = mVEngineServer->GetClientSteamIDByPlayerIndex(entIndex);
+        const int speakerEntIndex = playerSlot + 1;
+        const CSteamID* steamId = mVEngineServer->GetClientSteamIDByPlayerIndex(speakerEntIndex);
         const CSteamID bottalkSteamId = strtoull(mSizzVoiceBotTalkSteamID->m_pszString, nullptr, 10);
         if (steamId && (*steamId == bottalkSteamId))
         {
@@ -326,10 +377,26 @@ bool ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
             for (int i = 0; i < numClients; ++i)
             {
                 IClient* client = mServer->GetClient(i);
-                if (client && client->IsFakeClient())
+                if (!client || client->IsFakeClient())
                 {
-                    svcVoiceData.m_nFromClient = i;
-                    BroadcastToAllPlayers(svcVoiceData, mServer);
+                    continue;
+                }
+
+                const int entIndex = i + 1;
+                INetChannel* netChannel = client->GetNetChannel();
+                edict_t* edict = mVEngineServer->PEntityOfEntIndex(entIndex);
+                if (!netChannel || !edict)
+                {
+                    continue;
+                }
+
+                Vector earPos;
+                mServerGameClients->ClientEarPosition(edict, &earPos);
+                const int closestBotIndex = GetClosestBotSlot(earPos);
+                if (closestBotIndex != -1)
+                {
+                    svcVoiceData.m_nFromClient = closestBotIndex;
+                    netChannel->SendNetMsg(svcVoiceData);
                 }
             }
             return false;
