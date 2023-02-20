@@ -290,8 +290,6 @@ void ServerPlugin::ClientDisconnect(edict_t* pEntity)
     mClientState[clientIndex] = nullptr;
 }
 
-#define Bits2Bytes(b) ((b+7)>>3)
-
 int ServerPlugin::GetClosestBotSlot(const Vector& position)
 {
     CBitVec<ABSOLUTE_PLAYER_LIMIT> playerbits;
