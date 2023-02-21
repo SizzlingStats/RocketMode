@@ -20,6 +20,7 @@
 #include "dsp/phaser.h"
 #include "dsp/bitcrush.h"
 #include "dsp/alienwah.h"
+#include "dsp/autotalent.h"
 #include "base/math.h"
 #include "CVarHelper.h"
 #include <string.h>
@@ -46,6 +47,8 @@ struct ClientState
         mPhaser.Rate(5.0f);
         mPhaser.Depth(0.3f);
 
+        mAutoTalent.InitInstance();
+
         // vaudio_celt 22050Hz 16-bit mono
         constexpr int celtQuality = 3;
         codec->Init(celtQuality);
@@ -53,6 +56,7 @@ struct ClientState
 
     ~ClientState()
     {
+        mAutoTalent.DestroyInstance();
         mVoiceCodec->Release();
     }
 
@@ -61,6 +65,7 @@ struct ClientState
     AlienWah mAlienWah;
     Phaser mPhaser;
     BitCrush mBitCrush;
+    AutoTalent mAutoTalent;
     float mBitsRadians = 0.0f;
     float mRateRadians = 0.0f;
 
@@ -135,6 +140,8 @@ VTableHook<decltype(&ServerPlugin::IsProximityHearingClientHook)> ServerPlugin::
 
 static ServerPlugin sServerPlugin;
 
+ConVar* sSizzVoiceAutotune;
+
 void* CreateInterface(const char* pName, int* pReturnCode)
 {
     if (!strcmp(pName, "ISERVERPLUGINCALLBACKS003"))
@@ -197,9 +204,12 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         return false;
     }
 
+    AutoTalent::GlobalInit();
+
     mSizzVoiceEnabled = mCvarHelper.CreateConVar("sizz_voice_enabled", "1");
     mSizzVoiceBotTalk = mCvarHelper.CreateConVar("sizz_voice_bottalk", "0");
     mSizzVoiceBotTalkSteamID = mCvarHelper.CreateConVar("sizz_voice_bottalk_steamid", "");
+    sSizzVoiceAutotune = mCvarHelper.CreateConVar("sizz_voice_autotune", "0");
 
     return mServer && mSizzVoiceEnabled;
 }
@@ -209,6 +219,9 @@ void ServerPlugin::Unload(void)
     mCvarHelper.DestroyConVar(mSizzVoiceBotTalkSteamID);
     mCvarHelper.DestroyConVar(mSizzVoiceBotTalk);
     mCvarHelper.DestroyConVar(mSizzVoiceEnabled);
+    mCvarHelper.DestroyConVar(sSizzVoiceAutotune);
+
+    AutoTalent::GlobalShutdown();
 
     for (ClientState*& state : mClientState)
     {
@@ -455,6 +468,11 @@ void ServerPlugin::ProcessVoiceData(ClientState* clientState, bf_read voiceData,
 
 void ClientState::ApplyFx(float* samples, int numSamples)
 {
+    if (sSizzVoiceAutotune->m_nValue != 0)
+    {
+        mAutoTalent.ProcessBuffer(samples, numSamples);
+    }
+
     for (int i = 0; i < numSamples; ++i)
     {
         samples[i] = mAlienWah.Process(samples[i]);
