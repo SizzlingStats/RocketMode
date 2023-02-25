@@ -206,6 +206,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
 
     AutoTalent::GlobalInit();
 
+    mCvarHelper.UnhideAllCVars();
     mSizzVoiceEnabled = mCvarHelper.CreateConVar("sizz_voice_enabled", "1");
     mSizzVoiceBotTalk = mCvarHelper.CreateConVar("sizz_voice_bottalk", "0");
     mSizzVoiceBotTalkSteamID = mCvarHelper.CreateConVar("sizz_voice_bottalk_steamid", "");

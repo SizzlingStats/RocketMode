@@ -50,3 +50,13 @@ void CVarHelper::DestroyConVar(ConVar* convar)
     convar->~ConVar();
     free(convar);
 }
+
+void CVarHelper::UnhideAllCVars()
+{
+    ConCommandBase* command = mCvar->GetCommands();
+    while (command)
+    {
+        command->m_nFlags &= ~(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);
+        command = command->m_pNext;
+    }
+}

@@ -13,6 +13,8 @@ public:
     ConVar* CreateConVar(const char* name, const char* defaultValue, const char* description = "");
     void DestroyConVar(ConVar* convar);
 
+    void UnhideAllCVars();
+
 private:
     ICvar* mCvar;
     ConVar* mAnyConVar;
