@@ -212,6 +212,8 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
     mSizzVoiceBotTalkSteamID = mCvarHelper.CreateConVar("sizz_voice_bottalk_steamid", "");
     sSizzVoiceAutotune = mCvarHelper.CreateConVar("sizz_voice_autotune", "0");
 
+    mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
+
     return mServer && mSizzVoiceEnabled;
 }
 
