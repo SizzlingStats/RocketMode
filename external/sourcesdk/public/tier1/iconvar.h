@@ -3,6 +3,9 @@
 
 class IConVar;
 
+#define FCVAR_DEVELOPMENTONLY	(1<<1)
+#define FCVAR_HIDDEN			(1<<4)
+
 //-----------------------------------------------------------------------------
 // Called when a ConVar changes value
 // NOTE: For FCVAR_NEVER_AS_STRING ConVars, pOldValue == NULL
