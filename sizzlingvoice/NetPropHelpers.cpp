@@ -88,20 +88,25 @@ static void RecurseServerTable(SendTable* pTable, StringBuilder<128>& spacing)
     spacing.Reduce(6);
 }
 
+static void PrintServerClass(ServerClass* serverclass)
+{
+    printf("%s\n", serverclass->GetName());
+    SendTable* table = serverclass->GetTable();
+    if (table)
+    {
+        StringBuilder<128> spacing;
+        spacing.Append("  |");
+        RecurseServerTable(table, spacing);
+        printf("\n");
+    }
+}
+
 void NetPropHelpers::PrintAllServerClassTables(IServerGameDLL* serverGameDll)
 {
     ServerClass* pClass = serverGameDll->GetAllServerClasses();
     while (pClass)
     {
-        printf("%s\n", pClass->GetName());
-        SendTable* table = pClass->GetTable();
-        if (table)
-        {
-            StringBuilder<128> spacing;
-            spacing.Append("  |");
-            RecurseServerTable(table, spacing);
-            printf("\n");
-        }
+        PrintServerClass(pClass);
         pClass = pClass->GetNext();
     }
 }
@@ -114,15 +119,7 @@ void NetPropHelpers::PrintServerClassTables(IServerGameDLL* serverGameDll, const
         const char* name = pClass->GetName();
         if (!strcmp(classname, name))
         {
-            printf("%s\n", name);
-            SendTable* table = pClass->GetTable();
-            if (table)
-            {
-                StringBuilder<128> spacing;
-                spacing.Append("  |");
-                RecurseServerTable(table, spacing);
-                printf("\n");
-            }
+            PrintServerClass(pClass);
             return;
         }
         pClass = pClass->m_pNext;
