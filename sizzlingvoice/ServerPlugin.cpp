@@ -15,6 +15,7 @@
 #include "sourcesdk/common/netmessages.h"
 #include "sourcesdk/game/server/iplayerinfo.h"
 #include "sourcesdk/game/shared/shareddefs.h"
+#include "NetPropHelpers.h"
 #include "VTableHook.h"
 #include "VAudioCeltCodecManager.h"
 #include "dsp/phaser.h"
@@ -121,6 +122,7 @@ private:
     IServer* mServer;
     IServerGameClients* mServerGameClients;
     IPlayerInfoManager* mPlayerInfoManager;
+    IServerGameDLL* mServerGameDll;
 
     CVarHelper mCvarHelper;
     ConVar* mSizzVoiceEnabled;
@@ -164,6 +166,7 @@ ServerPlugin::ServerPlugin() :
     mServer(nullptr),
     mServerGameClients(nullptr),
     mPlayerInfoManager(nullptr),
+    mServerGameDll(nullptr),
     mCvarHelper(),
     mSizzVoiceEnabled(nullptr),
     mSizzVoiceBotTalk(nullptr),
@@ -194,6 +197,12 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
 
     mPlayerInfoManager = (IPlayerInfoManager*)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, nullptr);
     if (!mPlayerInfoManager)
+    {
+        return false;
+    }
+
+    mServerGameDll = (IServerGameDLL*)gameServerFactory(INTERFACEVERSION_SERVERGAMEDLL, nullptr);
+    if (!mServerGameDll)
     {
         return false;
     }
@@ -239,6 +248,8 @@ void ServerPlugin::Unload(void)
 void ServerPlugin::LevelInit(char const* pMapName)
 {
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
+
+    //NetPropHelpers::PrintAllServerClassTables(mServerGameDll);
 }
 
 template<typename T, typename U>
