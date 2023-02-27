@@ -593,6 +593,8 @@ public:
 
 #define INTERFACEVERSION_SERVERGAMECLIENTS				"ServerGameClients004"
 
+class CCommand;
+
 class IServerGameClients
 {
 public:
