@@ -238,8 +238,6 @@ void ServerPlugin::Unload(void)
     mCvarHelper.DestroyConVar(mSizzVoiceBotTalk);
     mCvarHelper.DestroyConVar(sSizzVoiceEnabled);
     mCvarHelper.DestroyConVar(sSizzVoiceAutotune);
-
-    AutoTalent::GlobalShutdown();
     mCvarHelper.DestroyConVar(sSizzVoiceWah);
     mCvarHelper.DestroyConVar(sSizzVoicePhaser);
     mCvarHelper.DestroyConVar(sSizzVoiceBitCrush);
@@ -249,6 +247,9 @@ void ServerPlugin::Unload(void)
         delete state;
         state = nullptr;
     }
+
+    AutoTalent::GlobalShutdown();
+
     mCeltCodecManager.Release();
     sIsProximityHearingClientHook.Unhook();
     sProcessVoiceDataHook.Unhook();
