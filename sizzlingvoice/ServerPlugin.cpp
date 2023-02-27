@@ -15,7 +15,10 @@
 #include "sourcesdk/common/netmessages.h"
 #include "sourcesdk/game/server/iplayerinfo.h"
 #include "sourcesdk/game/shared/shareddefs.h"
+#include "sourcesdk/engine/gl_model_private.h"
+#include "sourcesdk/public/toolframework/itoolentity.h"
 #include "NetPropHelpers.h"
+#include "StaticPropMgr.h"
 #include "VTableHook.h"
 #include "VAudioCeltCodecManager.h"
 #include "dsp/phaser.h"
@@ -119,6 +122,9 @@ private:
     IServer* mServer;
     IServerGameClients* mServerGameClients;
     IPlayerInfoManager* mPlayerInfoManager;
+    IServerGameEnts* mServerGameEnts;
+    CStaticPropMgr* mStaticPropMgr;
+    IServerTools* mServerTools;
     IServerGameDLL* mServerGameDll;
 
     CVarHelper mCvarHelper;
@@ -166,6 +172,9 @@ ServerPlugin::ServerPlugin() :
     mServer(nullptr),
     mServerGameClients(nullptr),
     mPlayerInfoManager(nullptr),
+    mServerGameEnts(nullptr),
+    mStaticPropMgr(nullptr),
+    mServerTools(nullptr),
     mServerGameDll(nullptr),
     mCvarHelper(),
     mCeltCodecManager(),
@@ -194,6 +203,24 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
 
     mPlayerInfoManager = (IPlayerInfoManager*)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, nullptr);
     if (!mPlayerInfoManager)
+    {
+        return false;
+    }
+
+    mServerGameEnts = (IServerGameEnts*)gameServerFactory(INTERFACEVERSION_SERVERGAMEENTS, nullptr);
+    if (!mServerGameEnts)
+    {
+        return false;
+    }
+
+    mStaticPropMgr = (CStaticPropMgr*)interfaceFactory(INTERFACEVERSION_STATICPROPMGR_SERVER, nullptr);
+    if (!mStaticPropMgr)
+    {
+        return false;
+    }
+
+    mServerTools = (IServerTools*)gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, nullptr);
+    if (!mServerTools)
     {
         return false;
     }
@@ -252,11 +279,31 @@ void ServerPlugin::Unload(void)
     sProcessVoiceDataHook.Unhook();
 }
 
+int gSpeakerEntIndex;
+
 void ServerPlugin::LevelInit(char const* pMapName)
 {
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
     //NetPropHelpers::PrintAllServerClassTables(mServerGameDll);
+    //NetPropHelpers::PrintServerClassTables(mServerGameDll, "CSprite");
+
+    const int numStaticProps = mStaticPropMgr->m_StaticProps.m_Size;
+    for (int i = 0; i < numStaticProps; ++i)
+    {
+        CStaticProp& staticProp = mStaticPropMgr->m_StaticProps.m_pElements[i];
+        if (!strcmp(staticProp.m_pModel->strName.m_pString, "models/props_spytech/siren001.mdl"))
+        {
+            CBaseEntity* ent = mServerTools->CreateEntityByName("env_sprite");
+            mServerTools->DispatchSpawn(ent);
+            mServerTools->SetMoveType(ent, 8, 0);
+            mServerTools->SetKeyValue(ent, "origin", staticProp.m_Origin);
+
+            edict_t* edict = mServerGameEnts->BaseEntityToEdict(ent);
+            gSpeakerEntIndex = mVEngineServer->IndexOfEdict(edict);
+            break;
+        }
+    }
 }
 
 template<typename T, typename U>
@@ -431,6 +478,20 @@ bool ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
                                 }
                             }
                         }
+                    }
+                }
+                return false;
+            }
+            else if ((positionalMode == 3) && (gSpeakerEntIndex > 0))
+            {
+                svcVoiceData.m_nFromClient = gSpeakerEntIndex - 1;
+                const int numClients = mServer->GetClientCount();
+                for (int i = 0; i < numClients; ++i)
+                {
+                    IClient* destClient = mServer->GetClient(i);
+                    if (destClient)
+                    {
+                        destClient->SendNetMsg(svcVoiceData);
                     }
                 }
                 return false;
