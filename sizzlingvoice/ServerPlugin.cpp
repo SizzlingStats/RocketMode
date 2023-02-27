@@ -142,7 +142,11 @@ VTableHook<decltype(&ServerPlugin::IsProximityHearingClientHook)> ServerPlugin::
 
 static ServerPlugin sServerPlugin;
 
-ConVar* sSizzVoiceAutotune;
+static ConVar* sSizzVoiceEnabled;
+static ConVar* sSizzVoiceAutotune;
+static ConVar* sSizzVoiceWah;
+static ConVar* sSizzVoicePhaser;
+static ConVar* sSizzVoiceBitCrush;
 
 void* CreateInterface(const char* pName, int* pReturnCode)
 {
@@ -168,7 +172,6 @@ ServerPlugin::ServerPlugin() :
     mPlayerInfoManager(nullptr),
     mServerGameDll(nullptr),
     mCvarHelper(),
-    mSizzVoiceEnabled(nullptr),
     mSizzVoiceBotTalk(nullptr),
     mSizzVoiceBotTalkSteamID(nullptr),
     mCeltCodecManager(),
@@ -216,24 +219,30 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
     AutoTalent::GlobalInit();
 
     mCvarHelper.UnhideAllCVars();
-    mSizzVoiceEnabled = mCvarHelper.CreateConVar("sizz_voice_enabled", "1");
     mSizzVoiceBotTalk = mCvarHelper.CreateConVar("sizz_voice_bottalk", "0");
     mSizzVoiceBotTalkSteamID = mCvarHelper.CreateConVar("sizz_voice_bottalk_steamid", "");
+    sSizzVoiceEnabled = mCvarHelper.CreateConVar("sizz_voice_enabled", "1");
     sSizzVoiceAutotune = mCvarHelper.CreateConVar("sizz_voice_autotune", "0");
+    sSizzVoiceWah = mCvarHelper.CreateConVar("sizz_voice_wah", "0");
+    sSizzVoicePhaser = mCvarHelper.CreateConVar("sizz_voice_phaser", "1");
+    sSizzVoiceBitCrush = mCvarHelper.CreateConVar("sizz_voice_bitcrush", "0");
 
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
-    return mServer && mSizzVoiceEnabled;
+    return mServer && sSizzVoiceEnabled;
 }
 
 void ServerPlugin::Unload(void)
 {
     mCvarHelper.DestroyConVar(mSizzVoiceBotTalkSteamID);
     mCvarHelper.DestroyConVar(mSizzVoiceBotTalk);
-    mCvarHelper.DestroyConVar(mSizzVoiceEnabled);
+    mCvarHelper.DestroyConVar(sSizzVoiceEnabled);
     mCvarHelper.DestroyConVar(sSizzVoiceAutotune);
 
     AutoTalent::GlobalShutdown();
+    mCvarHelper.DestroyConVar(sSizzVoiceWah);
+    mCvarHelper.DestroyConVar(sSizzVoicePhaser);
+    mCvarHelper.DestroyConVar(sSizzVoiceBitCrush);
 
     for (ClientState*& state : mClientState)
     {
@@ -366,7 +375,7 @@ int ServerPlugin::GetClosestBotSlot(const Vector& position)
 
 bool ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
 {
-    if (mSizzVoiceEnabled->m_nValue == 0)
+    if (!sSizzVoiceEnabled->IsEnabled())
     {
         return true;
     }
@@ -482,19 +491,25 @@ void ServerPlugin::ProcessVoiceData(ClientState* clientState, bf_read voiceData,
 
 void ClientState::ApplyFx(float* samples, int numSamples)
 {
-    if (sSizzVoiceAutotune->m_nValue != 0)
+    if (sSizzVoiceAutotune->IsEnabled())
     {
         mAutoTalent.ProcessBuffer(samples, numSamples);
     }
 
-    for (int i = 0; i < numSamples; ++i)
+    if (sSizzVoiceWah->IsEnabled())
     {
-        samples[i] = mAlienWah.Process(samples[i]);
+        for (int i = 0; i < numSamples; ++i)
+        {
+            samples[i] = mAlienWah.Process(samples[i]);
+        }
     }
 
-    for (int i = 0; i < numSamples; ++i)
+    if (sSizzVoicePhaser->IsEnabled())
     {
-        samples[i] = mPhaser.Update(samples[i]);
+        for (int i = 0; i < numSamples; ++i)
+        {
+            samples[i] = mPhaser.Update(samples[i]);
+        }
     }
 
     {
@@ -536,10 +551,13 @@ void ClientState::ApplyFx(float* samples, int numSamples)
         mBitCrush.Rate(value);
     }
 
-    for (int i = 0; i < numSamples; ++i)
+    if (sSizzVoiceBitCrush->IsEnabled())
     {
-        float normalizedSample = (samples[i] * 0.5f) + 0.5f;
-        normalizedSample = mBitCrush.Process(normalizedSample);
-        samples[i] = (normalizedSample - 0.5f) * 2.0f;
+        for (int i = 0; i < numSamples; ++i)
+        {
+            float normalizedSample = (samples[i] * 0.5f) + 0.5f;
+            normalizedSample = mBitCrush.Process(normalizedSample);
+            samples[i] = (normalizedSample - 0.5f) * 2.0f;
+        }
     }
 }
