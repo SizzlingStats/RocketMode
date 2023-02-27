@@ -112,10 +112,7 @@ public:
     void ProcessVoiceData(ClientState* clientState, bf_read voiceData, int numEncodedBits);
     int GetClosestBotSlot(const Vector& position);
 
-    bool IsProximityHearingClientHook(int index)
-    {
-        return sIsProximityHearingClientHook.CallOriginalFn(this, index);
-    }
+    bool IsProximityHearingClientHook(int index);
 
 private:
     IVEngineServer* mVEngineServer;
@@ -125,9 +122,6 @@ private:
     IServerGameDLL* mServerGameDll;
 
     CVarHelper mCvarHelper;
-    ConVar* mSizzVoiceEnabled;
-    ConVar* mSizzVoiceBotTalk;
-    ConVar* mSizzVoiceBotTalkSteamID;
 
     VAudioCeltCodecManager mCeltCodecManager;
 
@@ -147,6 +141,8 @@ static ConVar* sSizzVoiceAutotune;
 static ConVar* sSizzVoiceWah;
 static ConVar* sSizzVoicePhaser;
 static ConVar* sSizzVoiceBitCrush;
+static ConVar* sSizzVoicePositionalSteamID;
+static ConVar* sSizzVoicePositional;
 
 void* CreateInterface(const char* pName, int* pReturnCode)
 {
@@ -172,8 +168,6 @@ ServerPlugin::ServerPlugin() :
     mPlayerInfoManager(nullptr),
     mServerGameDll(nullptr),
     mCvarHelper(),
-    mSizzVoiceBotTalk(nullptr),
-    mSizzVoiceBotTalkSteamID(nullptr),
     mCeltCodecManager(),
     mClientState()
 {
@@ -219,13 +213,16 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
     AutoTalent::GlobalInit();
 
     mCvarHelper.UnhideAllCVars();
-    mSizzVoiceBotTalk = mCvarHelper.CreateConVar("sizz_voice_bottalk", "0");
-    mSizzVoiceBotTalkSteamID = mCvarHelper.CreateConVar("sizz_voice_bottalk_steamid", "");
     sSizzVoiceEnabled = mCvarHelper.CreateConVar("sizz_voice_enabled", "1");
     sSizzVoiceAutotune = mCvarHelper.CreateConVar("sizz_voice_autotune", "0");
     sSizzVoiceWah = mCvarHelper.CreateConVar("sizz_voice_wah", "0");
     sSizzVoicePhaser = mCvarHelper.CreateConVar("sizz_voice_phaser", "1");
     sSizzVoiceBitCrush = mCvarHelper.CreateConVar("sizz_voice_bitcrush", "0");
+    sSizzVoicePositionalSteamID = mCvarHelper.CreateConVar("sizz_voice_positional_steamid", "");
+    sSizzVoicePositional = mCvarHelper.CreateConVar("sizz_voice_positional", "0",
+        "0 - Default non positional voice.\n"
+        "1 - All player voices are positional.\n"
+        "2 - Voice is emitted from the closest bot to the listener. (sizz_voice_positional_steamid)\n");
 
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
@@ -234,13 +231,13 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
 
 void ServerPlugin::Unload(void)
 {
-    mCvarHelper.DestroyConVar(mSizzVoiceBotTalkSteamID);
-    mCvarHelper.DestroyConVar(mSizzVoiceBotTalk);
     mCvarHelper.DestroyConVar(sSizzVoiceEnabled);
     mCvarHelper.DestroyConVar(sSizzVoiceAutotune);
     mCvarHelper.DestroyConVar(sSizzVoiceWah);
     mCvarHelper.DestroyConVar(sSizzVoicePhaser);
     mCvarHelper.DestroyConVar(sSizzVoiceBitCrush);
+    mCvarHelper.DestroyConVar(sSizzVoicePositionalSteamID);
+    mCvarHelper.DestroyConVar(sSizzVoicePositional);
 
     for (ClientState*& state : mClientState)
     {
@@ -345,18 +342,17 @@ int ServerPlugin::GetClosestBotSlot(const Vector& position)
 
         const int entIndex = i + 1;
         edict_t* edict = mVEngineServer->PEntityOfEntIndex(entIndex);
+        if (!edict)
+        {
+            continue;
+        }
+
         IPlayerInfo* playerInfo = mPlayerInfoManager->GetPlayerInfo(edict);
-        if (!edict || !playerInfo)
-        {
-            continue;
-        }
-
-        if (!playerInfo->IsFakeClient())
-        {
-            continue;
-        }
-
-        if (playerInfo->IsDead())
+        if (!playerInfo ||
+            !playerInfo->IsFakeClient() ||
+            playerInfo->IsDead() ||
+            playerInfo->IsHLTV() ||
+            playerInfo->IsReplay())
         {
             continue;
         }
@@ -390,51 +386,55 @@ bool ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
 
     ProcessVoiceData(clientState, voiceData->m_DataIn, voiceData->m_nLength);
 
-    if ((mSizzVoiceBotTalk->m_nValue == 1) && (mSizzVoiceBotTalkSteamID->m_StringLength > 1))
+    const int positionalMode = sSizzVoicePositional->GetInt();
+    if ((positionalMode > 1) && (sSizzVoicePositionalSteamID->m_StringLength > 1))
     {
-        bf_read dataCopy = voiceData->m_DataIn;
+        const int sourceEntIndex = playerSlot + 1;
+        const CSteamID* steamId = mVEngineServer->GetClientSteamIDByPlayerIndex(sourceEntIndex);
+        const CSteamID positionalSteamId = strtoull(sSizzVoicePositionalSteamID->m_pszString, nullptr, 10);
 
-        char voiceDataBuffer[4096];
-        int bitsRead = dataCopy.ReadBitsClamped(voiceDataBuffer, voiceData->m_nLength);
-
-        SVC_VoiceData svcVoiceData;
-        svcVoiceData.m_nFromClient = 0;
-        svcVoiceData.m_bProximity = true;
-        svcVoiceData.m_nLength = bitsRead;
-        svcVoiceData.m_DataOut = voiceDataBuffer;
-
-        const int speakerEntIndex = playerSlot + 1;
-        const CSteamID* steamId = mVEngineServer->GetClientSteamIDByPlayerIndex(speakerEntIndex);
-        const CSteamID bottalkSteamId = strtoull(mSizzVoiceBotTalkSteamID->m_pszString, nullptr, 10);
-        if (steamId && (*steamId == bottalkSteamId))
+        if (steamId && (*steamId == positionalSteamId))
         {
-            const int numClients = mServer->GetClientCount();
-            for (int i = 0; i < numClients; ++i)
+            bf_read dataCopy = voiceData->m_DataIn;
+
+            char voiceDataBuffer[4096];
+            int bitsRead = dataCopy.ReadBitsClamped(voiceDataBuffer, voiceData->m_nLength);
+
+            SVC_VoiceData svcVoiceData;
+            svcVoiceData.m_nFromClient = playerSlot;
+            svcVoiceData.m_bProximity = true;
+            svcVoiceData.m_nLength = bitsRead;
+            svcVoiceData.m_DataOut = voiceDataBuffer;
+
+            if (positionalMode == 2)
             {
-                IClient* client = mServer->GetClient(i);
-                if (!client || client->IsFakeClient())
+                const int numClients = mServer->GetClientCount();
+                for (int i = 0; i < numClients; ++i)
                 {
-                    continue;
+                    IClient* destClient = mServer->GetClient(i);
+                    if (destClient)
+                    {
+                        const bool isHltvOrReplay = destClient->IsHLTV() || destClient->IsReplay();
+                        if (isHltvOrReplay || !destClient->IsFakeClient())
+                        {
+                            const int entIndex = isHltvOrReplay ? sourceEntIndex : (i + 1);
+                            edict_t* edict = mVEngineServer->PEntityOfEntIndex(entIndex);
+                            if (edict)
+                            {
+                                Vector earPos;
+                                mServerGameClients->ClientEarPosition(edict, &earPos);
+                                const int closestBotIndex = GetClosestBotSlot(earPos);
+                                if (closestBotIndex != -1)
+                                {
+                                    svcVoiceData.m_nFromClient = closestBotIndex;
+                                    destClient->SendNetMsg(svcVoiceData);
+                                }
+                            }
+                        }
+                    }
                 }
-
-                const int entIndex = i + 1;
-                INetChannel* netChannel = client->GetNetChannel();
-                edict_t* edict = mVEngineServer->PEntityOfEntIndex(entIndex);
-                if (!netChannel || !edict)
-                {
-                    continue;
-                }
-
-                Vector earPos;
-                mServerGameClients->ClientEarPosition(edict, &earPos);
-                const int closestBotIndex = GetClosestBotSlot(earPos);
-                if (closestBotIndex != -1)
-                {
-                    svcVoiceData.m_nFromClient = closestBotIndex;
-                    netChannel->SendNetMsg(svcVoiceData);
-                }
+                return false;
             }
-            return false;
         }
     }
     return true;
@@ -561,4 +561,13 @@ void ClientState::ApplyFx(float* samples, int numSamples)
             samples[i] = (normalizedSample - 0.5f) * 2.0f;
         }
     }
+}
+
+bool ServerPlugin::IsProximityHearingClientHook(int index)
+{
+    if (sSizzVoicePositional->GetInt() == 1)
+    {
+        return true;
+    }
+    return sIsProximityHearingClientHook.CallOriginalFn(this, index);
 }
