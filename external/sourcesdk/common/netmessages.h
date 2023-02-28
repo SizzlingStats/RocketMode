@@ -15,7 +15,9 @@ class CNetMessageRatelimitPolicyBase;
 class CNetMessage : public INetMessage
 {
 public:
+#ifndef SDK_COMPAT
     CNetMessageRatelimitPolicyBase* m_RateLimitPolicy;
+#endif
     bool m_bReliable; // true if message should be send reliable
     INetChannel* m_NetChannel; // netchannel this message is from/for
 };

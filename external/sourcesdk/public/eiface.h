@@ -297,7 +297,10 @@ public:
     // Tells the engine we can immdiately re-use all edict indices
     // even though we may not have waited enough time
     virtual void			AllowImmediateEdictReuse() = 0;
-
+#ifdef SDK_COMPAT
+    // Returns true if the engine is an internal build. i.e. is using the internal bugreporter.
+    virtual bool		IsInternalBuild(void) = 0;
+#endif
     virtual IChangeInfoAccessor* GetChangeAccessor(const edict_t* pEdict) = 0;
 
     // Name of most recently load .sav file

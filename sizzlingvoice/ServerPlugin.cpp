@@ -315,7 +315,12 @@ inline T ByteOffsetFromPointer(U pBase, int byte_offset)
 static const INetMessage* GetCLCVoiceData(INetChannel* channel)
 {
     //channel->RegisterMessage(nullptr);
+
+#ifdef SDK_COMPAT
+    constexpr int NetMessagesOffset = 9228;
+#else
     constexpr int NetMessagesOffset = 9000;
+#endif
     CUtlVector<INetMessage*>* pNetMessages = ByteOffsetFromPointer<CUtlVector<INetMessage*>*>(channel, NetMessagesOffset);
     for (int i = 0; i < pNetMessages->m_Size; ++i)
     {

@@ -58,6 +58,7 @@ solution "sizzlingvoice"
     symbols "On"
 
     -- defines "_CRT_SECURE_NO_WARNINGS"
+    --defines { "INSTRSET=2", "SDK_COMPAT" }
     defines { "INSTRSET=2" }
     configuration "Debug"
         defines { "DEBUG" }
@@ -76,7 +77,8 @@ solution "sizzlingvoice"
 
         configuration "vs*"
             debugcommand (srcds_exe)
-            debugargs "-console -game tf +sv_voicecodec vaudio_celt +map cp_granary"
+            debugargs "-console -game tf +sv_voicecodec vaudio_celt +map cp_granary +plugin_load addons/sizzlingvoice"
+            --debugargs "-game tf -console -nomaster -insecure -maxplayers 32 +sv_lan 1 -allowdebug -NOINITMEMORY +map cp_granary +plugin_load addons/sizzlingvoice"
             postbuildcommands { postbuild_link_dll, postbuild_link_vdf }
         configuration {}
         files
