@@ -587,14 +587,7 @@ void ClientState::ApplyFx(float* samples, int numSamples)
             mBitsRadians -= PI_2;
         }
         float lfo = (Math::Sin(mBitsRadians) * 0.5f) + 0.5f;
-        if (lfo < 0.0f)
-        {
-            lfo = 0.0f;
-        }
-        if (lfo > 1.0f)
-        {
-            lfo = 1.0f;
-        }
+        lfo = Math::Clamp(lfo, 0.0f, 1.0f);
         float value = (lfo * 4.0f) + 3.0f;
         mBitCrush.Bits(value);
     }
@@ -606,14 +599,7 @@ void ClientState::ApplyFx(float* samples, int numSamples)
             mRateRadians -= PI_2;
         }
         float lfo = (Math::Sin(mRateRadians) * 0.5f) + 0.5f;
-        if (lfo < 0.0f)
-        {
-            lfo = 0.0f;
-        }
-        if (lfo > 1.0f)
-        {
-            lfo = 1.0f;
-        }
+        lfo = Math::Clamp(lfo, 0.0f, 1.0f);
         float value = (lfo * 500.0f) + 7000.0f;
         mBitCrush.Rate(value);
     }
