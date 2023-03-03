@@ -9,17 +9,20 @@ namespace Math
     float Cos(float x);
     float Sin(float x);
 
-    FORCEINLINE float Min(float x, float y)
+    template<typename T>
+    FORCEINLINE T Min(T x, T y)
     {
         return x < y ? x : y;
     }
 
-    FORCEINLINE float Max(float x, float y)
+    template<typename T>
+    FORCEINLINE T Max(T x, T y)
     {
         return x > y ? x : y;
     }
 
-    FORCEINLINE float Clamp(float x, float min, float max)
+    template<typename T>
+    FORCEINLINE T Clamp(T x, T min, T max)
     {
         return (x < min) ? min : ((x > max) ? max : x);
     }
