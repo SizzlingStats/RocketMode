@@ -28,14 +28,14 @@ local postbuild_move = nil
 local postbuild_move_vdf = nil
 if srcds_path ~= nil then
     srcds_exe = srcds_path .. "srcds.exe"
-    
+
     local target_name = "$(TargetName)$(TargetExt)"
-    local mklink_dll = "copy /Y \"$(TargetDir)" .. target_name .. "\" "
-    postbuild_link_dll = mklink_dll .. "\"" .. srcds_path .. "tf/addons/" .. target_name .. "\""
-    
+    local copy_dll = "copy /Y \"$(TargetDir)" .. target_name .. "\" "
+    postbuild_copy_dll = copy_dll .. "\"" .. srcds_path .. "tf/addons/" .. target_name .. "\""
+
     local vdf_name = "sizzlingvoice.vdf"
-    local mklink_vdf = "copy /Y \"$(TargetDir)" .. vdf_name .. "\" "
-    postbuild_link_vdf = mklink_vdf .. "\"" .. srcds_path .. "tf/addons/" .. vdf_name .. "\""
+    local copy_vdf = "copy /Y \"$(TargetDir)" .. vdf_name .. "\" "
+    postbuild_copy_vdf = copy_vdf .. "\"" .. srcds_path .. "tf/addons/" .. vdf_name .. "\""
 
     local wav_name = "*.wav"
     local copy_wav = "copy /Y \"$(TargetDir)" .. wav_name .. "\" "
@@ -82,7 +82,7 @@ solution "sizzlingvoice"
             debugcommand (srcds_exe)
             debugargs "-console -game tf +sv_voicecodec vaudio_celt +map cp_granary +plugin_load addons/sizzlingvoice"
             --debugargs "-game tf -console -nomaster -insecure -maxplayers 32 +sv_lan 1 -allowdebug -NOINITMEMORY +map cp_granary +plugin_load addons/sizzlingvoice"
-            postbuildcommands { postbuild_link_dll, postbuild_link_vdf, postbuild_copy_wav }
+            postbuildcommands { postbuild_copy_dll, postbuild_copy_vdf, postbuild_copy_wav }
         configuration {}
         files
         {
