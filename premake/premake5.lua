@@ -36,6 +36,10 @@ if srcds_path ~= nil then
     local vdf_name = "sizzlingvoice.vdf"
     local mklink_vdf = "copy /Y \"$(TargetDir)" .. vdf_name .. "\" "
     postbuild_link_vdf = mklink_vdf .. "\"" .. srcds_path .. "tf/addons/" .. vdf_name .. "\""
+
+    local wav_name = "*.wav"
+    local copy_wav = "copy /Y \"$(TargetDir)" .. wav_name .. "\" "
+    postbuild_copy_wav = copy_wav .. "\"" .. srcds_path .. "tf/addons/" .. wav_name .. "\""
 end
 
 solution "sizzlingvoice"
@@ -57,9 +61,8 @@ solution "sizzlingvoice"
     cppdialect "C++17"
     symbols "On"
 
-    -- defines "_CRT_SECURE_NO_WARNINGS"
-    --defines { "INSTRSET=2", "SDK_COMPAT" }
-    defines { "INSTRSET=2" }
+    --defines { "SDK_COMPAT" }
+    defines { "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_WARNINGS", "INSTRSET=2" }
     configuration "Debug"
         defines { "DEBUG" }
         inlining "Explicit"
@@ -79,7 +82,7 @@ solution "sizzlingvoice"
             debugcommand (srcds_exe)
             debugargs "-console -game tf +sv_voicecodec vaudio_celt +map cp_granary +plugin_load addons/sizzlingvoice"
             --debugargs "-game tf -console -nomaster -insecure -maxplayers 32 +sv_lan 1 -allowdebug -NOINITMEMORY +map cp_granary +plugin_load addons/sizzlingvoice"
-            postbuildcommands { postbuild_link_dll, postbuild_link_vdf }
+            postbuildcommands { postbuild_link_dll, postbuild_link_vdf, postbuild_copy_wav }
         configuration {}
         files
         {

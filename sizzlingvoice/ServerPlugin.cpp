@@ -27,6 +27,7 @@
 #include "dsp/autotalent.h"
 #include "base/math.h"
 #include "CVarHelper.h"
+#include "WavFile.h"
 #include <string.h>
 #include <float.h>
 
@@ -132,6 +133,7 @@ private:
     VAudioCeltCodecManager mCeltCodecManager;
 
     ClientState* mClientState[MAX_PLAYERS];
+    WavFile mSpeakerIR;
 
     static VTableHook<decltype(&ProcessVoiceDataHook)> sProcessVoiceDataHook;
     static VTableHook<decltype(&IsProximityHearingClientHook)> sIsProximityHearingClientHook;
@@ -250,6 +252,11 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         "0 - Default non positional voice.\n"
         "1 - All player voices are positional.\n"
         "2 - Voice is emitted from the closest bot to the listener. (sizz_voice_positional_steamid)\n");
+
+    if (!mSpeakerIR.Load("tf/addons/ir_siren.wav"))
+    {
+        return false;
+    }
 
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 

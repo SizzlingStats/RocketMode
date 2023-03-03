@@ -2,6 +2,7 @@
 premake/*/
 addons/*
 !addons/*.vdf
+!addons/*.wav
 scratch/*
 
 # Prerequisites
