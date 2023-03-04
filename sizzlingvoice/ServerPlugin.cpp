@@ -25,6 +25,8 @@
 #include "dsp/bitcrush.h"
 #include "dsp/alienwah.h"
 #include "dsp/autotalent.h"
+#include "dsp/delay.h"
+#include "dsp/convolution.h"
 #include "base/math.h"
 #include "CVarHelper.h"
 #include "WavFile.h"
@@ -39,7 +41,7 @@ inline T Max(T a, T b) { return a >= b ? a : b; }
 
 struct ClientState
 {
-    ClientState(IVAudioVoiceCodec* codec) :
+    ClientState(IVAudioVoiceCodec* codec, const float* kernel, int kernelSamples) :
         mAlienWah(),
         mPhaser(),
         mBitCrush(4500.0f, 22050.0f, 7.0f),
@@ -54,6 +56,10 @@ struct ClientState
 
         mAutoTalent.InitInstance();
 
+        mConvolution.Init(kernel, kernelSamples, 512);
+        mDelay.Init(0.1f, 0.1f, 22050.0f);
+        mDelay2.Init(0.132f, 0.07f, 22050.0f);
+
         // vaudio_celt 22050Hz 16-bit mono
         constexpr int celtQuality = 3;
         codec->Init(celtQuality);
@@ -66,11 +72,15 @@ struct ClientState
     }
 
     void ApplyFx(float* samples, int numSamples);
+    void SirenFx(float* samples, int numSamples);
 
     AlienWah mAlienWah;
     Phaser mPhaser;
     BitCrush mBitCrush;
     AutoTalent mAutoTalent;
+    Convolution mConvolution;
+    Delay mDelay;
+    Delay mDelay2;
     float mBitsRadians = 0.0f;
     float mRateRadians = 0.0f;
 
@@ -113,7 +123,7 @@ public:
     }
 
     bool ProcessVoiceData(INetMessage* VoiceDataNetMsg);
-    void ProcessVoiceData(ClientState* clientState, bf_read voiceData, int numEncodedBits);
+    void ProcessVoiceData(ClientState* clientState, bf_read voiceData, int numEncodedBits, bool sirenFx);
     int GetClosestBotSlot(const Vector& position);
 
     bool IsProximityHearingClientHook(int index);
@@ -151,6 +161,7 @@ static ConVar* sSizzVoicePhaser;
 static ConVar* sSizzVoiceBitCrush;
 static ConVar* sSizzVoicePositionalSteamID;
 static ConVar* sSizzVoicePositional;
+static ConVar* sSizzVoiceSirenFx;
 
 void* CreateInterface(const char* pName, int* pReturnCode)
 {
@@ -252,6 +263,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         "0 - Default non positional voice.\n"
         "1 - All player voices are positional.\n"
         "2 - Voice is emitted from the closest bot to the listener. (sizz_voice_positional_steamid)\n");
+    sSizzVoiceSirenFx = mCvarHelper.CreateConVar("sizz_voice_sirenfx", "3");
 
     if (!mSpeakerIR.Load("tf/addons/ir_siren.wav"))
     {
@@ -272,6 +284,7 @@ void ServerPlugin::Unload(void)
     mCvarHelper.DestroyConVar(sSizzVoiceBitCrush);
     mCvarHelper.DestroyConVar(sSizzVoicePositionalSteamID);
     mCvarHelper.DestroyConVar(sSizzVoicePositional);
+    mCvarHelper.DestroyConVar(sSizzVoiceSirenFx);
 
     for (ClientState*& state : mClientState)
     {
@@ -370,7 +383,10 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
     assert(!mClientState[clientIndex]);
     delete mClientState[clientIndex];
 
-    mClientState[clientIndex] = new ClientState(mCeltCodecManager.CreateVoiceCodec());
+    const float* kernel = reinterpret_cast<const float*>(mSpeakerIR.Samples());
+    const int numSamples = mSpeakerIR.NumSamples();
+    assert(mSpeakerIR.Format() == WavFile::WAVE_FORMAT_IEEE_FLOAT);
+    mClientState[clientIndex] = new ClientState(mCeltCodecManager.CreateVoiceCodec(), kernel, numSamples);
 }
 
 void ServerPlugin::ClientDisconnect(edict_t* pEntity)
@@ -439,82 +455,93 @@ bool ServerPlugin::ProcessVoiceData(INetMessage* VoiceDataNetMsg)
     INetChannel* netChannel = VoiceDataNetMsg->GetNetChannel();
     IClient* client = static_cast<IClient*>(netChannel->GetMsgHandler());
     const int playerSlot = client->GetPlayerSlot();
+    const int sourceEntIndex = playerSlot + 1;
     ClientState* clientState = mClientState[playerSlot];
 
     CLC_VoiceData* voiceData = static_cast<CLC_VoiceData*>(VoiceDataNetMsg);
 
-    ProcessVoiceData(clientState, voiceData->m_DataIn, voiceData->m_nLength);
-
+    bool positionalEnabled = false;
     const int positionalMode = sSizzVoicePositional->GetInt();
     if ((positionalMode > 1) && (sSizzVoicePositionalSteamID->m_StringLength > 1))
     {
-        const int sourceEntIndex = playerSlot + 1;
         const CSteamID* steamId = mVEngineServer->GetClientSteamIDByPlayerIndex(sourceEntIndex);
         const CSteamID positionalSteamId = strtoull(sSizzVoicePositionalSteamID->m_pszString, nullptr, 10);
+        positionalEnabled = (steamId && (*steamId == positionalSteamId));
+    }
 
-        if (steamId && (*steamId == positionalSteamId))
+    const bool sirenFx = positionalEnabled && (positionalMode == 3) && (gSpeakerEntIndex > 0);
+    ProcessVoiceData(clientState, voiceData->m_DataIn, voiceData->m_nLength, sirenFx);
+
+    if (positionalEnabled)
+    {
+        bf_read dataCopy = voiceData->m_DataIn;
+
+        char voiceDataBuffer[4096];
+        int bitsRead = dataCopy.ReadBitsClamped(voiceDataBuffer, voiceData->m_nLength);
+
+        SVC_VoiceData svcVoiceData;
+        svcVoiceData.m_nFromClient = playerSlot;
+        svcVoiceData.m_bProximity = true;
+        svcVoiceData.m_nLength = bitsRead;
+        svcVoiceData.m_DataOut = voiceDataBuffer;
+
+        if (positionalMode == 2)
         {
-            bf_read dataCopy = voiceData->m_DataIn;
-
-            char voiceDataBuffer[4096];
-            int bitsRead = dataCopy.ReadBitsClamped(voiceDataBuffer, voiceData->m_nLength);
-
-            SVC_VoiceData svcVoiceData;
-            svcVoiceData.m_nFromClient = playerSlot;
-            svcVoiceData.m_bProximity = true;
-            svcVoiceData.m_nLength = bitsRead;
-            svcVoiceData.m_DataOut = voiceDataBuffer;
-
-            if (positionalMode == 2)
+            const int numClients = mServer->GetClientCount();
+            for (int i = 0; i < numClients; ++i)
             {
-                const int numClients = mServer->GetClientCount();
-                for (int i = 0; i < numClients; ++i)
+                IClient* destClient = mServer->GetClient(i);
+                if (destClient)
                 {
-                    IClient* destClient = mServer->GetClient(i);
-                    if (destClient)
+                    const bool isHltvOrReplay = destClient->IsHLTV() || destClient->IsReplay();
+                    if (isHltvOrReplay || !destClient->IsFakeClient())
                     {
-                        const bool isHltvOrReplay = destClient->IsHLTV() || destClient->IsReplay();
-                        if (isHltvOrReplay || !destClient->IsFakeClient())
+                        const int entIndex = isHltvOrReplay ? sourceEntIndex : (i + 1);
+                        edict_t* edict = mVEngineServer->PEntityOfEntIndex(entIndex);
+                        if (edict)
                         {
-                            const int entIndex = isHltvOrReplay ? sourceEntIndex : (i + 1);
-                            edict_t* edict = mVEngineServer->PEntityOfEntIndex(entIndex);
-                            if (edict)
+                            Vector earPos;
+                            mServerGameClients->ClientEarPosition(edict, &earPos);
+                            const int closestBotIndex = GetClosestBotSlot(earPos);
+                            if (closestBotIndex != -1)
                             {
-                                Vector earPos;
-                                mServerGameClients->ClientEarPosition(edict, &earPos);
-                                const int closestBotIndex = GetClosestBotSlot(earPos);
-                                if (closestBotIndex != -1)
-                                {
-                                    svcVoiceData.m_nFromClient = closestBotIndex;
-                                    destClient->SendNetMsg(svcVoiceData);
-                                }
+                                svcVoiceData.m_nFromClient = closestBotIndex;
+                                destClient->SendNetMsg(svcVoiceData);
                             }
                         }
                     }
                 }
-                return false;
             }
-            else if ((positionalMode == 3) && (gSpeakerEntIndex > 0))
+            return false;
+        }
+        else if (sirenFx)
+        {
+            svcVoiceData.m_nFromClient = gSpeakerEntIndex - 1;
+            const int numClients = mServer->GetClientCount();
+            for (int i = 0; i < numClients; ++i)
             {
-                svcVoiceData.m_nFromClient = gSpeakerEntIndex - 1;
-                const int numClients = mServer->GetClientCount();
-                for (int i = 0; i < numClients; ++i)
+                IClient* destClient = mServer->GetClient(i);
+                if (destClient)
                 {
-                    IClient* destClient = mServer->GetClient(i);
-                    if (destClient)
-                    {
-                        destClient->SendNetMsg(svcVoiceData);
-                    }
+                    destClient->SendNetMsg(svcVoiceData);
                 }
-                return false;
             }
+            return false;
         }
     }
     return true;
 }
 
-void ServerPlugin::ProcessVoiceData(ClientState* clientState, bf_read voiceData, int numEncodedBits)
+#include <xmmintrin.h>
+#include <pmmintrin.h>
+
+void ServerPlugin::ProcessVoiceData(ClientState* clientState, bf_read voiceData, int numEncodedBits, bool sirenFx)
 {
+    const unsigned int oldDtz = _MM_GET_DENORMALS_ZERO_MODE();
+    const unsigned int oldFtz = _MM_GET_FLUSH_ZERO_MODE();
+    _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
+    _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+
     assert(voiceData.GetNumBitsLeft() >= numEncodedBits);
 
     // Pad up to 4 byte boundary.
@@ -547,6 +574,10 @@ void ServerPlugin::ProcessVoiceData(ClientState* clientState, bf_read voiceData,
             samples[i] = decodedFrame[i] / 32768.0f;
         }
         clientState->ApplyFx(samples, celtDecodedFrameSizeSamples);
+        if (sirenFx)
+        {
+            clientState->SirenFx(samples, celtDecodedFrameSizeSamples);
+        }
         for (int i = 0; i < celtDecodedFrameSizeSamples; ++i)
         {
             const int32_t expandedSample = static_cast<int32_t>(samples[i] * 32768.0f);
@@ -561,6 +592,9 @@ void ServerPlugin::ProcessVoiceData(ClientState* clientState, bf_read voiceData,
         voiceOutputWriter.WriteBits(encodedFrame, celtFrameSizeBits);
     }
     assert(numEncodedBits == 0);
+
+    _MM_SET_FLUSH_ZERO_MODE(oldDtz);
+    _MM_SET_DENORMALS_ZERO_MODE(oldFtz);
 }
 
 void ClientState::ApplyFx(float* samples, int numSamples)
@@ -618,6 +652,23 @@ void ClientState::ApplyFx(float* samples, int numSamples)
             float normalizedSample = (samples[i] * 0.5f) + 0.5f;
             normalizedSample = mBitCrush.Process(normalizedSample);
             samples[i] = (normalizedSample - 0.5f) * 2.0f;
+        }
+    }
+}
+
+void ClientState::SirenFx(float* samples, int numSamples)
+{
+    const int mode = sSizzVoiceSirenFx->GetInt();
+    if (mode > 0)
+    {
+        mConvolution.Process(samples, numSamples);
+        if (mode > 1)
+        {
+            mDelay.Process(samples, numSamples);
+            if (mode > 2)
+            {
+                mDelay2.Process(samples, numSamples);
+            }
         }
     }
 }
