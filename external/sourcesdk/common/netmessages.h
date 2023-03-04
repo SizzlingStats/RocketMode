@@ -71,3 +71,32 @@ public:
     bf_read m_DataIn;
     void* m_DataOut;
 };
+
+class SVC_SetView : public CNetMessage
+{
+public:
+    virtual void Destructor() override;
+
+    virtual void SetNetChannel(INetChannel* netchan) override;
+    virtual void SetReliable(bool state) override;
+
+    virtual bool Process() override;
+
+    virtual bool ReadFromBuffer(bf_read& buffer) override;
+    virtual bool WriteToBuffer(bf_write& buffer) override;
+
+    virtual bool IsReliable() const override;
+
+    virtual int GetType() const override;
+    virtual int GetGroup() const override;
+    virtual const char* GetName() const override;
+    INetChannel* GetNetChannel() const override;
+    virtual const char* ToString() const override;
+
+    virtual bool BIncomingMessageForProcessing(double, int) const override;
+    virtual int GetSize() const override;
+    virtual void SetRatePolicy() override;
+
+public:
+    int m_nEntityIndex = 0;
+};
