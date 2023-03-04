@@ -39,7 +39,7 @@ if srcds_path ~= nil then
 
     local wav_name = "*.wav"
     local copy_wav = "copy /Y \"$(TargetDir)" .. wav_name .. "\" "
-    postbuild_copy_wav = copy_wav .. "\"" .. srcds_path .. "tf/addons/" .. wav_name .. "\""
+    postbuild_copy_wav = copy_wav .. "\"" .. srcds_path .. "tf/addons/\""
 end
 
 solution "sizzlingvoice"
