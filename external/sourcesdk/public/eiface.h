@@ -1,13 +1,9 @@
 
 #pragma once
 
-#define PRINTF_FORMAT_STRING
-#define ABSOLUTE_PLAYER_LIMIT 255
+#include "const.h"
 
-// How many bits to use to encode an edict.
-#define	MAX_EDICT_BITS				12			// # of bits needed to represent max edicts
-// Max # of edicts in a level
-#define	MAX_EDICTS					(1<<MAX_EDICT_BITS)
+#define PRINTF_FORMAT_STRING
 
 typedef char byte;
 typedef int QueryCvarCookie_t;

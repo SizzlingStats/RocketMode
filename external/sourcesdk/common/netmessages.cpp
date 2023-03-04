@@ -2,7 +2,7 @@
 #include "netmessages.h"
 #include "protocol.h"
 #include "../engine/net.h"
-#include "../public/eiface.h"
+#include "../public/const.h"
 
 // Only need to implement WriteToBuffer, IsReliable, and constructor.
 // Can't get around this unless I get a handle to an allocated SVC_VoiceData.
