@@ -46,9 +46,12 @@ ConVar* CVarHelper::CreateConVar(const char* name, const char* defaultValue, con
 
 void CVarHelper::DestroyConVar(ConVar* convar)
 {
-    mCvar->UnregisterConCommand(convar);
-    convar->~ConVar();
-    free(convar);
+    if (convar)
+    {
+        mCvar->UnregisterConCommand(convar);
+        convar->~ConVar();
+        free(convar);
+    }
 }
 
 void CVarHelper::UnhideAllCVars()
