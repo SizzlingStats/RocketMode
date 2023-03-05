@@ -30,6 +30,7 @@
 #include "base/math.h"
 #include "sourcehelpers/CVarHelper.h"
 #include "WavFile.h"
+#include "RocketMode.h"
 #include <string.h>
 #include <float.h>
 
@@ -92,7 +93,7 @@ public:
     virtual const char* GetPluginDescription(void) { return "ServerPlugin"; }
     virtual void LevelInit(char const* pMapName);
     virtual void ServerActivate(edict_t* pEdictList, int edictCount, int clientMax) {}
-    virtual void GameFrame(bool simulating) {}
+    virtual void GameFrame(bool simulating);
     virtual void LevelShutdown(void) {}
     virtual void ClientActive(edict_t* pEntity);
     virtual void ClientDisconnect(edict_t* pEntity);
@@ -103,8 +104,8 @@ public:
     virtual PLUGIN_RESULT ClientCommand(edict_t* pEntity, const CCommand& args) { return PLUGIN_CONTINUE; }
     virtual PLUGIN_RESULT NetworkIDValidated(const char* pszUserName, const char* pszNetworkID) { return PLUGIN_CONTINUE; }
     virtual void OnQueryCvarValueFinished(QueryCvarCookie_t iCookie, edict_t* pPlayerEntity, EQueryCvarValueStatus eStatus, const char* pCvarName, const char* pCvarValue) {}
-    virtual void OnEdictAllocated(edict_t* edict) {}
-    virtual void OnEdictFreed(const edict_t* edict) {}
+    virtual void OnEdictAllocated(edict_t* edict);
+    virtual void OnEdictFreed(const edict_t* edict);
 
     bool ProcessVoiceDataHook()
     {
@@ -138,6 +139,7 @@ private:
 
     ClientState* mClientState[MAX_PLAYERS];
     WavFile mSpeakerIR;
+    RocketMode mRocketMode;
 
     static VTableHook<decltype(&ProcessVoiceDataHook)> sProcessVoiceDataHook;
     static VTableHook<decltype(&IsProximityHearingClientHook)> sIsProximityHearingClientHook;
@@ -185,7 +187,9 @@ ServerPlugin::ServerPlugin() :
     mServerGameDll(nullptr),
     mCvarHelper(),
     mCeltCodecManager(),
-    mClientState()
+    mClientState(),
+    mSpeakerIR(),
+    mRocketMode()
 {
 }
 
@@ -264,6 +268,8 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         return false;
     }
 
+    mRocketMode.Init(mServer);
+
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
     return mServer && sSizzVoiceEnabled;
@@ -271,6 +277,8 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
 
 void ServerPlugin::Unload(void)
 {
+    mRocketMode.Shutdown();
+
     mCvarHelper.DestroyConVar(sSizzVoiceEnabled);
     mCvarHelper.DestroyConVar(sSizzVoiceAutotune);
     mCvarHelper.DestroyConVar(sSizzVoiceWah);
@@ -324,6 +332,11 @@ template<typename T, typename U>
 inline T ByteOffsetFromPointer(U pBase, int byte_offset)
 {
     return reinterpret_cast<T>((reinterpret_cast<unsigned char*>(pBase) + byte_offset));
+}
+
+void ServerPlugin::GameFrame(bool simulating)
+{
+    mRocketMode.GameFrame(simulating);
 }
 
 static const INetMessage* GetCLCVoiceData(INetChannel* channel)
@@ -391,6 +404,18 @@ void ServerPlugin::ClientDisconnect(edict_t* pEntity)
     // can delete null here if the client had no net channel (bot/other).
     delete mClientState[clientIndex];
     mClientState[clientIndex] = nullptr;
+
+    mRocketMode.ClientDisconnect(pEntity);
+}
+
+void ServerPlugin::OnEdictAllocated(edict_t* edict)
+{
+    mRocketMode.OnEdictAllocated(edict);
+}
+
+void ServerPlugin::OnEdictFreed(const edict_t* edict)
+{
+    mRocketMode.OnEdictFreed(edict);
 }
 
 int ServerPlugin::GetClosestBotSlot(const Vector& position)
