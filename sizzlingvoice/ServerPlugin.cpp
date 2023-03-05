@@ -28,7 +28,7 @@
 #include "dsp/delay.h"
 #include "dsp/convolution.h"
 #include "base/math.h"
-#include "CVarHelper.h"
+#include "sourcehelpers/CVarHelper.h"
 #include "WavFile.h"
 #include <string.h>
 #include <float.h>
