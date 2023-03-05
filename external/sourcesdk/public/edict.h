@@ -4,8 +4,71 @@
 class IServerNetworkable;
 class IServerUnknown;
 
+#define FL_EDICT_CHANGED (1<<0) // Game DLL sets this when the entity state changes
+                                // Mutually exclusive with FL_EDICT_PARTIAL_CHANGE.
+
+// This is used internally to edict_t to remember that it's carrying a 
+// "full change list" - all its properties might have changed their value.
+#define FL_FULL_EDICT_CHANGED (1<<8)
+
+// Max # of variable changes we'll track in an entity before we treat it
+// like they all changed.
+#define MAX_CHANGE_OFFSETS	19
+#define MAX_EDICT_CHANGE_INFOS	100
+
+class CEdictChangeInfo
+{
+public:
+    // Edicts remember the offsets of properties that change 
+    unsigned short m_ChangeOffsets[MAX_CHANGE_OFFSETS];
+    unsigned short m_nChangeOffsets;
+};
+
+// Shared between engine and game DLL.
+class CSharedEdictChangeInfo
+{
+public:
+    // Matched against edict_t::m_iChangeInfoSerialNumber to determine if its
+    // change info is valid.
+    unsigned short m_iSerialNumber;
+
+    CEdictChangeInfo m_ChangeInfos[MAX_EDICT_CHANGE_INFOS];
+    unsigned short m_nChangeInfos;	// How many are in use this frame.
+};
+
+class IChangeInfoAccessor
+{
+public:
+    inline void SetChangeInfo(unsigned short info)
+    {
+        m_iChangeInfo = info;
+    }
+
+    inline void SetChangeInfoSerialNumber(unsigned short sn)
+    {
+        m_iChangeInfoSerialNumber = sn;
+    }
+
+    inline unsigned short GetChangeInfo() const
+    {
+        return m_iChangeInfo;
+    }
+
+    inline unsigned short GetChangeInfoSerialNumber() const
+    {
+        return m_iChangeInfoSerialNumber;
+    }
+
+private:
+    unsigned short m_iChangeInfo;
+    unsigned short m_iChangeInfoSerialNumber;
+};
+
 class CBaseEdict
 {
+public:
+    void StateChanged(unsigned short offset);
+
 public:
     int	m_fStateFlags;
 

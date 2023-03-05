@@ -14,3 +14,5 @@
 #define NUM_ENT_ENTRIES			(1 << NUM_ENT_ENTRY_BITS)
 #define ENT_ENTRY_MASK			(NUM_ENT_ENTRIES - 1)
 #define INVALID_EHANDLE_INDEX	0xFFFFFFFF
+
+#define FL_ATCONTROLS			(1<<7) // Player can't move, but keeps key inputs for controlling another entity

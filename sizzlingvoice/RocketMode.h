@@ -4,6 +4,7 @@
 #include "sourcesdk/game/shared/shareddefs.h"
 #include <list>
 
+class IVEngineServer;
 class IServer;
 struct edict_t;
 
@@ -13,7 +14,7 @@ public:
     RocketMode();
     ~RocketMode();
 
-    bool Init(IServer* server);
+    bool Init(IVEngineServer* engineServer, IServer* server);
     void Shutdown();
 
     void GameFrame(bool simulating);
@@ -26,6 +27,7 @@ public:
     void OnEdictFreed(const edict_t* edict);
 
 private:
+    IVEngineServer* mVEngineServer;
     IServer* mServer;
 
     struct State
