@@ -33,12 +33,6 @@
 #include <string.h>
 #include <float.h>
 
-template<typename T>
-inline T Min(T a, T b) { return a <= b ? a : b;  }
-
-template<typename T>
-inline T Max(T a, T b) { return a >= b ? a : b; }
-
 struct ClientState
 {
     ClientState(IVAudioVoiceCodec* codec, const float* kernel, int kernelSamples) :
@@ -581,7 +575,7 @@ void ServerPlugin::ProcessVoiceData(ClientState* clientState, bf_read voiceData,
         for (int i = 0; i < celtDecodedFrameSizeSamples; ++i)
         {
             const int32_t expandedSample = static_cast<int32_t>(samples[i] * 32768.0f);
-            decodedFrame[i] = static_cast<int16_t>(Max(-32768, Min(expandedSample, 32767)));
+            decodedFrame[i] = static_cast<int16_t>(Math::Max(-32768, Math::Min(expandedSample, 32767)));
         }
 
         // TODO: bFinal = true when the last byte of the sound data is a 0?
