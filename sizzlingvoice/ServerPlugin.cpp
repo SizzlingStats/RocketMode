@@ -17,7 +17,7 @@
 #include "sourcesdk/game/shared/shareddefs.h"
 #include "sourcesdk/engine/gl_model_private.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
-#include "NetPropHelpers.h"
+#include "sourcehelpers/NetPropHelpers.h"
 #include "StaticPropMgr.h"
 #include "VTableHook.h"
 #include "VAudioCeltCodecManager.h"
