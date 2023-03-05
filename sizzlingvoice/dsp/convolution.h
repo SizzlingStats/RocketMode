@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <assert.h>
 
+// https://ccrma.stanford.edu/~jos/sasp/Convolving_Long_Signals.html
 class Convolution
 {
 public:
