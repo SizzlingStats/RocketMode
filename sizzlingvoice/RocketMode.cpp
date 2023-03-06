@@ -202,6 +202,10 @@ void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
         return;
     }
 
+    // Clear state, reset view
+    state.rocket = nullptr;
+    state.owner.Term();
+
     SVC_SetView setview;
     setview.m_nEntityIndex = ownerEntIndex;
 
