@@ -33,6 +33,7 @@ private:
     static string_t tf_projectile_rocket;
     static int sClassnameOffset;
     static int sOwnerEntityOffset;
+    static int sfFlagsOffset;
 
     static string_t GetClassname(CBaseEntity* ent);
     static CBaseHandle GetOwnerEntity(CBaseEntity* ent);

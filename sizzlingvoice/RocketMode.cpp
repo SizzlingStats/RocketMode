@@ -17,6 +17,7 @@
 string_t RocketMode::tf_projectile_rocket;
 int RocketMode::sClassnameOffset;
 int RocketMode::sOwnerEntityOffset;
+int RocketMode::sfFlagsOffset;
 
 string_t RocketMode::GetClassname(CBaseEntity* ent)
 {
@@ -68,6 +69,11 @@ void RocketMode::LevelInit(const char* pMapName)
         {
             sOwnerEntityOffset = DatamapHelpers::GetDatamapVarOffsetFromEnt(ent, "m_hOwnerEntity");
             assert(sOwnerEntityOffset > 0);
+        }
+        if (!sfFlagsOffset)
+        {
+            sfFlagsOffset = DatamapHelpers::GetDatamapVarOffsetFromEnt(ent, "m_fFlags");
+            assert(sfFlagsOffset > 0);
         }
 
         tf_projectile_rocket = *(string_t*)((char*)ent + sClassnameOffset);
@@ -147,9 +153,9 @@ void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
         assert(ownerEdict);
         assert(ownerEnt);
 
-        const int fFlagsOffset = 320;
-        *(int*)((char*)ownerEnt + fFlagsOffset) |= FL_ATCONTROLS;
-        EdictChangeHelpers::StateChanged(ownerEdict, fFlagsOffset, mVEngineServer);
+        assert(sfFlagsOffset > 0);
+        *(int*)((char*)ownerEnt + sfFlagsOffset) |= FL_ATCONTROLS;
+        EdictChangeHelpers::StateChanged(ownerEdict, sfFlagsOffset, mVEngineServer);
     }
 
     // TODO: hook g_CommentarySystem.PrePlayerRunCommand as a pre usercmd process to clear weapon flags.
@@ -204,9 +210,11 @@ void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
     {
         edict_t* ownerEdict = mVEngineServer->PEntityOfEntIndex(ownerEntIndex);
         CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
+        assert(ownerEdict);
+        assert(ownerEnt);
 
-        const int fFlagsOffset = 320;
-        *(int*)((char*)ownerEnt + fFlagsOffset) &= ~FL_ATCONTROLS;
-        EdictChangeHelpers::StateChanged(ownerEdict, fFlagsOffset, mVEngineServer);
+        assert(sfFlagsOffset > 0);
+        *(int*)((char*)ownerEnt + sfFlagsOffset) &= ~FL_ATCONTROLS;
+        EdictChangeHelpers::StateChanged(ownerEdict, sfFlagsOffset, mVEngineServer);
     }
 }
