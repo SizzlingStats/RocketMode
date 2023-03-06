@@ -405,6 +405,8 @@ static const INetMessage* GetCLCVoiceData(INetChannel* channel)
 
 void ServerPlugin::ClientActive(edict_t* pEntity)
 {
+    mRocketMode.ClientActive(pEntity);
+
     const int entIndex = pEntity->m_EdictIndex;
     const int clientIndex = entIndex - 1;
     IClient* client = mServer->GetClient(clientIndex);

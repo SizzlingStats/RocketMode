@@ -2,6 +2,7 @@
 #include "RocketMode.h"
 #include "sourcesdk/common/netmessages.h"
 #include "sourcesdk/game/server/baseentity.h"
+#include "sourcesdk/game/shared/usercmd.h"
 #include "sourcesdk/public/basehandle.h"
 #include "sourcesdk/public/const.h"
 #include "sourcesdk/public/edict.h"
@@ -18,6 +19,7 @@ string_t RocketMode::tf_projectile_rocket;
 int RocketMode::sClassnameOffset;
 int RocketMode::sOwnerEntityOffset;
 int RocketMode::sfFlagsOffset;
+VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> RocketMode::sPlayerRunCommandHook;
 
 string_t RocketMode::GetClassname(CBaseEntity* ent)
 {
@@ -53,6 +55,7 @@ bool RocketMode::Init(IVEngineServer* engineServer, IServer* server, IServerTool
 
 void RocketMode::Shutdown()
 {
+    sPlayerRunCommandHook.Unhook();
 }
 
 void RocketMode::LevelInit(const char* pMapName)
@@ -84,6 +87,18 @@ void RocketMode::LevelInit(const char* pMapName)
 void RocketMode::LevelShutdown()
 {
     tf_projectile_rocket = nullptr;
+}
+
+void RocketMode::ClientActive(edict_t* pEntity)
+{
+    if (!sPlayerRunCommandHook.GetThisPtr())
+    {
+        CBaseEntity* ent = mServerTools->GetBaseEntityByEntIndex(pEntity->m_EdictIndex);
+        assert(ent);
+
+        constexpr int Offset = 430;
+        sPlayerRunCommandHook.Hook(ent, Offset, this, &RocketMode::PlayerRunCommandHook);
+    }
 }
 
 void RocketMode::ClientDisconnect(edict_t* pEntity)
@@ -220,5 +235,36 @@ void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
         assert(sfFlagsOffset > 0);
         *(int*)((char*)ownerEnt + sfFlagsOffset) &= ~FL_ATCONTROLS;
         EdictChangeHelpers::StateChanged(ownerEdict, sfFlagsOffset, mVEngineServer);
+    }
+}
+
+bool RocketMode::PlayerRunCommandHook(CUserCmd* ucmd, IMoveHelper* moveHelper)
+{
+    RocketMode* thisPtr = sPlayerRunCommandHook.GetThisPtr();
+    CBaseEntity* playerEnt = reinterpret_cast<CBaseEntity*>(this);
+    thisPtr->PlayerRunCommand(playerEnt, ucmd, moveHelper);
+    return sPlayerRunCommandHook.CallOriginalFn(this, ucmd, moveHelper);
+}
+
+void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelper* moveHelper)
+{
+    // log spam fix.
+    // DataTable warning: player: Out-of-range value (359.000000/90.000000) in SendPropFloat 'm_angEyeAngles[0]', clamping.
+    if (ucmd->viewangles.x > 90.0f)
+    {
+        ucmd->viewangles.x = 90.0f;
+    }
+
+    const CBaseHandle& handle = player->GetRefEHandle();
+    const int entIndex = handle.GetEntryIndex();
+    const int clientIndex = entIndex - 1;
+
+    State& state = mClientStates[clientIndex];
+    if (state.rocket)
+    {
+        // Disable weapnon switching while in rocket mode.
+        // Clients will predict incorrectly and flicker the hud a bit.
+        // Can't do anything about that.
+        ucmd->weaponselect = 0;
     }
 }
