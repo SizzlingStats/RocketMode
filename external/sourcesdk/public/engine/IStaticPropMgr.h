@@ -10,7 +10,7 @@ class IHandleEntity;
 class CBaseHandle;
 class ICollideable;
 class Vector;
-template<typename T> class CUtlMemory;
+template<typename T, class I> class CUtlMemory;
 template<typename T, class A> class CUtlVector;
 
 #define INTERFACEVERSION_STATICPROPMGR_SERVER "StaticPropMgrServer002"

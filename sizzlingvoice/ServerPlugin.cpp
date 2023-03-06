@@ -17,8 +17,10 @@
 #include "sourcesdk/game/shared/shareddefs.h"
 #include "sourcesdk/engine/gl_model_private.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
+#include "sourcesdk/game/server/entitylist.h"
 #include "sourcehelpers/NetPropHelpers.h"
 #include "sourcehelpers/StaticPropMgr.h"
+#include "sourcehelpers/ValveMemAlloc.h"
 #include "VTableHook.h"
 #include "sourcehelpers/VAudioCeltCodecManager.h"
 #include "dsp/phaser.h"
@@ -107,6 +109,10 @@ public:
     virtual void OnEdictAllocated(edict_t* edict);
     virtual void OnEdictFreed(const edict_t* edict);
 
+    void OnEntityCreated(CBaseEntity* pEntity);
+    void OnEntitySpawned(CBaseEntity* pEntity);
+    void OnEntityDeleted(CBaseEntity* pEntity);
+
     bool ProcessVoiceDataHook()
     {
         ServerPlugin* thisPtr = sProcessVoiceDataHook.GetThisPtr();
@@ -176,6 +182,16 @@ void* CreateInterface(const char* pName, int* pReturnCode)
     return nullptr;
 }
 
+class ServerPluginEntityListener : public IEntityListener
+{
+public:
+    virtual void OnEntityCreated(CBaseEntity* pEntity) { sServerPlugin.OnEntityCreated(pEntity); }
+    virtual void OnEntitySpawned(CBaseEntity* pEntity) { sServerPlugin.OnEntitySpawned(pEntity); }
+    virtual void OnEntityDeleted(CBaseEntity* pEntity) { sServerPlugin.OnEntityDeleted(pEntity); }
+};
+
+static ServerPluginEntityListener sEntityListener;
+
 ServerPlugin::ServerPlugin() :
     mVEngineServer(nullptr),
     mServer(nullptr),
@@ -195,6 +211,11 @@ ServerPlugin::ServerPlugin() :
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory)
 {
+    if (!ValveMemAlloc::Init())
+    {
+        return false;
+    }
+
     if (!mCeltCodecManager.Init())
     {
         return false;
@@ -248,6 +269,13 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         return false;
     }
 
+    CGlobalEntityList* entityList = mServerTools->GetEntityList();
+    if (!entityList)
+    {
+        return false;
+    }
+    entityList->m_entityListeners.AddToTail(&sEntityListener);
+
     AutoTalent::GlobalInit();
 
     mCvarHelper.UnhideAllCVars();
@@ -296,9 +324,17 @@ void ServerPlugin::Unload(void)
 
     AutoTalent::GlobalShutdown();
 
+    CGlobalEntityList* entityList = mServerTools->GetEntityList();
+    if (entityList)
+    {
+        entityList->m_entityListeners.FindAndFastRemove(&sEntityListener);
+    }
+
     mCeltCodecManager.Release();
     sIsProximityHearingClientHook.Unhook();
     sProcessVoiceDataHook.Unhook();
+
+    ValveMemAlloc::Release();
 }
 
 int gSpeakerEntIndex;
@@ -416,6 +452,18 @@ void ServerPlugin::OnEdictAllocated(edict_t* edict)
 void ServerPlugin::OnEdictFreed(const edict_t* edict)
 {
     mRocketMode.OnEdictFreed(edict);
+}
+
+void ServerPlugin::OnEntityCreated(CBaseEntity* pEntity)
+{
+}
+
+void ServerPlugin::OnEntitySpawned(CBaseEntity* pEntity)
+{
+}
+
+void ServerPlugin::OnEntityDeleted(CBaseEntity* pEntity)
+{
 }
 
 int ServerPlugin::GetClosestBotSlot(const Vector& position)
