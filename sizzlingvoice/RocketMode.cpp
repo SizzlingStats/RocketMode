@@ -1,6 +1,7 @@
 
 #include "RocketMode.h"
 #include "sourcesdk/common/netmessages.h"
+#include "sourcesdk/game/server/baseentity.h"
 #include "sourcesdk/public/basehandle.h"
 #include "sourcesdk/public/const.h"
 #include "sourcesdk/public/edict.h"
@@ -9,14 +10,31 @@
 #include "sourcesdk/public/iserver.h"
 #include "sourcesdk/public/iservernetworkable.h"
 #include "sourcesdk/public/iserverunknown.h"
+#include "sourcesdk/public/toolframework/itoolentity.h"
 #include "sourcehelpers/DatamapHelpers.h"
 #include "sourcehelpers/EdictChangeHelpers.h"
+
+string_t RocketMode::tf_projectile_rocket;
+int RocketMode::sClassnameOffset;
+int RocketMode::sOwnerEntityOffset;
+
+string_t RocketMode::GetClassname(CBaseEntity* ent)
+{
+    assert(sClassnameOffset > 0);
+    return *(string_t*)((char*)ent + sClassnameOffset);
+}
+
+CBaseHandle RocketMode::GetOwnerEntity(CBaseEntity* ent)
+{
+    assert(sOwnerEntityOffset > 0);
+    return *(CBaseHandle*)((char*)ent + sOwnerEntityOffset);
+}
 
 RocketMode::RocketMode() :
     mVEngineServer(nullptr),
     mServer(nullptr),
-    mClientStates(),
-    mTrackingForBaseEnt()
+    mServerTools(nullptr),
+    mClientStates()
 {
 }
 
@@ -24,10 +42,11 @@ RocketMode::~RocketMode()
 {
 }
 
-bool RocketMode::Init(IVEngineServer* engineServer, IServer* server)
+bool RocketMode::Init(IVEngineServer* engineServer, IServer* server, IServerTools* serverTools)
 {
     mVEngineServer = engineServer;
     mServer = server;
+    mServerTools = serverTools;
     return true;
 }
 
@@ -35,129 +54,159 @@ void RocketMode::Shutdown()
 {
 }
 
-static CBaseEntity* GetBaseEntity(edict_t* edict)
+void RocketMode::LevelInit(const char* pMapName)
 {
-    if (edict)
+    CBaseEntity* ent = mServerTools->CreateEntityByName("tf_projectile_rocket");
+    if (ent)
     {
-        if (IServerUnknown* unk = edict->m_pUnk)
+        if (!sClassnameOffset)
         {
-            return unk->GetBaseEntity();
+            sClassnameOffset = DatamapHelpers::GetDatamapVarOffsetFromEnt(ent, "m_iClassname");
+            assert(sClassnameOffset > 0);
         }
+        if (!sOwnerEntityOffset)
+        {
+            sOwnerEntityOffset = DatamapHelpers::GetDatamapVarOffsetFromEnt(ent, "m_hOwnerEntity");
+            assert(sOwnerEntityOffset > 0);
+        }
+
+        tf_projectile_rocket = *(string_t*)((char*)ent + sClassnameOffset);
+        mServerTools->RemoveEntityImmediate(ent);
     }
-    return nullptr;
 }
 
-static const char* GetClassname(edict_t* edict)
+void RocketMode::LevelShutdown()
 {
-    if (edict)
-    {
-        if (IServerNetworkable* networkable = edict->m_pNetworkable)
-        {
-            return networkable->GetClassName();
-        }
-    }
-    return nullptr;
-}
-
-void RocketMode::GameFrame(bool simulating)
-{
-    for (edict_t* edict : mTrackingForBaseEnt)
-    {
-        CBaseEntity* ent = GetBaseEntity(edict);
-        if (!ent)
-        {
-            continue;
-        }
-
-        const char* classname = GetClassname(edict);
-        if (!classname || strcmp(classname, "tf_projectile_rocket"))
-        {
-            continue;
-        }
-
-        static const int offset = DatamapHelpers::GetDatamapVarOffsetFromEnt(ent, "m_hOwnerEntity");
-        assert(offset > 0);
-
-        CBaseHandle owningEntHandle = *(CBaseHandle*)((char*)ent + offset);
-        if (owningEntHandle.IsValid())
-        {
-            const int owningEntIndex = owningEntHandle.GetEntryIndex();
-            const int owningClientIndex = owningEntIndex - 1;
-            assert(owningClientIndex < MAX_PLAYERS);
-
-            IClient* client = mServer->GetClient(owningClientIndex);
-            if (client && !client->IsFakeClient())
-            {
-                SVC_SetView setview;
-                setview.m_nEntityIndex = edict->m_EdictIndex;
-
-                if (client->SendNetMsg(setview, true))
-                {
-                    mClientStates[owningClientIndex].rocket = edict;
-
-                    edict_t* owningEdict = mVEngineServer->PEntityOfEntIndex(owningEntIndex);
-                    assert(owningEdict);
-                    if (CBaseEntity* owningEnt = GetBaseEntity(owningEdict))
-                    {
-                        const int fFlagsOffset = 320;
-                        *(int*)((char*)owningEnt + fFlagsOffset) |= FL_ATCONTROLS;
-                        EdictChangeHelpers::StateChanged(owningEdict, fFlagsOffset, mVEngineServer);
-                    }
-                }
-
-                // TODO: hook g_CommentarySystem.PrePlayerRunCommand as a pre usercmd process to clear weapon flags.
-                // TODO: set flags to FL_ATCONTROLS so buttons are still passed through
-                // TODO: hook g_pGameMovement->ProcessMovement for usercmds to get buttons
-
-                //mServerTools->GetKeyValue()
-            }
-        }
-    }
-    mTrackingForBaseEnt.remove_if([this](edict_t* edict) -> bool
-        {
-            return !!GetBaseEntity(edict);
-        });
+    tf_projectile_rocket = nullptr;
 }
 
 void RocketMode::ClientDisconnect(edict_t* pEntity)
 {
+    // When clients disconnect, their projectiles are instantly destroyed.
+    // OnEntityDeleted will see a projectile with an owner edict marked FL_KILLME.
+
+    // Clear out rocket and owner here just to make things less error prone.
     const int clientIndex = pEntity->m_EdictIndex - 1;
     assert(clientIndex < MAX_PLAYERS);
-    mClientStates[clientIndex].rocket = nullptr;
+    State& state = mClientStates[clientIndex];
+    state.rocket = nullptr;
+    state.owner.Term();
 }
 
-void RocketMode::OnEdictAllocated(edict_t* edict)
+void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
 {
-    mTrackingForBaseEnt.emplace_back(edict);
-}
-
-void RocketMode::OnEdictFreed(const edict_t* edict)
-{
-    for (int i = 0; i < MAX_PLAYERS; ++i)
+    const string_t classname = GetClassname(pEntity);
+    if (!tf_projectile_rocket || !classname || (classname != tf_projectile_rocket))
     {
-        State& state = mClientStates[i];
-        if (edict == state.rocket)
-        {
-            state.rocket = nullptr;
-
-            SVC_SetView setview;
-            setview.m_nEntityIndex = i + 1;
-
-            IClient* client = mServer->GetClient(i);
-            if (client)
-            {
-                client->SendNetMsg(setview, true);
-
-                edict_t* owningEdict = mVEngineServer->PEntityOfEntIndex(i + 1);
-                assert(owningEdict);
-                if (CBaseEntity* owningEnt = GetBaseEntity(owningEdict))
-                {
-                    const int fFlagsOffset = 320;
-                    *(int*)((char*)owningEnt + fFlagsOffset) &= ~FL_ATCONTROLS;
-                    EdictChangeHelpers::StateChanged(owningEdict, fFlagsOffset, mVEngineServer);
-                }
-            }
-        }
+        return;
     }
-    mTrackingForBaseEnt.remove(const_cast<edict_t*>(edict));
+
+    IServerNetworkable* networkable = pEntity->GetNetworkable();
+    if (!networkable)
+    {
+        return;
+    }
+
+    edict_t* edict = networkable->GetEdict();
+    if (!edict)
+    {
+        return;
+    }
+
+    CBaseHandle ownerEntHandle = GetOwnerEntity(pEntity);
+    if (!ownerEntHandle.IsValid())
+    {
+        return;
+    }
+
+    const int ownerEntIndex = ownerEntHandle.GetEntryIndex();
+    if (ownerEntIndex <= 0 || ownerEntIndex >= MAX_PLAYERS)
+    {
+        // sentries? TODO: check
+        return;
+    }
+
+    const int ownerClientIndex = ownerEntIndex - 1;
+    IClient* client = mServer->GetClient(ownerClientIndex);
+    if (!client || client->IsFakeClient())
+    {
+        return;
+    }
+
+    SVC_SetView setview;
+    setview.m_nEntityIndex = edict->m_EdictIndex;
+
+    if (client->SendNetMsg(setview, true))
+    {
+        State& state = mClientStates[ownerClientIndex];
+        state.rocket = pEntity;
+        state.owner = ownerEntHandle;
+
+        edict_t* ownerEdict = mVEngineServer->PEntityOfEntIndex(ownerEntIndex);
+        CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
+        assert(ownerEdict);
+        assert(ownerEnt);
+
+        const int fFlagsOffset = 320;
+        *(int*)((char*)ownerEnt + fFlagsOffset) |= FL_ATCONTROLS;
+        EdictChangeHelpers::StateChanged(ownerEdict, fFlagsOffset, mVEngineServer);
+    }
+
+    // TODO: hook g_CommentarySystem.PrePlayerRunCommand as a pre usercmd process to clear weapon flags.
+    // TODO: hook g_pGameMovement->ProcessMovement for usercmds to get buttons
+
+    //mServerTools->GetKeyValue()
+}
+
+void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
+{
+    const string_t classname = GetClassname(pEntity);
+    if (!tf_projectile_rocket || !classname || (classname != tf_projectile_rocket))
+    {
+        return;
+    }
+
+    CBaseHandle owner = GetOwnerEntity(pEntity);
+    if (!owner.IsValid())
+    {
+        return;
+    }
+
+    const int ownerEntIndex = owner.GetEntryIndex();
+    if (ownerEntIndex <= 0 || ownerEntIndex >= MAX_PLAYERS)
+    {
+        // sentries? TODO: check
+        return;
+    }
+
+    const int ownerClientIndex = ownerEntIndex - 1;
+    State& state = mClientStates[ownerClientIndex];
+
+    if (state.rocket != pEntity)
+    {
+        // Rocket came from a bot.
+        // Soldier fired multiple rockets.
+        // Client disconnected (ClientDisconnect nulls it).
+        return;
+    }
+
+    if (state.owner != owner)
+    {
+        // Pyro deflected soldier rocket.
+        return;
+    }
+
+    SVC_SetView setview;
+    setview.m_nEntityIndex = ownerEntIndex;
+
+    IClient* client = mServer->GetClient(ownerClientIndex);
+    if (client && client->SendNetMsg(setview, true))
+    {
+        edict_t* ownerEdict = mVEngineServer->PEntityOfEntIndex(ownerEntIndex);
+        CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
+
+        const int fFlagsOffset = 320;
+        *(int*)((char*)ownerEnt + fFlagsOffset) &= ~FL_ATCONTROLS;
+        EdictChangeHelpers::StateChanged(ownerEdict, fFlagsOffset, mVEngineServer);
+    }
 }

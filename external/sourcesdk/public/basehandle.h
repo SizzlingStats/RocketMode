@@ -6,6 +6,11 @@
 class CBaseHandle
 {
 public:
+    void Term()
+    {
+        m_Index = INVALID_EHANDLE_INDEX;
+    }
+
     bool IsValid() const
     {
         return m_Index != INVALID_EHANDLE_INDEX;
@@ -34,6 +39,16 @@ public:
     int CBaseHandle::GetSerialNumber() const
     {
         return m_Index >> NUM_SERIAL_NUM_SHIFT_BITS;
+    }
+
+    bool operator !=(const CBaseHandle& other) const
+    {
+        return m_Index != other.m_Index;
+    }
+
+    bool operator ==(const CBaseHandle& other) const
+    {
+        return m_Index == other.m_Index;
     }
 
 protected:

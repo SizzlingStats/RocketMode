@@ -96,7 +96,7 @@ public:
     virtual void LevelInit(char const* pMapName);
     virtual void ServerActivate(edict_t* pEdictList, int edictCount, int clientMax) {}
     virtual void GameFrame(bool simulating);
-    virtual void LevelShutdown(void) {}
+    virtual void LevelShutdown(void);
     virtual void ClientActive(edict_t* pEntity);
     virtual void ClientDisconnect(edict_t* pEntity);
     virtual void ClientPutInServer(edict_t* pEntity, char const* playername) {}
@@ -106,8 +106,8 @@ public:
     virtual PLUGIN_RESULT ClientCommand(edict_t* pEntity, const CCommand& args) { return PLUGIN_CONTINUE; }
     virtual PLUGIN_RESULT NetworkIDValidated(const char* pszUserName, const char* pszNetworkID) { return PLUGIN_CONTINUE; }
     virtual void OnQueryCvarValueFinished(QueryCvarCookie_t iCookie, edict_t* pPlayerEntity, EQueryCvarValueStatus eStatus, const char* pCvarName, const char* pCvarValue) {}
-    virtual void OnEdictAllocated(edict_t* edict);
-    virtual void OnEdictFreed(const edict_t* edict);
+    virtual void OnEdictAllocated(edict_t* edict) {}
+    virtual void OnEdictFreed(const edict_t* edict) {}
 
     void OnEntityCreated(CBaseEntity* pEntity);
     void OnEntitySpawned(CBaseEntity* pEntity);
@@ -296,7 +296,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         return false;
     }
 
-    mRocketMode.Init(mVEngineServer, mServer);
+    mRocketMode.Init(mVEngineServer, mServer, mServerTools);
 
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
@@ -341,6 +341,8 @@ int gSpeakerEntIndex;
 
 void ServerPlugin::LevelInit(char const* pMapName)
 {
+    mRocketMode.LevelInit(pMapName);
+
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
     //NetPropHelpers::PrintAllServerClassTables(mServerGameDll);
@@ -372,7 +374,11 @@ inline T ByteOffsetFromPointer(U pBase, int byte_offset)
 
 void ServerPlugin::GameFrame(bool simulating)
 {
-    mRocketMode.GameFrame(simulating);
+}
+
+void ServerPlugin::LevelShutdown()
+{
+    mRocketMode.LevelShutdown();
 }
 
 static const INetMessage* GetCLCVoiceData(INetChannel* channel)
@@ -444,26 +450,18 @@ void ServerPlugin::ClientDisconnect(edict_t* pEntity)
     mRocketMode.ClientDisconnect(pEntity);
 }
 
-void ServerPlugin::OnEdictAllocated(edict_t* edict)
-{
-    mRocketMode.OnEdictAllocated(edict);
-}
-
-void ServerPlugin::OnEdictFreed(const edict_t* edict)
-{
-    mRocketMode.OnEdictFreed(edict);
-}
-
 void ServerPlugin::OnEntityCreated(CBaseEntity* pEntity)
 {
 }
 
 void ServerPlugin::OnEntitySpawned(CBaseEntity* pEntity)
 {
+    mRocketMode.OnEntitySpawned(pEntity);
 }
 
 void ServerPlugin::OnEntityDeleted(CBaseEntity* pEntity)
 {
+    mRocketMode.OnEntityDeleted(pEntity);
 }
 
 int ServerPlugin::GetClosestBotSlot(const Vector& position)

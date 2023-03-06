@@ -2,11 +2,15 @@
 #pragma once
 
 #include "sourcesdk/game/shared/shareddefs.h"
-#include <list>
+#include "sourcesdk/public/string_t.h"
+#include "sourcesdk/public/basehandle.h"
 
+class CBaseEntity;
 class IVEngineServer;
 class IServer;
+class IServerTools;
 struct edict_t;
+class CBaseHandle;
 
 class RocketMode
 {
@@ -14,27 +18,34 @@ public:
     RocketMode();
     ~RocketMode();
 
-    bool Init(IVEngineServer* engineServer, IServer* server);
+    bool Init(IVEngineServer* engineServer, IServer* server, IServerTools* serverTools);
     void Shutdown();
 
-    void GameFrame(bool simulating);
+    void LevelInit(const char* pMapName);
+    void LevelShutdown();
 
     void ClientDisconnect(edict_t* pEntity);
 
-    // These are called before the edict even has its vtable setup initialized.
-    // Need a better way to get entity spawn callbacks.
-    void OnEdictAllocated(edict_t* edict);
-    void OnEdictFreed(const edict_t* edict);
+    void OnEntitySpawned(CBaseEntity* pEntity);
+    void OnEntityDeleted(CBaseEntity* pEntity);
+
+private:
+    static string_t tf_projectile_rocket;
+    static int sClassnameOffset;
+    static int sOwnerEntityOffset;
+
+    static string_t GetClassname(CBaseEntity* ent);
+    static CBaseHandle GetOwnerEntity(CBaseEntity* ent);
 
 private:
     IVEngineServer* mVEngineServer;
     IServer* mServer;
+    IServerTools* mServerTools;
 
     struct State
     {
-        edict_t* rocket;
+        CBaseEntity* rocket;
+        CBaseHandle owner;
     };
     State mClientStates[MAX_PLAYERS];
-
-    std::list<edict_t*> mTrackingForBaseEnt;
 };
