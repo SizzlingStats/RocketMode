@@ -1,6 +1,36 @@
 
 #pragma once
 
+#include "globalvars_base.h"
+#include "string_t.h"
+
+enum MapLoadType_t
+{
+    MapLoad_NewGame = 0,
+    MapLoad_LoadGame,
+    MapLoad_Transition,
+    MapLoad_Background,
+};
+
+class CGlobalVars : public CGlobalVarsBase
+{
+    // Current map
+    string_t		mapname;
+    int				mapversion;
+    string_t		startspot;
+    MapLoadType_t	eLoadType;		// How the current map was loaded
+    bool			bMapLoadFailed;	// Map has failed to load, we need to kick back to the main menu
+
+    // game specific flags
+    bool			deathmatch;
+    bool			coop;
+    bool			teamplay;
+    // current maxentities
+    int				maxEntities;
+
+    int				serverCount;
+};
+
 class IServerNetworkable;
 class IServerUnknown;
 
