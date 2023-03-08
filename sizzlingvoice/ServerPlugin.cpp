@@ -303,7 +303,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         return false;
     }
 
-    mRocketMode.Init(mVEngineServer, mServer, mServerTools);
+    mRocketMode.Init(interfaceFactory, gameServerFactory);
 
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 

@@ -19,6 +19,21 @@ public:
         y = _y;
         z = _z;
     }
+    QAngle& operator+=(const QAngle& other)
+    {
+        x += other.x;
+        y += other.y;
+        z += other.z;
+        return *this;
+    }
+    QAngle operator*(float fl) const
+    {
+        QAngle res;
+        res.x = x * fl;
+        res.y = y * fl;
+        res.z = z * fl;
+        return res;
+    }
 };
 
 class Vector
@@ -64,5 +79,12 @@ public:
         delta.y = y - vOther.y;
         delta.z = z - vOther.z;
         return delta.LengthSqr();
+    }
+    Vector& operator*=(float fl)
+    {
+        x *= fl;
+        y *= fl;
+        z *= fl;
+        return *this;
     }
 };
