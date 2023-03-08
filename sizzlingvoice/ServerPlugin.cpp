@@ -167,6 +167,13 @@ static ConVar* sSizzVoiceSirenFx;
 
 void* CreateInterface(const char* pName, int* pReturnCode)
 {
+    static bool sInitialized = false;
+    if (sInitialized)
+    {
+        return false;
+    }
+    sInitialized = true;
+
     if (!strcmp(pName, "ISERVERPLUGINCALLBACKS003"))
     {
         if (pReturnCode)
