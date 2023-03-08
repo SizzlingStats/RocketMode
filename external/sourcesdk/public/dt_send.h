@@ -1,6 +1,7 @@
 
 #pragma once
 
+class SendTable;
 class RecvProp;
 enum SendPropType;
 using ArrayLengthSendProxyFn = void*;

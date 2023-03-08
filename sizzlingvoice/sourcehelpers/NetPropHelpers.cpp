@@ -1,6 +1,7 @@
 
 #include "NetPropHelpers.h"
 #include "sourcesdk/public/eiface.h"
+#include "sourcesdk/public/dt_common.h"
 #include "sourcesdk/public/dt_send.h"
 #include "sourcesdk/public/server_class.h"
 #include <string.h>
@@ -113,15 +114,87 @@ void NetPropHelpers::PrintAllServerClassTables(IServerGameDLL* serverGameDll)
 
 void NetPropHelpers::PrintServerClassTables(IServerGameDLL* serverGameDll, const char* classname)
 {
+    ServerClass* pClass = GetServerClass(serverGameDll, classname);
+    if (pClass)
+    {
+        PrintServerClass(pClass);
+    }
+}
+
+ServerClass* NetPropHelpers::GetServerClass(IServerGameDLL* serverGameDll, const char* classname)
+{
     ServerClass* pClass = serverGameDll->GetAllServerClasses();
     while (pClass)
     {
         const char* name = pClass->GetName();
         if (!strcmp(classname, name))
         {
-            PrintServerClass(pClass);
-            return;
+            return pClass;
         }
         pClass = pClass->m_pNext;
     }
+    return nullptr;
+}
+
+static SendTable* GetTableRecursive(SendTable* table, const char* name)
+{
+    if (!table)
+    {
+        return nullptr;
+    }
+
+    if (!strcmp(name, table->GetName()))
+    {
+        return table;
+    }
+
+    const int numProps = table->GetNumProps();
+    for (int i = 0; i < numProps; ++i)
+    {
+        SendProp* prop = table->GetProp(i);
+        SendTable* foundSubTable = GetTableRecursive(prop->GetDataTable(), name);
+        if (foundSubTable)
+        {
+            return foundSubTable;
+        }
+    }
+    return nullptr;
+}
+
+SendProp* NetPropHelpers::GetProp(IServerGameDLL* serverGameDll, const char* className, const char* tableName, const char* propName)
+{
+    ServerClass* pClass = GetServerClass(serverGameDll, className);
+    if (pClass)
+    {
+        SendProp* prop = GetProp(pClass, tableName, propName);
+        if (prop)
+        {
+            return prop;
+        }
+    }
+    return nullptr;
+}
+
+SendProp* NetPropHelpers::GetProp(ServerClass* serverClass, const char* tableName, const char* propName)
+{
+    SendTable* table = GetTableRecursive(serverClass->GetTable(), tableName);
+    if (!table)
+    {
+        return nullptr;
+    }
+
+    const int numProps = table->GetNumProps();
+    for (int i = 0; i < numProps; ++i)
+    {
+        SendProp* prop = table->GetProp(i);
+        if ((prop->m_Flags & SPROP_EXCLUDE) != 0)
+        {
+            continue;
+        }
+        if (!strcmp(prop->GetName(), propName))
+        {
+            return prop;
+        }
+    }
+    return nullptr;
 }
