@@ -111,7 +111,7 @@ public:
             mDescriptor->connect_port(mHandle, i, &mPortSettings[i]);
         }
         
-        SetKey(sCMajor);
+        SetKey(sBFlatMinor);
     }
 
     void ProcessBuffer(float* samples, int numSamples)
