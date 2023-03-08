@@ -80,8 +80,8 @@ solution "sizzlingvoice"
 
         configuration "vs*"
             debugcommand (srcds_exe)
-            debugargs "-console -game tf +sv_voicecodec vaudio_celt +map cp_granary +plugin_load addons/sizzlingvoice"
-            --debugargs "-game tf -console -nomaster -insecure -maxplayers 32 +sv_lan 1 -allowdebug -NOINITMEMORY +map cp_granary +plugin_load addons/sizzlingvoice"
+            debugargs "-console -game tf +sv_voicecodec vaudio_celt +map cp_granary"
+            --debugargs "-game tf -console -nomaster -insecure -maxplayers 32 +sv_lan 1 -allowdebug -NOINITMEMORY +map cp_granary"
             postbuildcommands { postbuild_copy_dll, postbuild_copy_vdf, postbuild_copy_wav }
         configuration {}
         files
