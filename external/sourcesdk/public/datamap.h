@@ -45,13 +45,10 @@ typedef enum _fieldtypes
 } fieldtype_t;
 
 class ISaveRestoreOps;
-class CBaseEntity;
+class __single_inheritance CBaseEntity;
 struct inputdata_t;
 
-// VS2022 fattens this pointer size to 20 something bytes.
-// Typedef to void* to keep it at 4.
-using inputfunc_t = void*;
-//typedef void (CBaseEntity::* inputfunc_t)(inputdata_t& data);
+typedef void (CBaseEntity::* inputfunc_t)(inputdata_t& data);
 
 struct datamap_t;
 
