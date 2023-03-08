@@ -3,6 +3,13 @@
 #include "sourcesdk/public/edict.h"
 #include "sourcesdk/public/eiface.h"
 
+void EdictChangeHelpers::FullStateChanged(edict_t* edict, IVEngineServer* engineServer)
+{
+    edict->m_fStateFlags |= (FL_EDICT_CHANGED | FL_FULL_EDICT_CHANGED);
+    IChangeInfoAccessor* accessor = engineServer->GetChangeAccessor(edict);
+    accessor->SetChangeInfoSerialNumber(0);
+}
+
 void EdictChangeHelpers::StateChanged(edict_t* edict, unsigned short offset, IVEngineServer* engineServer)
 {
     if (edict->m_fStateFlags & FL_FULL_EDICT_CHANGED)

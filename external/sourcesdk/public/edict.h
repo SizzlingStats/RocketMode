@@ -7,6 +7,9 @@ class IServerUnknown;
 #define FL_EDICT_CHANGED (1<<0) // Game DLL sets this when the entity state changes
                                 // Mutually exclusive with FL_EDICT_PARTIAL_CHANGE.
 
+#define FL_EDICT_FREE (1<<1) // this edict if free for reuse
+#define FL_EDICT_FULL (1<<2) // this is a full server entity
+
 // This is used internally to edict_t to remember that it's carrying a 
 // "full change list" - all its properties might have changed their value.
 #define FL_FULL_EDICT_CHANGED (1<<8)
@@ -67,7 +70,7 @@ private:
 class CBaseEdict
 {
 public:
-    void StateChanged(unsigned short offset);
+    bool IsFree() const;
 
 public:
     int	m_fStateFlags;
@@ -96,3 +99,8 @@ public:
     // The server timestampe at which the edict was freed (so we can try to use other edicts before reallocating this one)
     float		freetime;
 };
+
+inline bool CBaseEdict::IsFree() const
+{
+    return (m_fStateFlags & FL_EDICT_FREE) != 0;
+}
