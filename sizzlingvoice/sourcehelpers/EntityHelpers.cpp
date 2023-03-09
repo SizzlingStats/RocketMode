@@ -11,6 +11,54 @@
 #include <string.h>
 #include <stdio.h>
 
+template<typename T, int N>
+constexpr int ArrayLength(const T(&)[N]) { return N; }
+
+template<int N>
+struct StringBuilder
+{
+public:
+    StringBuilder() :
+        mLength(0)
+    {
+        mString[0] = '\0';
+    }
+
+    void Append(const char* str)
+    {
+        int length = mLength;
+        char* thisStr = mString;
+
+        int index = 0;
+        while ((length < N) && (str[index] != '\0'))
+        {
+            thisStr[length++] = str[index++];
+        }
+        thisStr[length] = '\0';
+        mLength = length;
+    }
+
+    void Reduce(int numChars)
+    {
+        int newLength = mLength - numChars;
+        if (newLength < 0)
+        {
+            newLength = 0;
+        }
+        mLength = newLength;
+        mString[newLength] = '\0';
+    }
+
+    const char* c_str() const
+    {
+        return mString;
+    }
+
+private:
+    int mLength;
+    char mString[N + 1];
+};
+
 int EntityHelpers::GetDatamapVarOffset(datamap_t* pDatamap, const char* szVarName)
 {
     while (pDatamap)
@@ -37,6 +85,45 @@ int EntityHelpers::GetDatamapVarOffset(datamap_t* pDatamap, const char* szVarNam
         pDatamap = pDatamap->baseMap;
     }
     return 0;
+}
+
+static void PrintDatamapRecursive(datamap_t* datamap, StringBuilder<128>& spacing)
+{
+    printf("%s%s\n", spacing.c_str(), datamap->dataClassName);
+    spacing.Append("  |");
+
+    if (datamap->baseMap)
+    {
+        PrintDatamapRecursive(datamap->baseMap, spacing);
+    }
+
+    const int numFields = datamap->dataNumFields;
+    typedescription_t* pFields = datamap->dataDesc;
+    for (int i = 0; i < numFields; ++i)
+    {
+        typedescription_t* pField = &pFields[i];
+        if (pField->fieldType != FIELD_VOID)
+        {
+            const char* name = pField->fieldName;
+            const int offset = pField->fieldOffset[TD_OFFSET_NORMAL];
+            printf("%s%s, Offset: %i (%i bytes)\n", spacing.c_str(), name, offset, pField->fieldSizeInBytes);
+
+            if (pField->td)
+            {
+                spacing.Append("  |");
+                PrintDatamapRecursive(pField->td, spacing);
+                spacing.Reduce(3);
+            }
+        }
+    }
+    spacing.Reduce(3);
+}
+
+void EntityHelpers::PrintDatamap(datamap_t* datamap)
+{
+    StringBuilder<128> spacing;
+    PrintDatamapRecursive(datamap, spacing);
+    printf("\n");
 }
 
 void EntityHelpers::FullStateChanged(edict_t* edict, IVEngineServer* engineServer)
@@ -103,54 +190,6 @@ void EntityHelpers::StateChanged(edict_t* edict, unsigned short offset, IVEngine
 static const char* sPropTypeNames[7] =
 {
     "int", "float", "vector", "vectorxy", "string", "array", "datatable"
-};
-
-template<typename T, int N>
-constexpr int ArrayLength(const T(&)[N]) { return N; }
-
-template<int N>
-struct StringBuilder
-{
-public:
-    StringBuilder() :
-        mLength(0)
-    {
-        mString[0] = '\0';
-    }
-
-    void Append(const char* str)
-    {
-        int length = mLength;
-        char* thisStr = mString;
-
-        int index = 0;
-        while ((length < N) && (str[index] != '\0'))
-        {
-            thisStr[length++] = str[index++];
-        }
-        thisStr[length] = '\0';
-        mLength = length;
-    }
-
-    void Reduce(int numChars)
-    {
-        int newLength = mLength - numChars;
-        if (newLength < 0)
-        {
-            newLength = 0;
-        }
-        mLength = newLength;
-        mString[newLength] = '\0';
-    }
-
-    const char* c_str() const
-    {
-        return mString;
-    }
-
-private:
-    int mLength;
-    char mString[N + 1];
 };
 
 static void RecurseServerTable(SendTable* pTable, StringBuilder<128>& spacing)
