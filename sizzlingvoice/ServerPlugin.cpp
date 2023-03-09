@@ -102,7 +102,7 @@ public:
     virtual void ClientPutInServer(edict_t* pEntity, char const* playername) {}
     virtual void SetCommandClient(int index) {}
     virtual void ClientSettingsChanged(edict_t* pEdict) {}
-    virtual PLUGIN_RESULT ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen) { return PLUGIN_CONTINUE; }
+    virtual PLUGIN_RESULT ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen);
     virtual PLUGIN_RESULT ClientCommand(edict_t* pEntity, const CCommand& args) { return PLUGIN_CONTINUE; }
     virtual PLUGIN_RESULT NetworkIDValidated(const char* pszUserName, const char* pszNetworkID) { return PLUGIN_CONTINUE; }
     virtual void OnQueryCvarValueFinished(QueryCvarCookie_t iCookie, edict_t* pPlayerEntity, EQueryCvarValueStatus eStatus, const char* pCvarName, const char* pCvarValue) {}
@@ -457,6 +457,12 @@ void ServerPlugin::ClientDisconnect(edict_t* pEntity)
     mClientState[clientIndex] = nullptr;
 
     mRocketMode.ClientDisconnect(pEntity);
+}
+
+PLUGIN_RESULT ServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen)
+{
+    mRocketMode.ClientConnect();
+    return PLUGIN_CONTINUE;
 }
 
 void ServerPlugin::OnEntityCreated(CBaseEntity* pEntity)

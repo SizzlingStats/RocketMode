@@ -13,11 +13,13 @@ class IServer;
 class IServerTools;
 class IServerGameDLL;
 class ICvar;
-class CGlobalVarsBase;
+class CGlobalVars;
 struct edict_t;
 class CBaseHandle;
 class CUserCmd;
 class IMoveHelper;
+class IConVar;
+class ServerClass;
 
 class RocketMode
 {
@@ -31,6 +33,8 @@ public:
     void LevelInit(const char* pMapName);
     void LevelShutdown();
 
+    void ClientConnect();
+
     void ClientActive(edict_t* pEntity);
     void ClientDisconnect(edict_t* pEntity);
 
@@ -38,6 +42,8 @@ public:
     void OnEntityDeleted(CBaseEntity* pEntity);
 
 private:
+    bool ModifyRocketAngularPrecision();
+
     bool PlayerRunCommandHook(CUserCmd* ucmd, IMoveHelper* moveHelper);
     void PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelper* moveHelper);
 
@@ -61,7 +67,10 @@ private:
     IServerTools* mServerTools;
     IServerGameDLL* mServerGameDll;
     ICvar* mCvar;
-    CGlobalVarsBase* mGlobals;
+    CGlobalVars* mGlobals;
+
+    IConVar* mSendTables;
+    ServerClass* mTFBaseRocketClass;
 
     struct State
     {

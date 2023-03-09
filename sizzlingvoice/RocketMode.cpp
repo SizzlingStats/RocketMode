@@ -16,16 +16,17 @@
 #include "sourcesdk/public/dt_send.h"
 #include "sourcesdk/public/edict.h"
 #include "sourcesdk/public/eiface.h"
-#include "sourcesdk/public/globalvars_base.h"
 #include "sourcesdk/public/iclient.h"
 #include "sourcesdk/public/icvar.h"
 #include "sourcesdk/public/iserver.h"
 #include "sourcesdk/public/iservernetworkable.h"
 #include "sourcesdk/public/iserverunknown.h"
+#include "sourcesdk/public/server_class.h"
 #include "sourcesdk/public/tier1/convar.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
 
 #include "base/math.h"
+#include "sourcehelpers/SendTablesFix.h"
 
 string_t RocketMode::tf_projectile_rocket;
 int RocketMode::sClassnameOffset;
@@ -56,6 +57,8 @@ RocketMode::RocketMode() :
     mServerGameDll(nullptr),
     mCvar(nullptr),
     mGlobals(nullptr),
+    mSendTables(nullptr),
+    mTFBaseRocketClass(nullptr),
     mClientStates()
 {
 }
@@ -78,7 +81,7 @@ bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn game
     IPlayerInfoManager* playerInfoManager = (IPlayerInfoManager*)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, nullptr);
     if (playerInfoManager)
     {
-        mGlobals = reinterpret_cast<CGlobalVarsBase*>(playerInfoManager->GetGlobalVars());
+        mGlobals = playerInfoManager->GetGlobalVars();
     }
 
     if (!mVEngineServer || !mServer || !mServerTools || !mCvar || !mGlobals)
@@ -86,16 +89,10 @@ bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn game
         return false;
     }
 
-    //SendProp* angRotationProp = NetPropHelpers::GetProp(mServerGameDll, "CTFProjectile_Rocket", "DT_TFBaseRocket", "m_angRotation");
-    //if (angRotationProp)
-    //{
-    //    angRotationProp->m_nBits = 13;
-    //    double range = static_cast<double>(angRotationProp->m_fHighValue) - angRotationProp->m_fLowValue;
-    //    unsigned long iHighValue = ((1 << (unsigned long)angRotationProp->m_nBits) - 1);
-
-    //    angRotationProp->m_fHighLowMul = static_cast<float>(iHighValue / range);
-    //}
-    //mCvar->FindVar("sv_sendtables")->SetValue(1);
+    if (!ModifyRocketAngularPrecision())
+    {
+        return false;
+    }
 
     return true;
 }
@@ -157,6 +154,18 @@ void RocketMode::LevelInit(const char* pMapName)
 void RocketMode::LevelShutdown()
 {
     tf_projectile_rocket = nullptr;
+}
+
+void RocketMode::ClientConnect()
+{
+    assert(mSendTables);
+    assert(mTFBaseRocketClass);
+    assert(mVEngineServer);
+
+    // m_FullSendTables construction happens right after ServerActivate.
+    // It's overkill to reconstruct at each ClientConnect, but better than handling state.
+    mSendTables->SetValue(1);
+    SendTablesFix::ReconstructFullSendTablesForModification(mTFBaseRocketClass, mVEngineServer);
 }
 
 void RocketMode::ClientActive(edict_t* pEntity)
@@ -305,6 +314,51 @@ void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
         *(int*)((char*)ownerEnt + sfFlagsOffset) &= ~FL_ATCONTROLS;
         EdictChangeHelpers::StateChanged(ownerEdict, sfFlagsOffset, mVEngineServer);
     }
+}
+
+bool RocketMode::ModifyRocketAngularPrecision()
+{
+    assert(mCvar);
+    assert(mServerGameDll);
+
+    mSendTables = mCvar->FindVar("sv_sendtables");
+    if (!mSendTables)
+    {
+        // ensure dev commands are unhidden.
+        return false;
+    }
+
+    mTFBaseRocketClass = NetPropHelpers::GetServerClass(mServerGameDll, "CTFBaseRocket");
+    if (!mTFBaseRocketClass)
+    {
+        return false;
+    }
+
+    SendProp* angRotationProp = NetPropHelpers::GetProp(mTFBaseRocketClass, "DT_TFBaseRocket", "m_angRotation");
+    if (!angRotationProp)
+    {
+        return false;
+    }
+
+    // Increase angular precision:
+    // angular precision = (high-low) / ((1 << nBits) - 1)
+    // nBits | angular precision (degrees)
+    //   6   |   5.7    (default in DT_TFBaseRocket)
+    //   7   |   2.8
+    //   8   |   1.4
+    //   9   |   0.7
+    //  10   |   0.35
+    //  11   |   0.18
+    //  12   |   0.09
+    //  13   |   0.04   (default in DT_BaseEntity)
+
+    constexpr int newAngularPrecisionBits = 13;
+    angRotationProp->m_nBits = newAngularPrecisionBits;
+    double range = static_cast<double>(angRotationProp->m_fHighValue) - angRotationProp->m_fLowValue;
+    unsigned long iHighValue = ((1 << (unsigned long)angRotationProp->m_nBits) - 1);
+
+    angRotationProp->m_fHighLowMul = static_cast<float>(iHighValue / range);
+    return true;
 }
 
 bool RocketMode::PlayerRunCommandHook(CUserCmd* ucmd, IMoveHelper* moveHelper)
