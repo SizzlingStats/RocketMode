@@ -13,7 +13,6 @@ namespace EntityHelpers
 {
     // Datamaps
     int GetDatamapVarOffset(datamap_t* pDatamap, const char* szVarName);
-    int GetDatamapVarOffsetFromEnt(CBaseEntity* pEntity, const char* szVarName);
 
     // Netprops
     // Call this after manually editing a net prop

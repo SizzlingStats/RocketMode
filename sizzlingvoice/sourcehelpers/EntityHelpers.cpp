@@ -39,16 +39,6 @@ int EntityHelpers::GetDatamapVarOffset(datamap_t* pDatamap, const char* szVarNam
     return 0;
 }
 
-int EntityHelpers::GetDatamapVarOffsetFromEnt(CBaseEntity* pEntity, const char* szVarName)
-{
-    if (pEntity)
-    {
-        datamap_t* pDatamap = pEntity->GetDataDescMap();
-        return GetDatamapVarOffset(pDatamap, szVarName);
-    }
-    return 0;
-}
-
 void EntityHelpers::FullStateChanged(edict_t* edict, IVEngineServer* engineServer)
 {
     edict->m_fStateFlags |= (FL_EDICT_CHANGED | FL_FULL_EDICT_CHANGED);
