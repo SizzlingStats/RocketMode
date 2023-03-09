@@ -18,7 +18,7 @@
 #include "sourcesdk/engine/gl_model_private.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
 #include "sourcesdk/game/server/entitylist.h"
-#include "sourcehelpers/NetPropHelpers.h"
+#include "sourcehelpers/EntityHelpers.h"
 #include "sourcehelpers/StaticPropMgr.h"
 #include "sourcehelpers/ValveMemAlloc.h"
 #include "VTableHook.h"
@@ -352,8 +352,8 @@ void ServerPlugin::LevelInit(char const* pMapName)
 
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
-    //NetPropHelpers::PrintAllServerClassTables(mServerGameDll);
-    //NetPropHelpers::PrintServerClassTables(mServerGameDll, "CSprite");
+    //EntityHelpers::PrintAllServerClassTables(mServerGameDll);
+    //EntityHelpers::PrintServerClassTables(mServerGameDll, "CTFProjectile_Rocket");
 
     const int numStaticProps = mStaticPropMgr->m_StaticProps.m_Size;
     for (int i = 0; i < numStaticProps; ++i)

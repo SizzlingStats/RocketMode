@@ -1,9 +1,7 @@
 
 #include "RocketMode.h"
 
-#include "sourcehelpers/DatamapHelpers.h"
-#include "sourcehelpers/EdictChangeHelpers.h"
-#include "sourcehelpers/NetPropHelpers.h"
+#include "sourcehelpers/EntityHelpers.h"
 
 #include "sourcesdk/common/netmessages.h"
 #include "sourcesdk/game/server/baseentity.h"
@@ -112,37 +110,37 @@ void RocketMode::LevelInit(const char* pMapName)
 
         if (!sClassnameOffset)
         {
-            sClassnameOffset = DatamapHelpers::GetDatamapVarOffset(datamap, "m_iClassname");
+            sClassnameOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iClassname");
             assert(sClassnameOffset > 0);
         }
         if (!sOwnerEntityOffset)
         {
-            sOwnerEntityOffset = DatamapHelpers::GetDatamapVarOffset(datamap, "m_hOwnerEntity");
+            sOwnerEntityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_hOwnerEntity");
             assert(sOwnerEntityOffset > 0);
         }
         if (!sfFlagsOffset)
         {
-            sfFlagsOffset = DatamapHelpers::GetDatamapVarOffset(datamap, "m_fFlags");
+            sfFlagsOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_fFlags");
             assert(sfFlagsOffset > 0);
         }
         if (!seFlagsOffset)
         {
-            seFlagsOffset = DatamapHelpers::GetDatamapVarOffset(datamap, "m_iEFlags");
+            seFlagsOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iEFlags");
             assert(seFlagsOffset > 0);
         }
         if (!sLocalVelocityOffset)
         {
-            sLocalVelocityOffset = DatamapHelpers::GetDatamapVarOffset(datamap, "m_vecVelocity");
+            sLocalVelocityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_vecVelocity");
             assert(sLocalVelocityOffset > 0);
         }
         if (!sAngRotationOffset)
         {
-            sAngRotationOffset = DatamapHelpers::GetDatamapVarOffset(datamap, "m_angRotation");
+            sAngRotationOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_angRotation");
             assert(sAngRotationOffset > 0);
         }
         if (!sAngVelocityOffset)
         {
-            sAngVelocityOffset = DatamapHelpers::GetDatamapVarOffset(datamap, "m_vecAngVelocity");
+            sAngVelocityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_vecAngVelocity");
             assert(sAngVelocityOffset > 0);
         }
 
@@ -253,7 +251,7 @@ void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
 
         assert(sfFlagsOffset > 0);
         *(int*)((char*)ownerEnt + sfFlagsOffset) |= FL_ATCONTROLS;
-        EdictChangeHelpers::StateChanged(ownerEdict, sfFlagsOffset, mVEngineServer);
+        EntityHelpers::StateChanged(ownerEdict, sfFlagsOffset, mVEngineServer);
     }
 }
 
@@ -312,7 +310,7 @@ void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
 
         assert(sfFlagsOffset > 0);
         *(int*)((char*)ownerEnt + sfFlagsOffset) &= ~FL_ATCONTROLS;
-        EdictChangeHelpers::StateChanged(ownerEdict, sfFlagsOffset, mVEngineServer);
+        EntityHelpers::StateChanged(ownerEdict, sfFlagsOffset, mVEngineServer);
     }
 }
 
@@ -328,13 +326,13 @@ bool RocketMode::ModifyRocketAngularPrecision()
         return false;
     }
 
-    mTFBaseRocketClass = NetPropHelpers::GetServerClass(mServerGameDll, "CTFBaseRocket");
+    mTFBaseRocketClass = EntityHelpers::GetServerClass(mServerGameDll, "CTFBaseRocket");
     if (!mTFBaseRocketClass)
     {
         return false;
     }
 
-    SendProp* angRotationProp = NetPropHelpers::GetProp(mTFBaseRocketClass, "DT_TFBaseRocket", "m_angRotation");
+    SendProp* angRotationProp = EntityHelpers::GetProp(mTFBaseRocketClass, "DT_TFBaseRocket", "m_angRotation");
     if (!angRotationProp)
     {
         return false;
