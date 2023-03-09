@@ -423,7 +423,7 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
     const bool up = (ucmd->buttons & IN_FORWARD) != 0;
     const bool down = (ucmd->buttons & IN_BACK) != 0;
 
-    const float turnspeed = 100.0f;
+    const float turnspeed = 150.0f;
 
     QAngle angVel;
     angVel.Init();
