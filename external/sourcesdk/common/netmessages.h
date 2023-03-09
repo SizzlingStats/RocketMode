@@ -32,6 +32,18 @@ public:
     uint64 m_xuid;
 };
 
+class SVC_SendTable// : public CNetMessage
+{
+public:
+    static bool WriteToBuffer(bf_write& buffer, bool bNeedsDecoder, const bf_write& dataOut);
+};
+
+class SVC_ClassInfo// : public CNetMessage
+{
+public:
+    static bool WriteToBuffer(bf_write& buffer, bool bCreateOnClient);
+};
+
 class SVC_VoiceData : public CNetMessage
 {
 public:

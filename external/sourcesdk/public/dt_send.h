@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include "dt_common.h"
+
 class SendTable;
 class RecvProp;
 enum SendPropType;
@@ -17,6 +19,11 @@ public:
     SendTable* GetDataTable() const { return m_pDataTable; }
     int GetOffset() const { return m_Offset; }
     const char* GetName() const { return m_pVarName; }
+    int SendProp::GetFlags() const { return m_Flags; }
+    bool IsExcludeProp() const { return (m_Flags & SPROP_EXCLUDE) != 0; }
+    char const* GetExcludeDTName() const { return m_pExcludeDTName; }
+    SendPropType SendProp::GetType() const { return m_Type; }
+    int SendProp::GetNumElements() const { return m_nElements; }
 
 public:
     RecvProp* m_pMatchingRecvProp;	// This is temporary and only used while precalculating
@@ -60,6 +67,8 @@ public:
     const char* GetName() const { return m_pNetTableName; }
     SendProp* GetProp(int i) const { return &m_pProps[i]; }
     int GetNumProps() const { return m_nProps; }
+    void SetWriteFlag(bool bHasBeenWritten) { m_bHasBeenWritten = bHasBeenWritten; }
+    bool GetWriteFlag() const { return m_bHasBeenWritten; }
 
 public:
     SendProp* m_pProps;

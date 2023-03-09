@@ -4,6 +4,31 @@
 #include "../engine/net.h"
 #include "../public/const.h"
 
+bool SVC_SendTable::WriteToBuffer(bf_write& buffer, bool bNeedsDecoder, const bf_write& dataOut)
+{
+    const int length = dataOut.GetNumBitsWritten();
+    assert(length <= 0x7FFF);
+
+    buffer.WriteUBitLong(svc_SendTable, NETMSG_TYPE_BITS);
+    buffer.WriteOneBit(bNeedsDecoder ? 1 : 0);
+    buffer.WriteShort(length);
+    buffer.WriteBits(dataOut.GetData(), length);
+
+    return !buffer.IsOverflowed();
+}
+
+bool SVC_ClassInfo::WriteToBuffer(bf_write& buffer, bool bCreateOnClient)
+{
+    assert(bCreateOnClient);
+
+    const int numServerClasses = 0;
+    buffer.WriteUBitLong(svc_ClassInfo, NETMSG_TYPE_BITS);
+    buffer.WriteShort(numServerClasses);
+    buffer.WriteOneBit(bCreateOnClient ? 1 : 0);
+
+    return !buffer.IsOverflowed();
+}
+
 // Only need to implement WriteToBuffer, IsReliable, and constructor.
 // Can't get around this unless I get a handle to an allocated SVC_VoiceData.
 SVC_VoiceData::SVC_VoiceData() :

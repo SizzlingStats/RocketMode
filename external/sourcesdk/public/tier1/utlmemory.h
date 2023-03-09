@@ -27,6 +27,9 @@ public:
     // Grows the memory, so that at least allocated + num elements are allocated
     void Grow(int num = 1);
 
+    // Makes sure we've got at least this much memory
+    void EnsureCapacity(int num);
+
     // is the memory externally allocated?
     bool IsExternallyAllocated() const { return m_nGrowSize < 0; }
 
@@ -146,5 +149,40 @@ void CUtlMemory<T, I>::Grow(int num)
         MEM_ALLOC_CREDIT_CLASS();
         m_pMemory = (T*)g_pMemAlloc->Alloc(m_nAllocationCount * sizeof(T));
         Assert(m_pMemory);
+    }
+}
+
+//-----------------------------------------------------------------------------
+// Makes sure we've got at least this much memory
+//-----------------------------------------------------------------------------
+template< class T, class I >
+inline void CUtlMemory<T, I>::EnsureCapacity(int num)
+{
+    if (m_nAllocationCount >= num)
+        return;
+
+    if (IsExternallyAllocated())
+    {
+        // Can't grow a buffer whose memory was externally allocated 
+        Assert(0);
+        return;
+    }
+
+    UTLMEMORY_TRACK_FREE();
+
+    m_nAllocationCount = num;
+
+    UTLMEMORY_TRACK_ALLOC();
+
+    extern IMemAlloc* g_pMemAlloc;
+    if (m_pMemory)
+    {
+        MEM_ALLOC_CREDIT_CLASS();
+        m_pMemory = (T*)g_pMemAlloc->Realloc(m_pMemory, m_nAllocationCount * sizeof(T));
+    }
+    else
+    {
+        MEM_ALLOC_CREDIT_CLASS();
+        m_pMemory = (T*)g_pMemAlloc->Alloc(m_nAllocationCount * sizeof(T));
     }
 }
