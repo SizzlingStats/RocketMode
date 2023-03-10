@@ -390,17 +390,26 @@ void ServerPlugin::LevelShutdown()
 
 static const INetMessage* GetCLCVoiceData(INetChannel* channel)
 {
-    //channel->RegisterMessage(nullptr);
-
-#ifdef SDK_COMPAT
-    constexpr int NetMessagesOffset = 9228;
-#else
-    constexpr int NetMessagesOffset = 9000;
-#endif
-    CUtlVector<INetMessage*>* pNetMessages = ByteOffsetFromPointer<CUtlVector<INetMessage*>*>(channel, NetMessagesOffset);
-    for (int i = 0; i < pNetMessages->m_Size; ++i)
+    // excerpt from CNetChan. Used so we can get to m_NetMessages
+    struct CNetChanHack
     {
-        const INetMessage* msg = pNetMessages->m_pElements[i];
+        INetChannelHandler* m_MessageHandler;   // who registers and processes messages
+        CUtlVector<INetMessage*> m_NetMessages; // list of registered message
+    };
+
+    INetChannelHandler* messageHandler = channel->GetMsgHandler();
+    INetChannelHandler** searchPtr = reinterpret_cast<INetChannelHandler**>(channel);
+    while (*searchPtr != messageHandler)
+    {
+        searchPtr += 1;
+    }
+    CNetChanHack* hack = reinterpret_cast<CNetChanHack*>(searchPtr);
+    
+    const int numMessages = hack->m_NetMessages.m_Size;
+    INetMessage** messages = hack->m_NetMessages.m_pElements;
+    for (int i = 0; i < numMessages; ++i)
+    {
+        const INetMessage* msg = messages[i];
         const int type = msg->GetType();
         if (type == clc_VoiceData)
         {
