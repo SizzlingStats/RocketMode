@@ -6,6 +6,11 @@
 class CBaseHandle
 {
 public:
+    CBaseHandle() :
+        m_Index(INVALID_EHANDLE_INDEX)
+    {
+    }
+
     void Term()
     {
         m_Index = INVALID_EHANDLE_INDEX;
