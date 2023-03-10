@@ -2,12 +2,15 @@
 #include "EntityHelpers.h"
 
 #include "sourcesdk/game/server/baseentity.h"
+#include "sourcesdk/public/basehandle.h"
 #include "sourcesdk/public/datamap.h"
 #include "sourcesdk/public/dt_send.h"
 #include "sourcesdk/public/edict.h"
 #include "sourcesdk/public/eiface.h"
 #include "sourcesdk/public/server_class.h"
+#include "sourcesdk/public/toolframework/itoolentity.h"
 
+#include <assert.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -187,6 +190,15 @@ void EntityHelpers::StateChanged(edict_t* edict, unsigned short offset, IVEngine
     }
 }
 
+void EntityHelpers::StateChanged(CBaseEntity* ent, unsigned short offset, IServerGameEnts* gameEnts, IVEngineServer* engineServer)
+{
+    edict_t* edict = gameEnts->BaseEntityToEdict(ent);
+    if (edict)
+    {
+        StateChanged(edict, offset, engineServer);
+    }
+}
+
 static const char* sPropTypeNames[7] =
 {
     "int", "float", "vector", "vectorxy", "string", "array", "datatable"
@@ -329,4 +341,55 @@ SendProp* EntityHelpers::GetProp(ServerClass* serverClass, const char* tableName
         }
     }
     return nullptr;
+}
+
+CBaseEntity* EntityHelpers::HandleToEnt(const CBaseHandle& handle, IServerTools* serverTools)
+{
+    CBaseEntity* ent = serverTools->GetBaseEntityByEntIndex(handle.GetEntryIndex());
+    if (ent && (ent->GetRefEHandle() == handle))
+    {
+        return ent;
+    }
+    return nullptr;
+}
+
+int BaseEntityHelpers::sClassnameOffset;
+int BaseEntityHelpers::sOwnerEntityOffset;
+int BaseEntityHelpers::sFFlagsOffset;
+int BaseEntityHelpers::sEFlagsOffset;
+int BaseEntityHelpers::sLocalVelocityOffset;
+int BaseEntityHelpers::sAngRotationOffset;
+int BaseEntityHelpers::sAngVelocityOffset;
+
+void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
+{
+    if (sClassnameOffset > 0)
+    {
+        // already initialized
+        return;
+    }
+
+    datamap_t* datamap = ent->GetDataDescMap();
+    assert(datamap);
+
+    sClassnameOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iClassname");
+    assert(sClassnameOffset > 0);
+
+    sOwnerEntityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_hOwnerEntity");
+    assert(sOwnerEntityOffset > 0);
+
+    sFFlagsOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_fFlags");
+    assert(sFFlagsOffset > 0);
+
+    sEFlagsOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iEFlags");
+    assert(sEFlagsOffset > 0);
+
+    sLocalVelocityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_vecVelocity");
+    assert(sLocalVelocityOffset > 0);
+
+    sAngRotationOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_angRotation");
+    assert(sAngRotationOffset > 0);
+
+    sAngVelocityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_vecAngVelocity");
+    assert(sAngVelocityOffset > 0);
 }
