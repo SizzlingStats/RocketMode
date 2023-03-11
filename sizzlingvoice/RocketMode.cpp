@@ -38,10 +38,9 @@ void AngleVectors(const QAngle& angles, Vector& forward)
     const float yaw = DegToRad(angles.y);
     const float pitch = DegToRad(angles.x);
 
-    const float sy = Math::Sin(yaw);
-    const float cy = Math::Cos(yaw);
-    const float sp = Math::Sin(pitch);
-    const float cp = Math::Cos(pitch);
+    float sy, cy, sp, cp;
+    Math::SinCos(yaw, &sy, &cy);
+    Math::SinCos(pitch, &sp, &cp);
 
     forward.x = cp * cy;
     forward.y = cp * sy;

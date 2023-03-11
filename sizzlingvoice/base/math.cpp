@@ -21,6 +21,15 @@ namespace Math
         return vec.extract(0);
     }
 
+    FORCENOINLINE void SinCos(float x, float* outSin, float* outCos)
+    {
+        Vec4f vecSin, vecCos;
+        vecSin.load_partial(1, &x);
+        vecSin = sincos(&vecCos, vecSin);
+        *outSin = vecSin.extract(0);
+        *outCos = vecCos.extract(0);
+    }
+
     FORCENOINLINE float Sqrt(float x)
     {
         Vec4f vec;

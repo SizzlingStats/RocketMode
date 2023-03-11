@@ -8,6 +8,7 @@ namespace Math
 {
     float Cos(float x);
     float Sin(float x);
+    void SinCos(float x, float* outSin, float* outCos);
     float Sqrt(float x);
 
     template<typename T>

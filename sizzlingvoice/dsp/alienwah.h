@@ -181,8 +181,10 @@ public:
     {
         if (mState.t++ % mParams.lfoSkipSamples == 0)
         {
-            float lfo = (1.0f + Math::Cos(mState.t * mState.lfoskip + mParams.startphase));
-            mState.c = Complex1f(Math::Cos(lfo) * mParams.feedback, Math::Sin(lfo) * mParams.feedback);
+            const float lfo = (1.0f + Math::Cos(mState.t * mState.lfoskip + mParams.startphase));
+            float lfoSin, lfoCos;
+            Math::SinCos(lfo, &lfoSin, &lfoCos);
+            mState.c = Complex1f(lfoCos, lfoSin) * mParams.feedback;
         }
         Complex1f outc = mState.c * mState.delaybuf[mState.k] + (1.0f - mParams.feedback) * sample;
         mState.delaybuf[mState.k] = outc;
