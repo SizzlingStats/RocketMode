@@ -156,9 +156,7 @@ void RocketMode::ClientDisconnect(edict_t* pEntity)
     // Clear out rocket and owner here just to make things less error prone.
     const int clientIndex = pEntity->m_EdictIndex - 1;
     assert(clientIndex < MAX_PLAYERS);
-    State& state = mClientStates[clientIndex];
-    state.rocket.Term();
-    state.owner.Term();
+    mClientStates[clientIndex].Reset();
 }
 
 void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
@@ -208,13 +206,12 @@ void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
         State& state = mClientStates[ownerClientIndex];
         state.rocket = pEntity->GetRefEHandle();
         state.owner = ownerEntHandle;
+        state.initialSpeed = 0.0f;
 
         CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
         assert(ownerEnt);
 
         BaseEntityHelpers::AddFlag(ownerEnt, FL_ATCONTROLS, mServerGameEnts, mVEngineServer);
-
-        state.initialSpeed = 0.0f;
     }
 }
 
@@ -261,8 +258,7 @@ void RocketMode::OnEntityDeleted(CBaseEntity* rocketEnt)
     }
 
     // Clear state, reset view
-    state.rocket.Term();
-    state.owner.Term();
+    state.Reset();
 
     IClient* client = mServer->GetClient(ownerClientIndex);
     if (client && ClientHelpers::SetViewEntity(client, nullptr))
@@ -358,12 +354,18 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
     ucmd->weaponselect = 0;
     ucmd->weaponsubtype = 0;
 
+    if (state.initialSpeed == 0.0f)
+    {
+        const Vector& localVelocity = BaseEntityHelpers::GetLocalVelocity(rocketEnt);
+        state.initialSpeed = VectorLength(localVelocity);
+    }
+
     const bool left = (ucmd->buttons & IN_MOVELEFT) != 0;
     const bool right = (ucmd->buttons & IN_MOVERIGHT) != 0;
     const bool up = (ucmd->buttons & IN_FORWARD) != 0;
     const bool down = (ucmd->buttons & IN_BACK) != 0;
 
-    const float turnspeed = 150.0f;
+    constexpr float turnspeed = 150.0f;
 
     QAngle angVel;
     angVel.Init();
@@ -391,12 +393,6 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
     // m_angRotation += m_vecAngVelocity * gpGlobals->frametime;
 
     // Update the local velocity assuming our angular velocity to avoid a frame of delay.
-    
-    if (state.initialSpeed == 0.0f)
-    {
-        const Vector& localVelocity = BaseEntityHelpers::GetLocalVelocity(rocketEnt);
-        state.initialSpeed = VectorLength(localVelocity);
-    }
 
     // calculate new angRotation, but don't set it. PhysicsToss will do the same calculation as here.
     QAngle angRotation = BaseEntityHelpers::GetLocalRotation(rocketEnt);

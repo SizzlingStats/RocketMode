@@ -66,9 +66,16 @@ private:
 
     struct State
     {
+        void Reset()
+        {
+            rocket.Term();
+            owner.Term();
+            initialSpeed = 0.0f;
+        }
+
         CBaseHandle rocket;
         CBaseHandle owner;
-        float initialSpeed;
+        float initialSpeed = 0.0f;
     };
     State mClientStates[MAX_PLAYERS];
 };
