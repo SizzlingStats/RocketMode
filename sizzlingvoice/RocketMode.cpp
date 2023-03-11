@@ -215,15 +215,20 @@ void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
     }
 }
 
-void RocketMode::OnEntityDeleted(CBaseEntity* rocketEnt)
+void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
 {
     // if not "tf_projectile_rocket"
-    const string_t classname = BaseEntityHelpers::GetClassname(rocketEnt);
+    const string_t classname = BaseEntityHelpers::GetClassname(pEntity);
     if (!tf_projectile_rocket || (classname != tf_projectile_rocket))
     {
         return;
     }
 
+    DetachFromRocket(pEntity);
+}
+
+void RocketMode::DetachFromRocket(CBaseEntity* rocketEnt)
+{
     // if no owner
     CBaseHandle owner = BaseEntityHelpers::GetOwnerEntity(rocketEnt);
     if (!owner.IsValid())
@@ -345,6 +350,13 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
     CBaseEntity* rocketEnt = EntityHelpers::HandleToEnt(state.rocket, mServerTools);
     if (!rocketEnt)
     {
+        return;
+    }
+
+    const bool attack2 = (ucmd->buttons & IN_ATTACK2);
+    if (attack2)
+    {
+        DetachFromRocket(rocketEnt);
         return;
     }
 

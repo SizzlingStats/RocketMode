@@ -43,6 +43,8 @@ public:
     void OnEntityDeleted(CBaseEntity* pEntity);
 
 private:
+    void DetachFromRocket(CBaseEntity* rocketEnt);
+
     bool ModifyRocketAngularPrecision();
 
     bool PlayerRunCommandHook(CUserCmd* ucmd, IMoveHelper* moveHelper);
