@@ -26,6 +26,7 @@
 
 string_t RocketMode::tf_projectile_rocket;
 VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> RocketMode::sPlayerRunCommandHook;
+VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> RocketMode::sSetOwnerEntityHook;
 
 inline float VectorLength(const Vector& v)
 {
@@ -98,6 +99,7 @@ bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn game
 
 void RocketMode::Shutdown()
 {
+    sSetOwnerEntityHook.Unhook();
     sPlayerRunCommandHook.Unhook();
 }
 
@@ -107,6 +109,15 @@ void RocketMode::LevelInit(const char* pMapName)
     if (ent)
     {
         tf_projectile_rocket = BaseEntityHelpers::GetClassname(ent);
+        if (!sSetOwnerEntityHook.GetThisPtr())
+        {
+#ifdef SDK_COMPAT
+            constexpr int Offset = ;
+#else
+            constexpr int Offset = 18;
+#endif
+            sSetOwnerEntityHook.Hook(ent, Offset, this, &RocketMode::SetOwnerEntityHook);
+        }
         mServerTools->RemoveEntityImmediate(ent);
     }
 }
@@ -412,4 +423,21 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
     newVelocity *= state.initialSpeed * 0.5f;
 
     BaseEntityHelpers::SetLocalVelocity(rocketEnt, newVelocity);
+}
+
+void RocketMode::SetOwnerEntityHook(CBaseEntity* owner)
+{
+    RocketMode* thisPtr = sPlayerRunCommandHook.GetThisPtr();
+    CBaseEntity* rocket = reinterpret_cast<CBaseEntity*>(this);
+    thisPtr->SetOwnerEntity(rocket, owner);
+    sSetOwnerEntityHook.CallOriginalFn(this, owner);
+}
+
+void RocketMode::SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* owner)
+{
+    CBaseHandle ownerHandle = BaseEntityHelpers::GetOwnerEntity(rocket);
+    if (ownerHandle != owner->GetRefEHandle())
+    {
+        DetachFromRocket(rocket);
+    }
 }

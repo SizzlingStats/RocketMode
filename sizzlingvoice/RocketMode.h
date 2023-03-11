@@ -50,9 +50,13 @@ private:
     bool PlayerRunCommandHook(CUserCmd* ucmd, IMoveHelper* moveHelper);
     void PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelper* moveHelper);
 
+    void SetOwnerEntityHook(CBaseEntity* owner);
+    void SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* owner);
+
 private:
     static string_t tf_projectile_rocket;
     static VTableHook<decltype(&PlayerRunCommandHook)> sPlayerRunCommandHook;
+    static VTableHook<decltype(&SetOwnerEntityHook)> sSetOwnerEntityHook;
 
 private:
     IVEngineServer* mVEngineServer;
