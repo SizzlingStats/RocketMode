@@ -210,6 +210,11 @@ void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
     if (ClientHelpers::SetViewEntity(client, edict))
     {
         State& state = mClientStates[ownerClientIndex];
+        if (CBaseEntity* rocketEnt = EntityHelpers::HandleToEnt(state.rocket, mServerTools))
+        {
+            BaseEntityHelpers::SetLocalAngularVelocity(rocketEnt, QAngle(0.0f, 0.0f, 0.0f));
+        }
+
         state.rocket = pEntity->GetRefEHandle();
         state.owner = ownerEntHandle;
         state.initialSpeed = 0.0f;
@@ -261,12 +266,14 @@ void RocketMode::DetachFromRocket(CBaseEntity* rocketEnt)
         return;
     }
 
-    // if the owner changed
+    // if the owner changed. Should be handled by SetOwnerEntityHook.
+    // This check is for safety.
     if (state.owner != owner)
     {
-        // Pyro deflected soldier rocket.
         return;
     }
+
+    BaseEntityHelpers::SetLocalAngularVelocity(rocketEnt, QAngle(0.0f, 0.0f, 0.0f));
 
     // Clear state, reset view
     state.Reset();

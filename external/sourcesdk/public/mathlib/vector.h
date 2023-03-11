@@ -9,6 +9,13 @@ class QAngle
 {
 public:
     float x, y, z;
+    QAngle()
+    {
+    }
+    QAngle(float X, float Y, float Z)
+    {
+        x = X; y = Y; z = Z;
+    }
     void Init( void )
     {
         x = y = z = 0.0f;
