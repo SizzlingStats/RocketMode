@@ -23,6 +23,7 @@
 
 #include "base/math.h"
 #include "sourcehelpers/SendTablesFix.h"
+#include <string.h>
 
 string_t RocketMode::tf_projectile_rocket;
 VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> RocketMode::sPlayerRunCommandHook;
@@ -55,6 +56,7 @@ RocketMode::RocketMode() :
     mCvar(nullptr),
     mServerGameEnts(nullptr),
     mGlobals(nullptr),
+    mGameEventManager(nullptr),
     mSendTables(nullptr),
     mTFBaseRocketClass(nullptr),
     mClientStates()
@@ -82,8 +84,14 @@ bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn game
     {
         mGlobals = playerInfoManager->GetGlobalVars();
     }
+    mGameEventManager = (IGameEventManager2*)interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER2, nullptr);
 
-    if (!mVEngineServer || !mServer || !mServerTools || !mCvar || !mServerGameEnts || !mGlobals)
+    if (!mVEngineServer || !mServer || !mServerTools || !mCvar || !mServerGameEnts || !mGlobals || !mGameEventManager)
+    {
+        return false;
+    }
+
+    if (!mGameEventManager->AddListener(this, "player_death", true))
     {
         return false;
     }
@@ -98,6 +106,10 @@ bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn game
 
 void RocketMode::Shutdown()
 {
+    if (mGameEventManager)
+    {
+        mGameEventManager->RemoveListener(this);
+    }
     sSetOwnerEntityHook.Unhook();
     sPlayerRunCommandHook.Unhook();
 }
@@ -445,5 +457,27 @@ void RocketMode::SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* owner)
     if (ownerHandle != owner->GetRefEHandle())
     {
         DetachFromRocket(rocket);
+    }
+}
+
+void RocketMode::IGameEventListener2_Destructor()
+{
+}
+
+void RocketMode::FireGameEvent(IGameEvent* event)
+{
+    assert(!strcmp(event->GetName(), "player_death"));
+
+    // from CTFGameRules::DeathNotice
+    const int victimEntIndex = event->GetInt("victim_entindex", -1);
+    if (victimEntIndex > 0 && victimEntIndex < MAX_PLAYERS)
+    {
+        const int victimClientIndex = victimEntIndex - 1;
+        State& state = mClientStates[victimClientIndex];
+        if (state.rocket.IsValid())
+        {
+            CBaseEntity* rocket = EntityHelpers::HandleToEnt(state.rocket, mServerTools);
+            DetachFromRocket(rocket);
+        }
     }
 }

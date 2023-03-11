@@ -2,6 +2,7 @@
 #pragma once
 
 #include "sourcesdk/game/shared/shareddefs.h"
+#include "sourcesdk/public/igameevents.h"
 #include "sourcesdk/public/string_t.h"
 #include "sourcesdk/public/basehandle.h"
 #include "VTableHook.h"
@@ -22,7 +23,7 @@ class IConVar;
 class ServerClass;
 class IServerGameEnts;
 
-class RocketMode
+class RocketMode : public IGameEventListener2
 {
 public:
     RocketMode();
@@ -53,6 +54,9 @@ private:
     void SetOwnerEntityHook(CBaseEntity* owner);
     void SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* owner);
 
+    virtual void IGameEventListener2_Destructor() override;
+    virtual void FireGameEvent(IGameEvent* event) override;
+
 private:
     static string_t tf_projectile_rocket;
     static VTableHook<decltype(&PlayerRunCommandHook)> sPlayerRunCommandHook;
@@ -66,6 +70,7 @@ private:
     ICvar* mCvar;
     IServerGameEnts* mServerGameEnts;
     CGlobalVars* mGlobals;
+    IGameEventManager2* mGameEventManager;
 
     IConVar* mSendTables;
     ServerClass* mTFBaseRocketClass;
