@@ -4,7 +4,6 @@
 #include "sourcehelpers/ClientHelpers.h"
 #include "sourcehelpers/EntityHelpers.h"
 
-#include "sourcesdk/common/netmessages.h"
 #include "sourcesdk/game/server/baseentity.h"
 #include "sourcesdk/game/server/iplayerinfo.h"
 #include "sourcesdk/game/shared/in_buttons.h"
@@ -18,10 +17,7 @@
 #include "sourcesdk/public/iclient.h"
 #include "sourcesdk/public/icvar.h"
 #include "sourcesdk/public/iserver.h"
-#include "sourcesdk/public/iservernetworkable.h"
-#include "sourcesdk/public/iserverunknown.h"
 #include "sourcesdk/public/mathlib/mathlib.h"
-#include "sourcesdk/public/server_class.h"
 #include "sourcesdk/public/tier1/convar.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
 
