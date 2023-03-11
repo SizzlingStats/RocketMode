@@ -356,6 +356,7 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
     // Clients will predict incorrectly and flicker the hud a bit.
     // Can't do anything about that.
     ucmd->weaponselect = 0;
+    ucmd->weaponsubtype = 0;
 
     const bool left = (ucmd->buttons & IN_MOVELEFT) != 0;
     const bool right = (ucmd->buttons & IN_MOVERIGHT) != 0;
