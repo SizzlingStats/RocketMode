@@ -211,7 +211,7 @@ void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
         CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
         assert(ownerEnt);
 
-        BaseEntityHelpers::AddFlag(ownerEnt, FL_ATCONTROLS, mServerGameEnts, mVEngineServer);
+        BaseEntityHelpers::AddFlag(ownerEnt, FL_FROZEN, mServerGameEnts, mVEngineServer);
     }
 }
 
@@ -266,7 +266,7 @@ void RocketMode::OnEntityDeleted(CBaseEntity* rocketEnt)
         CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
         assert(ownerEnt);
 
-        BaseEntityHelpers::RemoveFlag(ownerEnt, FL_ATCONTROLS, mServerGameEnts, mVEngineServer);
+        BaseEntityHelpers::RemoveFlag(ownerEnt, FL_FROZEN, mServerGameEnts, mVEngineServer);
     }
 }
 
