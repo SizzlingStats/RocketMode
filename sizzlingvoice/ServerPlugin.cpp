@@ -33,6 +33,7 @@
 #include "base/math.h"
 #include "sourcehelpers/CVarHelper.h"
 #include "sourcehelpers/ClientHelpers.h"
+#include "sourcehelpers/Debug.h"
 #include "WavFile.h"
 #include "RocketMode.h"
 #include <string.h>
@@ -222,6 +223,8 @@ ServerPlugin::ServerPlugin() :
 
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory)
 {
+    Debug::Initialize();
+
     if (!ValveMemAlloc::Init())
     {
         return false;

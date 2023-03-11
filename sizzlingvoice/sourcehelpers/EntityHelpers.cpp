@@ -1,5 +1,6 @@
 
 #include "EntityHelpers.h"
+#include "Debug.h"
 
 #include "sourcesdk/game/server/baseentity.h"
 #include "sourcesdk/public/basehandle.h"
@@ -12,7 +13,6 @@
 
 #include <assert.h>
 #include <string.h>
-#include <stdio.h>
 
 template<typename T, int N>
 constexpr int ArrayLength(const T(&)[N]) { return N; }
@@ -92,7 +92,7 @@ int EntityHelpers::GetDatamapVarOffset(datamap_t* pDatamap, const char* szVarNam
 
 static void PrintDatamapRecursive(datamap_t* datamap, StringBuilder<128>& spacing)
 {
-    printf("%s%s\n", spacing.c_str(), datamap->dataClassName);
+    Debug::Msg("%s%s\n", spacing.c_str(), datamap->dataClassName);
     spacing.Append("  |");
 
     if (datamap->baseMap)
@@ -109,7 +109,7 @@ static void PrintDatamapRecursive(datamap_t* datamap, StringBuilder<128>& spacin
         {
             const char* name = pField->fieldName;
             const int offset = pField->fieldOffset[TD_OFFSET_NORMAL];
-            printf("%s%s, Offset: %i (%i bytes)\n", spacing.c_str(), name, offset, pField->fieldSizeInBytes);
+            Debug::Msg("%s%s, Offset: %i (%i bytes)\n", spacing.c_str(), name, offset, pField->fieldSizeInBytes);
 
             if (pField->td)
             {
@@ -126,7 +126,7 @@ void EntityHelpers::PrintDatamap(datamap_t* datamap)
 {
     StringBuilder<128> spacing;
     PrintDatamapRecursive(datamap, spacing);
-    printf("\n");
+    Debug::Msg("\n");
 }
 
 void EntityHelpers::FullStateChanged(edict_t* edict, IVEngineServer* engineServer)
@@ -206,7 +206,7 @@ static const char* sPropTypeNames[7] =
 
 static void RecurseServerTable(SendTable* pTable, StringBuilder<128>& spacing)
 {
-    printf("%s%s\n", spacing.c_str(), pTable->GetName());
+    Debug::Msg("%s%s\n", spacing.c_str(), pTable->GetName());
     spacing.Append("  |");
 
     int num = pTable->GetNumProps();
@@ -220,7 +220,7 @@ static void RecurseServerTable(SendTable* pTable, StringBuilder<128>& spacing)
             typeString = sPropTypeNames[PropType];
         }
 
-        printf("%s%s, Offset: %i (%s, %i bits)\n",
+        Debug::Msg("%s%s, Offset: %i (%s, %i bits)\n",
             spacing.c_str(), pProp->GetName(), pProp->GetOffset(), typeString, pProp->m_nBits);
 
         SendTable* subTable = pProp->GetDataTable();
@@ -235,14 +235,14 @@ static void RecurseServerTable(SendTable* pTable, StringBuilder<128>& spacing)
 
 static void PrintServerClass(ServerClass* serverclass)
 {
-    printf("%s\n", serverclass->GetName());
+    Debug::Msg("%s\n", serverclass->GetName());
     SendTable* table = serverclass->GetTable();
     if (table)
     {
         StringBuilder<128> spacing;
         spacing.Append("  |");
         RecurseServerTable(table, spacing);
-        printf("\n");
+        Debug::Msg("\n");
     }
 }
 
@@ -372,7 +372,7 @@ void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
     datamap_t* datamap = ent->GetDataDescMap();
     assert(datamap);
 
-    //PrintDatamap(datamap);
+    //EntityHelpers::PrintDatamap(datamap);
 
     sClassnameOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iClassname");
     assert(sClassnameOffset > 0);
