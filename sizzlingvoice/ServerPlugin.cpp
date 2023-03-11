@@ -422,13 +422,13 @@ static const INetMessage* GetCLCVoiceData(INetChannel* channel)
 
 void ServerPlugin::ClientActive(edict_t* pEntity)
 {
-    mRocketMode.ClientActive(pEntity);
-
     const int entIndex = pEntity->m_EdictIndex;
     const int clientIndex = entIndex - 1;
     IClient* client = mServer->GetClient(clientIndex);
 
     ClientHelpers::InitializeOffsets(client, mVEngineServer);
+
+    mRocketMode.ClientActive(pEntity);
 
     INetChannel* netChannel = client->GetNetChannel();
     if (!netChannel)
@@ -479,6 +479,7 @@ PLUGIN_RESULT ServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity,
 
 void ServerPlugin::OnEntityCreated(CBaseEntity* pEntity)
 {
+    BaseEntityHelpers::InitializeOffsets(pEntity);
 }
 
 void ServerPlugin::OnEntitySpawned(CBaseEntity* pEntity)

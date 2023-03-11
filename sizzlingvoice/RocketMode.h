@@ -20,6 +20,7 @@ class CUserCmd;
 class IMoveHelper;
 class IConVar;
 class ServerClass;
+class IServerGameEnts;
 
 class RocketMode
 {
@@ -49,17 +50,7 @@ private:
 
 private:
     static string_t tf_projectile_rocket;
-    static int sClassnameOffset;
-    static int sOwnerEntityOffset;
-    static int sfFlagsOffset;
-    static int seFlagsOffset;
-    static int sLocalVelocityOffset;
-    static int sAngRotationOffset;
-    static int sAngVelocityOffset;
     static VTableHook<decltype(&PlayerRunCommandHook)> sPlayerRunCommandHook;
-
-    static string_t GetClassname(CBaseEntity* ent);
-    static CBaseHandle GetOwnerEntity(CBaseEntity* ent);
 
 private:
     IVEngineServer* mVEngineServer;
@@ -67,6 +58,7 @@ private:
     IServerTools* mServerTools;
     IServerGameDLL* mServerGameDll;
     ICvar* mCvar;
+    IServerGameEnts* mServerGameEnts;
     CGlobalVars* mGlobals;
 
     IConVar* mSendTables;
@@ -74,8 +66,9 @@ private:
 
     struct State
     {
-        CBaseEntity* rocket;
+        CBaseHandle rocket;
         CBaseHandle owner;
+        float initialSpeed;
     };
     State mClientStates[MAX_PLAYERS];
 };

@@ -372,6 +372,8 @@ void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
     datamap_t* datamap = ent->GetDataDescMap();
     assert(datamap);
 
+    //PrintDatamap(datamap);
+
     sClassnameOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iClassname");
     assert(sClassnameOffset > 0);
 

@@ -1,6 +1,7 @@
 
 #include "RocketMode.h"
 
+#include "sourcehelpers/ClientHelpers.h"
 #include "sourcehelpers/EntityHelpers.h"
 
 #include "sourcesdk/common/netmessages.h"
@@ -19,6 +20,7 @@
 #include "sourcesdk/public/iserver.h"
 #include "sourcesdk/public/iservernetworkable.h"
 #include "sourcesdk/public/iserverunknown.h"
+#include "sourcesdk/public/mathlib/mathlib.h"
 #include "sourcesdk/public/server_class.h"
 #include "sourcesdk/public/tier1/convar.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
@@ -27,25 +29,26 @@
 #include "sourcehelpers/SendTablesFix.h"
 
 string_t RocketMode::tf_projectile_rocket;
-int RocketMode::sClassnameOffset;
-int RocketMode::sOwnerEntityOffset;
-int RocketMode::sfFlagsOffset;
-int RocketMode::seFlagsOffset;
-int RocketMode::sLocalVelocityOffset;
-int RocketMode::sAngRotationOffset;
-int RocketMode::sAngVelocityOffset;
 VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> RocketMode::sPlayerRunCommandHook;
 
-string_t RocketMode::GetClassname(CBaseEntity* ent)
+inline float VectorLength(const Vector& v)
 {
-    assert(sClassnameOffset > 0);
-    return *(string_t*)((char*)ent + sClassnameOffset);
+    return Math::Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
 }
 
-CBaseHandle RocketMode::GetOwnerEntity(CBaseEntity* ent)
+void AngleVectors(const QAngle& angles, Vector& forward)
 {
-    assert(sOwnerEntityOffset > 0);
-    return *(CBaseHandle*)((char*)ent + sOwnerEntityOffset);
+    const float yaw = DegToRad(angles.y);
+    const float pitch = DegToRad(angles.x);
+
+    const float sy = Math::Sin(yaw);
+    const float cy = Math::Cos(yaw);
+    const float sp = Math::Sin(pitch);
+    const float cp = Math::Cos(pitch);
+
+    forward.x = cp * cy;
+    forward.y = cp * sy;
+    forward.z = -sp;
 }
 
 RocketMode::RocketMode() :
@@ -54,6 +57,7 @@ RocketMode::RocketMode() :
     mServerTools(nullptr),
     mServerGameDll(nullptr),
     mCvar(nullptr),
+    mServerGameEnts(nullptr),
     mGlobals(nullptr),
     mSendTables(nullptr),
     mTFBaseRocketClass(nullptr),
@@ -75,6 +79,7 @@ bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn game
     mServerTools = (IServerTools*)gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, nullptr);
     mServerGameDll = (IServerGameDLL*)gameServerFactory(INTERFACEVERSION_SERVERGAMEDLL, nullptr);
     mCvar = (ICvar*)interfaceFactory(CVAR_INTERFACE_VERSION, nullptr);
+    mServerGameEnts = (IServerGameEnts*)gameServerFactory(INTERFACEVERSION_SERVERGAMEENTS, nullptr);
 
     IPlayerInfoManager* playerInfoManager = (IPlayerInfoManager*)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, nullptr);
     if (playerInfoManager)
@@ -82,7 +87,7 @@ bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn game
         mGlobals = playerInfoManager->GetGlobalVars();
     }
 
-    if (!mVEngineServer || !mServer || !mServerTools || !mCvar || !mGlobals)
+    if (!mVEngineServer || !mServer || !mServerTools || !mCvar || !mServerGameEnts || !mGlobals)
     {
         return false;
     }
@@ -105,46 +110,7 @@ void RocketMode::LevelInit(const char* pMapName)
     CBaseEntity* ent = mServerTools->CreateEntityByName("tf_projectile_rocket");
     if (ent)
     {
-        datamap_t* datamap = ent->GetDataDescMap();
-        assert(datamap);
-
-        if (!sClassnameOffset)
-        {
-            sClassnameOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iClassname");
-            assert(sClassnameOffset > 0);
-        }
-        if (!sOwnerEntityOffset)
-        {
-            sOwnerEntityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_hOwnerEntity");
-            assert(sOwnerEntityOffset > 0);
-        }
-        if (!sfFlagsOffset)
-        {
-            sfFlagsOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_fFlags");
-            assert(sfFlagsOffset > 0);
-        }
-        if (!seFlagsOffset)
-        {
-            seFlagsOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iEFlags");
-            assert(seFlagsOffset > 0);
-        }
-        if (!sLocalVelocityOffset)
-        {
-            sLocalVelocityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_vecVelocity");
-            assert(sLocalVelocityOffset > 0);
-        }
-        if (!sAngRotationOffset)
-        {
-            sAngRotationOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_angRotation");
-            assert(sAngRotationOffset > 0);
-        }
-        if (!sAngVelocityOffset)
-        {
-            sAngVelocityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_vecAngVelocity");
-            assert(sAngVelocityOffset > 0);
-        }
-
-        tf_projectile_rocket = *(string_t*)((char*)ent + sClassnameOffset);
+        tf_projectile_rocket = BaseEntityHelpers::GetClassname(ent);
         mServerTools->RemoveEntityImmediate(ent);
     }
 }
@@ -191,43 +157,45 @@ void RocketMode::ClientDisconnect(edict_t* pEntity)
     const int clientIndex = pEntity->m_EdictIndex - 1;
     assert(clientIndex < MAX_PLAYERS);
     State& state = mClientStates[clientIndex];
-    state.rocket = nullptr;
+    state.rocket.Term();
     state.owner.Term();
 }
 
 void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
 {
-    const string_t classname = GetClassname(pEntity);
-    if (!tf_projectile_rocket || !classname || (classname != tf_projectile_rocket))
+    // can't assert here because we need an entity spawned in order to
+    // get the value of tf_projectile_rocket in the first place.
+    //assert(tf_projectile_rocket);
+
+    // blazing fast early out if not a tf_projectile_rocket.
+    const string_t classname = BaseEntityHelpers::GetClassname(pEntity);
+    if (!tf_projectile_rocket || (classname != tf_projectile_rocket))
     {
         return;
     }
 
-    IServerNetworkable* networkable = pEntity->GetNetworkable();
-    if (!networkable)
-    {
-        return;
-    }
-
-    edict_t* edict = networkable->GetEdict();
+    // if not networked
+    edict_t* edict = mServerGameEnts->BaseEntityToEdict(pEntity);
     if (!edict)
     {
         return;
     }
 
-    CBaseHandle ownerEntHandle = GetOwnerEntity(pEntity);
+    // if no owner
+    CBaseHandle ownerEntHandle = BaseEntityHelpers::GetOwnerEntity(pEntity);
     if (!ownerEntHandle.IsValid())
     {
         return;
     }
 
+    // if owner isn't a player
     const int ownerEntIndex = ownerEntHandle.GetEntryIndex();
     if (ownerEntIndex <= 0 || ownerEntIndex >= MAX_PLAYERS)
     {
-        // sentries? TODO: check
         return;
     }
 
+    // if owner is a fake client (hltv, bot).
     const int ownerClientIndex = ownerEntIndex - 1;
     IClient* client = mServer->GetClient(ownerClientIndex);
     if (!client || client->IsFakeClient())
@@ -235,51 +203,49 @@ void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
         return;
     }
 
-    SVC_SetView setview;
-    setview.m_nEntityIndex = edict->m_EdictIndex;
-
-    if (client->SendNetMsg(setview, true))
+    if (ClientHelpers::SetViewEntity(client, edict))
     {
         State& state = mClientStates[ownerClientIndex];
-        state.rocket = pEntity;
+        state.rocket = pEntity->GetRefEHandle();
         state.owner = ownerEntHandle;
 
-        edict_t* ownerEdict = mVEngineServer->PEntityOfEntIndex(ownerEntIndex);
         CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
-        assert(ownerEdict);
         assert(ownerEnt);
 
-        assert(sfFlagsOffset > 0);
-        *(int*)((char*)ownerEnt + sfFlagsOffset) |= FL_ATCONTROLS;
-        EntityHelpers::StateChanged(ownerEdict, sfFlagsOffset, mVEngineServer);
+        BaseEntityHelpers::AddFlag(ownerEnt, FL_ATCONTROLS, mServerGameEnts, mVEngineServer);
+
+        state.initialSpeed = 0.0f;
     }
 }
 
-void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
+void RocketMode::OnEntityDeleted(CBaseEntity* rocketEnt)
 {
-    const string_t classname = GetClassname(pEntity);
-    if (!tf_projectile_rocket || !classname || (classname != tf_projectile_rocket))
+    // if not "tf_projectile_rocket"
+    const string_t classname = BaseEntityHelpers::GetClassname(rocketEnt);
+    if (!tf_projectile_rocket || (classname != tf_projectile_rocket))
     {
         return;
     }
 
-    CBaseHandle owner = GetOwnerEntity(pEntity);
+    // if no owner
+    CBaseHandle owner = BaseEntityHelpers::GetOwnerEntity(rocketEnt);
     if (!owner.IsValid())
     {
         return;
     }
 
+    // if owner is not a player
     const int ownerEntIndex = owner.GetEntryIndex();
     if (ownerEntIndex <= 0 || ownerEntIndex >= MAX_PLAYERS)
     {
-        // sentries? TODO: check
         return;
     }
 
     const int ownerClientIndex = ownerEntIndex - 1;
     State& state = mClientStates[ownerClientIndex];
 
-    if (state.rocket != pEntity)
+    // if we're not tracking this rocket
+    if (state.rocket != rocketEnt->GetRefEHandle())
     {
         // Rocket came from a bot.
         // Soldier fired multiple rockets.
@@ -287,6 +253,7 @@ void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
         return;
     }
 
+    // if the owner changed
     if (state.owner != owner)
     {
         // Pyro deflected soldier rocket.
@@ -294,23 +261,16 @@ void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
     }
 
     // Clear state, reset view
-    state.rocket = nullptr;
+    state.rocket.Term();
     state.owner.Term();
 
-    SVC_SetView setview;
-    setview.m_nEntityIndex = ownerEntIndex;
-
     IClient* client = mServer->GetClient(ownerClientIndex);
-    if (client && client->SendNetMsg(setview, true))
+    if (client && ClientHelpers::SetViewEntity(client, nullptr))
     {
-        edict_t* ownerEdict = mVEngineServer->PEntityOfEntIndex(ownerEntIndex);
         CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
-        assert(ownerEdict);
         assert(ownerEnt);
 
-        assert(sfFlagsOffset > 0);
-        *(int*)((char*)ownerEnt + sfFlagsOffset) &= ~FL_ATCONTROLS;
-        EntityHelpers::StateChanged(ownerEdict, sfFlagsOffset, mVEngineServer);
+        BaseEntityHelpers::RemoveFlag(ownerEnt, FL_ATCONTROLS, mServerGameEnts, mVEngineServer);
     }
 }
 
@@ -367,31 +327,6 @@ bool RocketMode::PlayerRunCommandHook(CUserCmd* ucmd, IMoveHelper* moveHelper)
     return sPlayerRunCommandHook.CallOriginalFn(this, ucmd, moveHelper);
 }
 
-inline float DegToRad(float deg)
-{
-    return deg * (3.14159f / 180.f);
-}
-
-static void AngleVectors(const QAngle& angles, Vector& forward)
-{
-    const float yaw = DegToRad(angles.y);
-    const float pitch = DegToRad(angles.x);
-
-    const float sy = Math::Sin(yaw);
-    const float cy = Math::Cos(yaw);
-    const float sp = Math::Sin(pitch);
-    const float cp = Math::Cos(pitch);
-
-    forward.x = cp * cy;
-    forward.y = cp * sy;
-    forward.z = -sp;
-}
-
-inline float VectorLength(const Vector& v)
-{
-    return Math::Sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-}
-
 void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelper* moveHelper)
 {
     // log spam fix.
@@ -406,7 +341,13 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
     const int clientIndex = entIndex - 1;
 
     State& state = mClientStates[clientIndex];
-    if (!state.rocket)
+    if (!state.rocket.IsValid())
+    {
+        return;
+    }
+
+    CBaseEntity* rocketEnt = EntityHelpers::HandleToEnt(state.rocket, mServerTools);
+    if (!rocketEnt)
     {
         return;
     }
@@ -433,6 +374,7 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
     {
         angVel.x = up ? -turnspeed : turnspeed;
     }
+    BaseEntityHelpers::SetLocalAngularVelocity(rocketEnt, angVel);
 
     // m_vecAngVelocity is local angular velocity
     // m_angRotation is local rotation
@@ -448,21 +390,21 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
     // m_angRotation += m_vecAngVelocity * gpGlobals->frametime;
 
     // Update the local velocity assuming our angular velocity to avoid a frame of delay.
-    Vector& localVelocity = *(Vector*)((char*)state.rocket + sLocalVelocityOffset);
-    QAngle& localAngVelocity = *(QAngle*)((char*)state.rocket + sAngVelocityOffset);
-    const float speed = VectorLength(localVelocity);
+    
+    if (state.initialSpeed == 0.0f)
+    {
+        const Vector& localVelocity = BaseEntityHelpers::GetLocalVelocity(rocketEnt);
+        state.initialSpeed = VectorLength(localVelocity);
+    }
 
     // calculate new angRotation, but don't set it. PhysicsToss will do the same calculation as here.
-    QAngle angRotation = *(QAngle*)((char*)state.rocket + sAngRotationOffset);
+    QAngle angRotation = BaseEntityHelpers::GetLocalRotation(rocketEnt);
+    const QAngle& localAngVelocity = BaseEntityHelpers::GetLocalAngularVelocity(rocketEnt);
     angRotation += (localAngVelocity * mGlobals->frametime);
 
     Vector newVelocity;
     AngleVectors(angRotation, newVelocity);
-    newVelocity *= speed;
+    newVelocity *= state.initialSpeed * 0.5f;
 
-    localVelocity = newVelocity;
-    localAngVelocity = angVel;
-
-    int& eflags = *(int*)((char*)state.rocket + seFlagsOffset);
-    eflags |= EFL_DIRTY_ABSVELOCITY;
+    BaseEntityHelpers::SetLocalVelocity(rocketEnt, newVelocity);
 }
