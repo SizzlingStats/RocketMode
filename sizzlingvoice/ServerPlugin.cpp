@@ -31,6 +31,7 @@
 #include "dsp/convolution.h"
 #include "base/math.h"
 #include "sourcehelpers/CVarHelper.h"
+#include "sourcehelpers/ClientHelpers.h"
 #include "WavFile.h"
 #include "RocketMode.h"
 #include <string.h>
@@ -426,6 +427,8 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
     const int entIndex = pEntity->m_EdictIndex;
     const int clientIndex = entIndex - 1;
     IClient* client = mServer->GetClient(clientIndex);
+
+    ClientHelpers::InitializeOffsets(client, mVEngineServer);
 
     INetChannel* netChannel = client->GetNetChannel();
     if (!netChannel)
