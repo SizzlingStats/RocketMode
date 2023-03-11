@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+class IBaseFileSystem;
+
 class WavFile
 {
 public:
@@ -14,7 +16,7 @@ public:
     };
 
     ~WavFile();
-    bool Load(const char* file);
+    bool Load(const char* file, IBaseFileSystem* fileSystem);
     const char* Samples() const { return mSampleData; }
     uint32_t NumSamples() const { return mNumSamples; }
     SampleFormat Format() const { return mFormat; }

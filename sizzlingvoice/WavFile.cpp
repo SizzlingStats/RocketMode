@@ -1,44 +1,30 @@
 
 #include "WavFile.h"
 
+#include "sourcesdk/public/filesystem.h"
+
 #include "base/math.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 #include <assert.h>
 
-static int GetFileSize(int fd)
+static int ReadFileToMemory(const char* file, char** outData, IBaseFileSystem* fileSystem)
 {
-    struct stat buf;
-    const int ret = fstat(fd, &buf);
-    return ret == 0 ? buf.st_size : -1;
-}
-
-static int GetFileSize(FILE* f)
-{
-    return GetFileSize(fileno(f));
-}
-
-static int ReadFileToMemory(const char* file, char** outData)
-{
-    FILE* fp = fopen(file, "rb");
-    if (!fp)
+    FileHandle_t fp = fileSystem->Open(file, "rb");
+    if (fp == FILESYSTEM_INVALID_HANDLE)
     {
         return 0;
     }
 
-    const int size = GetFileSize(fp);
-    if (size > 0)
-    {
-        char* data = static_cast<char*>(malloc(size));
-        const int read = fread(data, 1, size, fp);
-        assert(read == size);
+    const unsigned int size = fileSystem->Size(fp);
 
-        *outData = data;
-    }
+    char* data = static_cast<char*>(malloc(size));
+    const int read = fileSystem->Read(data, size, fp);
+    assert(read == size);
 
-    fclose(fp);
+    *outData = data;
+
+    fileSystem->Close(fp);
     return size;
 }
 
@@ -121,10 +107,10 @@ WavFile::~WavFile()
     free(mSampleData);
 }
 
-bool WavFile::Load(const char* file)
+bool WavFile::Load(const char* file, IBaseFileSystem* fileSystem)
 {
     char* data;
-    const int32_t length = ReadFileToMemory(file, &data);
+    const int32_t length = ReadFileToMemory(file, &data, fileSystem);
 
     ByteReader reader(data, length);
 

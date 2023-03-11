@@ -3,6 +3,7 @@
 #include "sourcesdk/public/bitvec.h"
 #include "sourcesdk/public/edict.h"
 #include "sourcesdk/public/eiface.h"
+#include "sourcesdk/public/filesystem.h"
 #include "sourcesdk/public/iserver.h"
 #include "sourcesdk/public/iclient.h"
 #include "sourcesdk/public/icvar.h"
@@ -139,6 +140,7 @@ private:
     CStaticPropMgr* mStaticPropMgr;
     IServerTools* mServerTools;
     IServerGameDLL* mServerGameDll;
+    IBaseFileSystem* mFileSystem;
 
     CVarHelper mCvarHelper;
 
@@ -209,6 +211,7 @@ ServerPlugin::ServerPlugin() :
     mStaticPropMgr(nullptr),
     mServerTools(nullptr),
     mServerGameDll(nullptr),
+    mFileSystem(nullptr),
     mCvarHelper(),
     mCeltCodecManager(),
     mClientState(),
@@ -271,6 +274,12 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         return false;
     }
 
+    mFileSystem = (IBaseFileSystem*)interfaceFactory(BASEFILESYSTEM_INTERFACE_VERSION, nullptr);
+    if (!mFileSystem)
+    {
+        return false;
+    }
+
     ICvar* cvar = (ICvar*)interfaceFactory(CVAR_INTERFACE_VERSION, nullptr);
     if (!cvar || !mCvarHelper.Init(cvar))
     {
@@ -299,7 +308,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         "2 - Voice is emitted from the closest bot to the listener. (sizz_voice_positional_steamid)\n");
     sSizzVoiceSirenFx = mCvarHelper.CreateConVar("sizz_voice_sirenfx", "3");
 
-    if (!mSpeakerIR.Load("tf/addons/ir_siren.wav"))
+    if (!mSpeakerIR.Load("addons/ir_siren.wav", mFileSystem))
     {
         return false;
     }
