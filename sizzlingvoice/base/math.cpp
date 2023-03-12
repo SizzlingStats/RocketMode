@@ -2,6 +2,7 @@
 #include "math.h"
 
 #include "vectorclass/vectormath_trig.h"
+#include "vectorclass/vectormath_exp.h"
 
 namespace Math
 {
@@ -36,5 +37,26 @@ namespace Math
         vec.load_partial(1, &x);
         vec = sqrt(vec);
         return vec.extract(0);
+    }
+
+    float Exp(float x)
+    {
+        Vec4f vec;
+        vec.load_partial(1, &x);
+        vec = exp(vec);
+        return vec.extract(0);
+    }
+
+    float Log(float x)
+    {
+        Vec4f vec;
+        vec.load_partial(1, &x);
+        vec = log(vec);
+        return vec.extract(0);
+    }
+
+    float ExpSmooth(float a, float b, float smooth, float dt)
+    {
+        return Lerp(b, a, Exp(Log(smooth) * dt));
     }
 }
