@@ -5,7 +5,7 @@
 
 namespace Math
 {
-    FORCENOINLINE float Cos(float x)
+    float Cos(float x)
     {
         Vec4f vec;
         vec.load_partial(1, &x);
@@ -13,7 +13,7 @@ namespace Math
         return vec.extract(0);
     }
 
-    FORCENOINLINE float Sin(float x)
+    float Sin(float x)
     {
         Vec4f vec;
         vec.load_partial(1, &x);
@@ -21,7 +21,7 @@ namespace Math
         return vec.extract(0);
     }
 
-    FORCENOINLINE void SinCos(float x, float* outSin, float* outCos)
+    void SinCos(float x, float* outSin, float* outCos)
     {
         Vec4f vecSin, vecCos;
         vecSin.load_partial(1, &x);
@@ -30,7 +30,7 @@ namespace Math
         *outCos = vecCos.extract(0);
     }
 
-    FORCENOINLINE float Sqrt(float x)
+    float Sqrt(float x)
     {
         Vec4f vec;
         vec.load_partial(1, &x);
