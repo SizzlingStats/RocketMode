@@ -230,6 +230,7 @@ void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
         state.rocket = pEntity->GetRefEHandle();
         state.owner = ownerEntHandle;
         state.initialSpeed = 0.0f;
+        state.rollAngle = 0.0f;
 
         CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
         assert(ownerEnt);
@@ -404,17 +405,17 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
 
     constexpr float turnspeed = 150.0f;
 
-    QAngle angVel;
-    angVel.Init();
+    QAngle localAngVel;
+    localAngVel.Init();
     if (left != right)
     {
-        angVel.y = left ? turnspeed : -turnspeed;
+        localAngVel.y = left ? turnspeed : -turnspeed;
     }
     if (up != down)
     {
-        angVel.x = up ? -turnspeed : turnspeed;
+        localAngVel.x = up ? -turnspeed : turnspeed;
     }
-    BaseEntityHelpers::SetLocalAngularVelocity(rocketEnt, angVel);
+    BaseEntityHelpers::SetLocalAngularVelocity(rocketEnt, localAngVel);
 
     // m_vecAngVelocity is local angular velocity
     // m_angRotation is local rotation
@@ -433,8 +434,12 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
 
     // calculate new angRotation, but don't set it. PhysicsToss will do the same calculation as here.
     QAngle angRotation = BaseEntityHelpers::GetLocalRotation(rocketEnt);
-    const QAngle& localAngVelocity = BaseEntityHelpers::GetLocalAngularVelocity(rocketEnt);
-    angRotation += (localAngVelocity * mGlobals->frametime);
+
+    // Only write over z rotation (roll). The others will be computed by PhysicsToss with our localAngVel.
+    angRotation.z = state.UpdateRoll(mGlobals->frametime, localAngVel.y * -0.13333f); // ~20 degrees of tilt
+    BaseEntityHelpers::SetLocalRotation(rocketEnt, angRotation);
+
+    angRotation += (localAngVel * mGlobals->frametime);
 
     Vector newVelocity;
     AngleVectors(angRotation, newVelocity);

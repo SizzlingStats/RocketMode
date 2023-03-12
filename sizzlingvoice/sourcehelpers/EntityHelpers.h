@@ -105,6 +105,14 @@ namespace BaseEntityHelpers
     }
 
     // m_angRotation
+    inline void SetLocalRotation(CBaseEntity* ent, const QAngle& localRotation)
+    {
+        // TODO: EFL_DIRTY_ABSTRANSFORM.
+        // InvalidatePhysicsRecursive(ANGLES_CHANGED)
+        *(QAngle*)((char*)ent + sAngRotationOffset) = localRotation;
+    }
+
+    // m_angRotation
     inline const QAngle& GetLocalRotation(CBaseEntity* ent)
     {
         return *(QAngle*)((char*)ent + sAngRotationOffset);

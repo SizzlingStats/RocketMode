@@ -6,6 +6,7 @@
 #include "sourcesdk/public/string_t.h"
 #include "sourcesdk/public/basehandle.h"
 #include "VTableHook.h"
+#include "base/math.h"
 
 typedef void* (*CreateInterfaceFn)(const char* pName, int* pReturnCode);
 class CBaseEntity;
@@ -82,11 +83,19 @@ private:
             rocket.Term();
             owner.Term();
             initialSpeed = 0.0f;
+            rollAngle = 0.0f;
+        }
+
+        float UpdateRoll(float dt, float target)
+        {
+            rollAngle = Math::Lerp(target, rollAngle, Math::ExpDecay2(dt));
+            return rollAngle;
         }
 
         CBaseHandle rocket;
         CBaseHandle owner;
         float initialSpeed = 0.0f;
+        float rollAngle = 0.0f;
     };
     State mClientStates[MAX_PLAYERS];
 };
