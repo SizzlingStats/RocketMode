@@ -376,7 +376,7 @@ void ServerPlugin::LevelInit(char const* pMapName)
         {
             CBaseEntity* ent = mServerTools->CreateEntityByName("env_sprite");
             mServerTools->DispatchSpawn(ent);
-            mServerTools->SetMoveType(ent, 8, 0);
+            mServerTools->SetMoveType(ent, MOVETYPE_NOCLIP, MOVECOLLIDE_DEFAULT);
             mServerTools->SetKeyValue(ent, "origin", staticProp.m_Origin);
 
             edict_t* edict = mServerGameEnts->BaseEntityToEdict(ent);

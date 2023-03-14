@@ -71,3 +71,41 @@
 #define FL_DISSOLVING			(1<<29) // We're dissolving!
 #define FL_TRANSRAGDOLL			(1<<30) // In the process of turning into a client side ragdoll.
 #define FL_UNBLOCKABLE_BY_PLAYER (1<<31) // pusher that can't be blocked by the player
+
+// edict->movetype values
+enum MoveType_t
+{
+    MOVETYPE_NONE = 0,	// never moves
+    MOVETYPE_ISOMETRIC,			// For players -- in TF2 commander view, etc.
+    MOVETYPE_WALK,				// Player only - moving on the ground
+    MOVETYPE_STEP,				// gravity, special edge handling -- monsters use this
+    MOVETYPE_FLY,				// No gravity, but still collides with stuff
+    MOVETYPE_FLYGRAVITY,		// flies through the air + is affected by gravity
+    MOVETYPE_VPHYSICS,			// uses VPHYSICS for simulation
+    MOVETYPE_PUSH,				// no clip to world, push and crush
+    MOVETYPE_NOCLIP,			// No gravity, no collisions, still do velocity/avelocity
+    MOVETYPE_LADDER,			// Used by players only when going onto a ladder
+    MOVETYPE_OBSERVER,			// Observer movement, depends on player's observer mode
+    MOVETYPE_CUSTOM,			// Allows the entity to describe its own physics
+
+    // should always be defined as the last item in the list
+    MOVETYPE_LAST = MOVETYPE_CUSTOM,
+
+    MOVETYPE_MAX_BITS = 4
+};
+
+// edict->movecollide values
+enum MoveCollide_t
+{
+    MOVECOLLIDE_DEFAULT = 0,
+
+    // These ones only work for MOVETYPE_FLY + MOVETYPE_FLYGRAVITY
+    MOVECOLLIDE_FLY_BOUNCE,	// bounces, reflects, based on elasticity of surface and object - applies friction (adjust velocity)
+    MOVECOLLIDE_FLY_CUSTOM,	// Touch() will modify the velocity however it likes
+    MOVECOLLIDE_FLY_SLIDE,  // slides along surfaces (no bounce) - applies friciton (adjusts velocity)
+
+    MOVECOLLIDE_COUNT,		// Number of different movecollides
+
+    // When adding new movecollide types, make sure this is correct
+    MOVECOLLIDE_MAX_BITS = 3
+};
