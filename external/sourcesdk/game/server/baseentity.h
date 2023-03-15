@@ -8,6 +8,7 @@ struct datamap_t;
 class CGameTrace;
 typedef CGameTrace trace_t;
 struct Ray_t;
+class Vector;
 
 //
 // Base Entity.  All entity types derive from this
