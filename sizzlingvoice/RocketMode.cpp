@@ -9,6 +9,7 @@
 #include "sourcesdk/game/shared/in_buttons.h"
 #include "sourcesdk/game/shared/shareddefs.h"
 #include "sourcesdk/game/shared/usercmd.h"
+#include "sourcesdk/public/engine/IEngineSound.h"
 #include "sourcesdk/public/basehandle.h"
 #include "sourcesdk/public/const.h"
 #include "sourcesdk/public/dt_send.h"
@@ -21,9 +22,12 @@
 #include "sourcesdk/public/tier1/convar.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
 
-#include "base/math.h"
+#include "sourcehelpers/RecipientFilter.h"
 #include "sourcehelpers/SendTablesFix.h"
+#include "base/math.h"
 #include <string.h>
+
+#define BOOSTER_LOOP "ambient/steam_drum.wav"
 
 string_t RocketMode::tf_projectile_rocket;
 VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> RocketMode::sPlayerRunCommandHook;
@@ -57,6 +61,7 @@ RocketMode::RocketMode() :
     mServerGameEnts(nullptr),
     mGlobals(nullptr),
     mGameEventManager(nullptr),
+    mEngineSound(nullptr),
     mSendTables(nullptr),
     mTFBaseRocketClass(nullptr),
     mClientStates()
@@ -85,8 +90,9 @@ bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn game
         mGlobals = playerInfoManager->GetGlobalVars();
     }
     mGameEventManager = (IGameEventManager2*)interfaceFactory(INTERFACEVERSION_GAMEEVENTSMANAGER2, nullptr);
+    mEngineSound = (IEngineSound*)interfaceFactory(IENGINESOUND_SERVER_INTERFACE_VERSION, nullptr);
 
-    if (!mVEngineServer || !mServer || !mServerTools || !mCvar || !mServerGameEnts || !mGlobals || !mGameEventManager)
+    if (!mVEngineServer || !mServer || !mServerTools || !mCvar || !mServerGameEnts || !mGlobals || !mGameEventManager || !mEngineSound)
     {
         return false;
     }
@@ -116,6 +122,8 @@ void RocketMode::Shutdown()
 
 void RocketMode::LevelInit(const char* pMapName)
 {
+    mEngineSound->PrecacheSound(BOOSTER_LOOP, true);
+
     CBaseEntity* ent = mServerTools->CreateEntityByName("tf_projectile_rocket");
     if (ent)
     {
@@ -236,6 +244,10 @@ void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
         assert(ownerEnt);
 
         BaseEntityHelpers::AddFlag(ownerEnt, FL_FROZEN, mServerGameEnts, mVEngineServer);
+
+        RecipientFilter filter;
+        filter.AddAllPlayers(mServer);
+        mEngineSound->EmitSound(filter, edict->m_EdictIndex, CHAN_WEAPON, BOOSTER_LOOP, 1.0f, SNDLVL_80dB);
     }
 }
 
@@ -246,6 +258,12 @@ void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
     if (!tf_projectile_rocket || (classname != tf_projectile_rocket))
     {
         return;
+    }
+
+    edict_t* rocketEdict = mServerGameEnts->BaseEntityToEdict(pEntity);
+    if (rocketEdict)
+    {
+        mEngineSound->StopSound(rocketEdict->m_EdictIndex, CHAN_WEAPON, BOOSTER_LOOP);
     }
 
     DetachFromRocket(pEntity);

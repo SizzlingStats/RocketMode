@@ -23,6 +23,7 @@ class IMoveHelper;
 class IConVar;
 class ServerClass;
 class IServerGameEnts;
+class IEngineSound;
 
 class RocketMode : public IGameEventListener2
 {
@@ -72,6 +73,7 @@ private:
     IServerGameEnts* mServerGameEnts;
     CGlobalVars* mGlobals;
     IGameEventManager2* mGameEventManager;
+    IEngineSound* mEngineSound;
 
     IConVar* mSendTables;
     ServerClass* mTFBaseRocketClass;
