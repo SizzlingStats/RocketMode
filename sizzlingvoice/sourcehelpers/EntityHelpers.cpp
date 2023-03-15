@@ -354,12 +354,15 @@ CBaseEntity* EntityHelpers::HandleToEnt(const CBaseHandle& handle, IServerTools*
 }
 
 int BaseEntityHelpers::sClassnameOffset;
+int BaseEntityHelpers::sNameOffset;
+int BaseEntityHelpers::sModelNameOffset;
 int BaseEntityHelpers::sOwnerEntityOffset;
 int BaseEntityHelpers::sFFlagsOffset;
 int BaseEntityHelpers::sEFlagsOffset;
 int BaseEntityHelpers::sLocalVelocityOffset;
 int BaseEntityHelpers::sAngRotationOffset;
 int BaseEntityHelpers::sAngVelocityOffset;
+int BaseEntityHelpers::sTargetOffset;
 
 void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
 {
@@ -376,6 +379,12 @@ void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
 
     sClassnameOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iClassname");
     assert(sClassnameOffset > 0);
+
+    sNameOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iName");
+    assert(sNameOffset > 0);
+
+    sModelNameOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_ModelName");
+    assert(sModelNameOffset > 0);
 
     sOwnerEntityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_hOwnerEntity");
     assert(sOwnerEntityOffset > 0);
@@ -394,4 +403,7 @@ void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
 
     sAngVelocityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_vecAngVelocity");
     assert(sAngVelocityOffset > 0);
+
+    sTargetOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_target");
+    assert(sTargetOffset > 0);
 }

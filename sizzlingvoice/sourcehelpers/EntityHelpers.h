@@ -42,12 +42,15 @@ namespace EntityHelpers
 namespace BaseEntityHelpers
 {
     extern int sClassnameOffset;        // m_iClassname
+    extern int sNameOffset;             // m_iName
+    extern int sModelNameOffset;        // m_ModelName
     extern int sOwnerEntityOffset;      // m_hOwnerEntity
     extern int sFFlagsOffset;           // m_fFlags
     extern int sEFlagsOffset;           // m_iEFlags
     extern int sLocalVelocityOffset;    // m_vecVelocity
     extern int sAngRotationOffset;      // m_angRotation
     extern int sAngVelocityOffset;      // m_vecAngVelocity
+    extern int sTargetOffset;           // m_target
 
     void InitializeOffsets(CBaseEntity* ent);
 
@@ -55,6 +58,18 @@ namespace BaseEntityHelpers
     inline string_t GetClassname(CBaseEntity* ent)
     {
         return *(string_t*)((char*)ent + sClassnameOffset);
+    }
+
+    // m_iName
+    inline string_t GetName(CBaseEntity* ent)
+    {
+        return *(string_t*)((char*)ent + sNameOffset);
+    }
+
+    // m_ModelName
+    inline void SetModelName(CBaseEntity* ent, string_t modelName)
+    {
+        *(string_t*)((char*)ent + sModelNameOffset) = modelName;
     }
 
     // m_hOwnerEntity
@@ -130,5 +145,11 @@ namespace BaseEntityHelpers
     inline const QAngle& GetLocalAngularVelocity(CBaseEntity* ent)
     {
         return *(QAngle*)((char*)ent + sAngVelocityOffset);
+    }
+
+    // m_target
+    inline string_t GetTarget(CBaseEntity* ent)
+    {
+        return *(string_t*)((char*)ent + sTargetOffset);
     }
 }
