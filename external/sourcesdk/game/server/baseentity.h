@@ -5,6 +5,7 @@
 
 class ServerClass;
 struct datamap_t;
+struct ScriptClassDesc_t;
 class CGameTrace;
 typedef CGameTrace trace_t;
 struct Ray_t;
@@ -25,6 +26,10 @@ public:
     // DECLARE_DATADESC();
     virtual datamap_t* GetDataDescMap() = 0;
 
+#ifndef SDK_COMPAT
+    virtual ScriptClassDesc_t* GetScriptDesc() = 0;
+#endif
+
     virtual void SetModelIndexOverride(int index, int nValue) = 0;
 
     // virtual methods for derived classes to override
@@ -36,6 +41,10 @@ public:
     virtual	bool ShouldCollide(int collisionGroup, int contentsMask) const = 0;
 
     virtual void SetOwnerEntity(CBaseEntity* pOwner) = 0;
+#ifndef SDK_COMPAT
+    virtual void SetScriptOwnerEntity(void* pOwner) = 0;
+#endif
+
 
     // Don't need the rest for now.
 };

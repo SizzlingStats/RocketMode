@@ -131,7 +131,7 @@ void RocketMode::LevelInit(const char* pMapName)
         if (!sSetOwnerEntityHook.GetThisPtr())
         {
 #ifdef SDK_COMPAT
-            constexpr int Offset = 18;
+            constexpr int Offset = 17;
 #else
             constexpr int Offset = 18;
 #endif
