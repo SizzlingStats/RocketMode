@@ -34,6 +34,7 @@
 #include "sourcehelpers/CVarHelper.h"
 #include "sourcehelpers/ClientHelpers.h"
 #include "sourcehelpers/Debug.h"
+#include "sourcehelpers/VScriptHelpers.h"
 #include "WavFile.h"
 #include "RocketMode.h"
 #include <string.h>
@@ -283,6 +284,11 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         return false;
     }
 
+    if (!VScriptHelpers::Initialize(interfaceFactory))
+    {
+        return false;
+    }
+
     ICvar* cvar = (ICvar*)interfaceFactory(CVAR_INTERFACE_VERSION, nullptr);
     if (!cvar || !mCvarHelper.Init(cvar))
     {
@@ -349,6 +355,8 @@ void ServerPlugin::Unload(void)
     {
         entityList->m_entityListeners.FindAndFastRemove(&sEntityListener);
     }
+
+    VScriptHelpers::Shutdown();
 
     mCeltCodecManager.Release();
     sIsProximityHearingClientHook.Unhook();
