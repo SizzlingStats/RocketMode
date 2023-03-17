@@ -15,6 +15,7 @@ class SendProp;
 class CBaseHandle;
 class IServerGameEnts;
 class IServerTools;
+class IHasAttributes;
 
 namespace EntityHelpers
 {
@@ -51,6 +52,7 @@ namespace BaseEntityHelpers
     extern int sAngRotationOffset;      // m_angRotation
     extern int sAngVelocityOffset;      // m_vecAngVelocity
     extern int sTargetOffset;           // m_target
+    extern int sAttributesOffset;       // m_pAttributes
 
     void InitializeOffsets(CBaseEntity* ent);
 
@@ -151,5 +153,11 @@ namespace BaseEntityHelpers
     inline string_t GetTarget(CBaseEntity* ent)
     {
         return *(string_t*)((char*)ent + sTargetOffset);
+    }
+
+    // m_pAttributes
+    inline IHasAttributes* GetAttribInterface(CBaseEntity* ent)
+    {
+        return (IHasAttributes*)((char*)ent + sAttributesOffset);
     }
 }

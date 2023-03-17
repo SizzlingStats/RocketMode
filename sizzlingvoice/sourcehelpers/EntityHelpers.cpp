@@ -13,6 +13,7 @@
 
 #include <assert.h>
 #include <string.h>
+#include <stdlib.h>
 
 template<typename T, int N>
 constexpr int ArrayLength(const T(&)[N]) { return N; }
@@ -363,6 +364,7 @@ int BaseEntityHelpers::sLocalVelocityOffset;
 int BaseEntityHelpers::sAngRotationOffset;
 int BaseEntityHelpers::sAngVelocityOffset;
 int BaseEntityHelpers::sTargetOffset;
+int BaseEntityHelpers::sAttributesOffset;
 
 void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
 {
@@ -406,4 +408,16 @@ void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
 
     sTargetOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_target");
     assert(sTargetOffset > 0);
+
+    // excerpt from CBaseEntity
+    struct GetAttribInterface_Hack
+    {
+        // NOTE: m_pAttributes needs to be set in the leaf class constructor.
+        IHasAttributes* m_pAttributes;
+        CBaseEntity* m_pLink;// used for temporary link-list operations. 
+        // variables promoted from edict_t
+        string_t m_target;
+    };
+    sAttributesOffset = sTargetOffset - offsetof(GetAttribInterface_Hack, m_target);
+    assert(sAttributesOffset > 0);
 }
