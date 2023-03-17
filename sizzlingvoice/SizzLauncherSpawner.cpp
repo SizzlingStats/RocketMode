@@ -8,6 +8,8 @@
 #include "sourcesdk/public/dt_send.h"
 #include "sourcesdk/public/eiface.h"
 #include "sourcesdk/public/edict.h"
+#include "sourcesdk/public/icvar.h"
+#include "sourcesdk/public/tier1/convar.h"
 #include "sourcesdk/game/shared/econ/econ_item_view.h"
 #include "sourcesdk/game/shared/econ/ihasattributes.h"
 #include "sourcesdk/game/shared/econ/attribute_manager.h"
@@ -18,10 +20,12 @@
 #include <string.h>
 
 VTableHook<decltype(&SizzLauncherSpawner::RocketLauncherSpawnHook)> SizzLauncherSpawner::sRocketLauncherSpawnHook;
+VTableHook<decltype(&SizzLauncherSpawner::DroppedWeaponSpawnHook)> SizzLauncherSpawner::sDroppedWeaponSpawnHook;
 
 SizzLauncherSpawner::SizzLauncherSpawner() :
     mServerGameClients(nullptr),
-    mServerTools(nullptr)
+    mServerTools(nullptr),
+    mTfDroppedWeaponLifetime(nullptr)
     //mServerGameDll(nullptr),
     //mServerGameEnts(nullptr),
     //mVEngineServer(nullptr)
@@ -39,7 +43,14 @@ bool SizzLauncherSpawner::Init(CreateInterfaceFn interfaceFactory, CreateInterfa
     //mServerGameDll = (IServerGameDLL*)gameServerFactory(INTERFACEVERSION_SERVERGAMEDLL, nullptr);
     //mServerGameEnts = (IServerGameEnts*)gameServerFactory(INTERFACEVERSION_SERVERGAMEENTS, nullptr);
     //mVEngineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, nullptr);
-    if (!mServerGameClients || !mServerTools)// || !mServerGameDll || !mServerGameEnts || !mVEngineServer)
+    ICvar* cvar = (ICvar*)interfaceFactory(CVAR_INTERFACE_VERSION, nullptr);
+    if (!mServerGameClients || !mServerTools || !cvar)// || !mServerGameDll || !mServerGameEnts || !mVEngineServer)
+    {
+        return false;
+    }
+
+    mTfDroppedWeaponLifetime = cvar->FindVar("tf_dropped_weapon_lifetime");
+    if (!mTfDroppedWeaponLifetime)
     {
         return false;
     }
@@ -49,6 +60,7 @@ bool SizzLauncherSpawner::Init(CreateInterfaceFn interfaceFactory, CreateInterfa
 
 void SizzLauncherSpawner::Shutdown()
 {
+    sDroppedWeaponSpawnHook.Unhook();
     sRocketLauncherSpawnHook.Unhook();
 }
 
@@ -74,6 +86,20 @@ void SizzLauncherSpawner::LevelInit(const char* pMapName)
             sRocketLauncherSpawnHook.Hook(ent, Offset, this, &SizzLauncherSpawner::RocketLauncherSpawnHook);
         }
         mServerTools->RemoveEntityImmediate(ent);
+    }
+    CBaseEntity* droppedWeapon = mServerTools->CreateEntityByName("tf_dropped_weapon");
+    if (droppedWeapon)
+    {
+        if (!sDroppedWeaponSpawnHook.GetThisPtr())
+        {
+#ifdef SDK_COMPAT
+            constexpr int Offset = 22;
+#else
+            constexpr int Offset = 24;
+#endif
+            sDroppedWeaponSpawnHook.Hook(droppedWeapon, Offset, this, &SizzLauncherSpawner::DroppedWeaponSpawnHook);
+        }
+        mServerTools->RemoveEntityImmediate(droppedWeapon);
     }
 }
 
@@ -103,9 +129,6 @@ static void ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverToo
     string_t modelName = BaseEntityHelpers::GetName(ent);
     BaseEntityHelpers::SetModelName(ent, modelName);
     serverTools->SetKeyValue(ent, "targetname", "");
-
-    SendProp* itemProp = EntityHelpers::GetProp(ent->GetServerClass(), "DT_TFDroppedWeapon", "m_Item");
-    const int itemOffset = itemProp->GetOffset();
 
     CEconItemView& item = TFDroppedWeaponHelpers::GetItem(ent);
 
@@ -228,4 +251,28 @@ void SizzLauncherSpawner::RocketLauncherSpawn(CBaseEntity* rocketLauncher)
     }
 
     con->OnAttributeValuesChanged();
+}
+
+void SizzLauncherSpawner::DroppedWeaponSpawnHook()
+{
+    SizzLauncherSpawner* thisPtr = sDroppedWeaponSpawnHook.GetThisPtr();
+    CBaseEntity* droppedWeapon = reinterpret_cast<CBaseEntity*>(this);
+    thisPtr->DroppedWeaponSpawn(droppedWeapon);
+}
+
+void SizzLauncherSpawner::DroppedWeaponSpawn(CBaseEntity* droppedWeapon)
+{
+    assert(mTfDroppedWeaponLifetime);
+
+    const float oldLifetime = mTfDroppedWeaponLifetime->m_pParent->m_fValue;
+
+    TFDroppedWeaponHelpers::InitializeOffsets(droppedWeapon);
+    CEconItemView& item = TFDroppedWeaponHelpers::GetItem(droppedWeapon);
+    if (item.m_iItemID == 3977757014)
+    {
+        mTfDroppedWeaponLifetime->m_pParent->m_fValue = 30.0f;
+    }
+    sDroppedWeaponSpawnHook.CallOriginalFn(reinterpret_cast<SizzLauncherSpawner*>(droppedWeapon));
+
+    mTfDroppedWeaponLifetime->m_pParent->m_fValue = oldLifetime;
 }

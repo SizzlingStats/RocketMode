@@ -12,6 +12,7 @@ class IServerTools;
 struct edict_t;
 class CCommand;
 class CBaseEntity;
+class ConVar;
 
 class SizzLauncherSpawner
 {
@@ -30,12 +31,17 @@ private:
     void RocketLauncherSpawnHook();
     void RocketLauncherSpawn(CBaseEntity* rocketLauncher);
 
+    void DroppedWeaponSpawnHook();
+    void DroppedWeaponSpawn(CBaseEntity* droppedWeapon);
+
 private:
     static VTableHook<decltype(&RocketLauncherSpawnHook)> sRocketLauncherSpawnHook;
+    static VTableHook<decltype(&DroppedWeaponSpawnHook)> sDroppedWeaponSpawnHook;
 
 private:
     IServerGameClients* mServerGameClients;
     IServerTools* mServerTools;
+    ConVar* mTfDroppedWeaponLifetime;
     //IServerGameDLL* mServerGameDll;
     //IServerGameEnts* mServerGameEnts;
     //IVEngineServer* mVEngineServer;
