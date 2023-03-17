@@ -164,7 +164,7 @@ namespace BaseEntityHelpers
     // m_pAttributes
     inline IHasAttributes* GetAttribInterface(CBaseEntity* ent)
     {
-        return (IHasAttributes*)((char*)ent + sAttributesOffset);
+        return *(IHasAttributes**)((char*)ent + sAttributesOffset);
     }
 }
 
