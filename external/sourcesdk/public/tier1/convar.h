@@ -36,6 +36,53 @@ public:
 	int m_nFlags;
 };
 
+class CCommand
+{
+public:
+    int ArgC() const
+    {
+        return m_nArgc;
+    }
+
+    const char** ArgV() const
+    {
+        return m_nArgc ? (const char**)m_ppArgv : nullptr;
+    }
+    
+    // All args that occur after the 0th arg, in string form
+    const char* ArgS() const
+    {
+        return m_nArgv0Size ? &m_pArgSBuffer[m_nArgv0Size] : "";
+    }
+
+    // The entire command in string form, including the 0th arg
+    const char* GetCommandString() const
+    {
+        return m_nArgc ? m_pArgSBuffer : "";
+    }
+
+    // Gets at arguments
+    const char* Arg(int nIndex) const
+    {
+        if (nIndex < 0 || nIndex >= m_nArgc)
+            return "";
+        return m_ppArgv[nIndex];
+    }
+
+private:
+    enum
+    {
+        COMMAND_MAX_ARGC = 64,
+        COMMAND_MAX_LENGTH = 512,
+    };
+
+    int m_nArgc;
+    int m_nArgv0Size;
+    char m_pArgSBuffer[COMMAND_MAX_LENGTH];
+    char m_pArgvBuffer[COMMAND_MAX_LENGTH];
+    const char* m_ppArgv[COMMAND_MAX_ARGC];
+};
+
 class ConVar : public ConCommandBase, public IConVar
 {
 public:
