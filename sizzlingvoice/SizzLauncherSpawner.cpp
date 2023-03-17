@@ -239,11 +239,28 @@ void SizzLauncherSpawner::RocketLauncherSpawn(CBaseEntity* rocketLauncher)
         &item.m_NetworkedDynamicAttributesForDemos.m_Attributes
     };
 
+    /*Debug::Msg("attributes: %s\n", BaseEntityHelpers::GetClassname(rocketLauncher));
+    for (CUtlVector<CEconItemAttribute>* attributes : attrLists)
+    {
+        for (int i = 0; i < attributes->Count(); ++i)
+        {
+            auto& attr = attributes->Element(i);
+            Debug::Msg("%i %f\n", attr.m_iAttributeDefinitionIndex, attr.m_flValue);
+        }
+        Debug::Msg("\n");
+    }*/
+
     for (CUtlVector<CEconItemAttribute>* attributes : attrLists)
     {
         for (const CEconItemAttribute& attr : attrs)
         {
-            if (attributes->Find(attr) < 0)
+            const int index = attributes->Find(attr);
+            if (index >= 0)
+            {
+                CEconItemAttribute& existingAttr = attributes->Element(index);
+                existingAttr.m_flValue = attr.m_flValue;
+            }
+            else
             {
                 attributes->AddToTail(attr);
             }

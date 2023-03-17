@@ -48,7 +48,7 @@ public:
 
     bool operator==(const CEconItemAttribute& other) const
     {
-        return !memcmp(this, &other, sizeof(other));
+        return m_iAttributeDefinitionIndex == other.m_iAttributeDefinitionIndex;
     }
 
     void* vtable;
