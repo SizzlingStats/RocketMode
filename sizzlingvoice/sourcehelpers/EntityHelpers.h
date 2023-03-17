@@ -4,6 +4,7 @@
 #include "sourcesdk/public/string_t.h"
 #include "sourcesdk/game/shared/shareddefs.h"
 #include "sourcesdk/public/mathlib/vector.h"
+#include <assert.h>
 
 struct datamap_t;
 class CBaseEntity;
@@ -67,30 +68,35 @@ namespace BaseEntityHelpers
     // m_iClassname
     inline string_t GetClassname(CBaseEntity* ent)
     {
+        assert(sClassnameOffset > 0);
         return *(string_t*)((char*)ent + sClassnameOffset);
     }
 
     // m_iName
     inline string_t GetName(CBaseEntity* ent)
     {
+        assert(sNameOffset > 0);
         return *(string_t*)((char*)ent + sNameOffset);
     }
 
     // m_ModelName
     inline void SetModelName(CBaseEntity* ent, string_t modelName)
     {
+        assert(sModelNameOffset > 0);
         *(string_t*)((char*)ent + sModelNameOffset) = modelName;
     }
 
     // m_hOwnerEntity
     inline CBaseHandle& GetOwnerEntity(CBaseEntity* ent)
     {
+        assert(sOwnerEntityOffset > 0);
         return *(CBaseHandle*)((char*)ent + sOwnerEntityOffset);
     }
 
     // m_fFlags. TODO: what happens if derived classes didn't ask for m_fFlags replication?
     inline void AddFlag(CBaseEntity* ent, int flags, IServerGameEnts* gameEnts, IVEngineServer* engineServer)
     {
+        assert(sFFlagsOffset > 0);
         const int offset = sFFlagsOffset;
         *(int*)((char*)ent + offset) |= flags;
 
@@ -100,6 +106,7 @@ namespace BaseEntityHelpers
     // m_fFlags. TODO: what happens if derived classes didn't ask for m_fFlags replication?
     inline void RemoveFlag(CBaseEntity* ent, int flags, IServerGameEnts* gameEnts, IVEngineServer* engineServer)
     {
+        assert(sFFlagsOffset > 0);
         const int offset = sFFlagsOffset;
         *(int*)((char*)ent + offset) &= ~flags;
 
@@ -109,6 +116,7 @@ namespace BaseEntityHelpers
     // m_iEFlags
     inline void AddEFlags(CBaseEntity* ent, int flags)
     {
+        assert(sEFlagsOffset > 0);
         int& eflags = *(int*)((char*)ent + sEFlagsOffset);
         eflags |= flags;
     }
@@ -116,6 +124,7 @@ namespace BaseEntityHelpers
     // m_vecVelocity
     inline void SetLocalVelocity(CBaseEntity* ent, const Vector& localVelocity)
     {
+        assert(sLocalVelocityOffset > 0);
         Vector& velocity = *(Vector*)((char*)ent + sLocalVelocityOffset);
         velocity = localVelocity;
 
@@ -126,12 +135,14 @@ namespace BaseEntityHelpers
     // m_vecVelocity
     inline const Vector& GetLocalVelocity(CBaseEntity* ent)
     {
+        assert(sLocalVelocityOffset > 0);
         return *(Vector*)((char*)ent + sLocalVelocityOffset);
     }
 
     // m_angRotation
     inline void SetLocalRotation(CBaseEntity* ent, const QAngle& localRotation)
     {
+        assert(sAngRotationOffset > 0);
         // TODO: EFL_DIRTY_ABSTRANSFORM.
         // InvalidatePhysicsRecursive(ANGLES_CHANGED)
         *(QAngle*)((char*)ent + sAngRotationOffset) = localRotation;
@@ -140,12 +151,14 @@ namespace BaseEntityHelpers
     // m_angRotation
     inline const QAngle& GetLocalRotation(CBaseEntity* ent)
     {
+        assert(sAngRotationOffset > 0);
         return *(QAngle*)((char*)ent + sAngRotationOffset);
     }
 
     // m_vecAngVelocity
     inline void SetLocalAngularVelocity(CBaseEntity* ent, const QAngle& localAngVel)
     {
+        assert(sAngVelocityOffset > 0);
         QAngle& angVel = *(QAngle*)((char*)ent + sAngVelocityOffset);
         angVel = localAngVel;
         // no invalidation needed here.
@@ -154,18 +167,21 @@ namespace BaseEntityHelpers
     // m_vecAngVelocity
     inline const QAngle& GetLocalAngularVelocity(CBaseEntity* ent)
     {
+        assert(sAngVelocityOffset > 0);
         return *(QAngle*)((char*)ent + sAngVelocityOffset);
     }
 
     // m_target
     inline string_t GetTarget(CBaseEntity* ent)
     {
+        assert(sTargetOffset > 0);
         return *(string_t*)((char*)ent + sTargetOffset);
     }
 
     // m_pAttributes
     inline IHasAttributes* GetAttribInterface(CBaseEntity* ent)
     {
+        assert(sAttributesOffset > 0);
         return *(IHasAttributes**)((char*)ent + sAttributesOffset);
     }
 }
@@ -179,6 +195,7 @@ namespace TFBaseRocketHelpers
     // m_hLauncher
     inline const CBaseHandle& GetLauncher(CBaseEntity* ent)
     {
+        assert(sLauncherOffset > 0);
         return *(CBaseHandle*)((char*)ent + sLauncherOffset);
     }
 }
@@ -192,6 +209,7 @@ namespace TFDroppedWeaponHelpers
     // m_Item
     inline CEconItemView& GetItem(CBaseEntity* ent)
     {
+        assert(sItemOffset > 0);
         return *(CEconItemView*)((char*)ent + sItemOffset);
     }
 }
@@ -205,6 +223,7 @@ namespace AttributeContainerHelpers
     // m_Item
     inline CEconItemView& GetItem(CAttributeContainer* container)
     {
+        assert(sItemOffset > 0);
         return *(CEconItemView*)((char*)container + sItemOffset);
     }
 }
