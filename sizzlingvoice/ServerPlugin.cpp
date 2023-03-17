@@ -37,6 +37,7 @@
 #include "sourcehelpers/VScriptHelpers.h"
 #include "WavFile.h"
 #include "RocketMode.h"
+#include "SizzLauncherSpawner.h"
 #include <string.h>
 #include <float.h>
 
@@ -107,7 +108,7 @@ public:
     virtual void SetCommandClient(int index) {}
     virtual void ClientSettingsChanged(edict_t* pEdict) {}
     virtual PLUGIN_RESULT ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen);
-    virtual PLUGIN_RESULT ClientCommand(edict_t* pEntity, const CCommand& args) { return PLUGIN_CONTINUE; }
+    virtual PLUGIN_RESULT ClientCommand(edict_t* pEntity, const CCommand& args);
     virtual PLUGIN_RESULT NetworkIDValidated(const char* pszUserName, const char* pszNetworkID) { return PLUGIN_CONTINUE; }
     virtual void OnQueryCvarValueFinished(QueryCvarCookie_t iCookie, edict_t* pPlayerEntity, EQueryCvarValueStatus eStatus, const char* pCvarName, const char* pCvarValue) {}
     virtual void OnEdictAllocated(edict_t* edict) {}
@@ -151,6 +152,7 @@ private:
     ClientState* mClientState[MAX_PLAYERS];
     WavFile mSpeakerIR;
     RocketMode mRocketMode;
+    SizzLauncherSpawner mSizzLauncherSpawner;
 
     static VTableHook<decltype(&ProcessVoiceDataHook)> sProcessVoiceDataHook;
     static VTableHook<decltype(&IsProximityHearingClientHook)> sIsProximityHearingClientHook;
@@ -323,6 +325,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
     }
 
     mRocketMode.Init(interfaceFactory, gameServerFactory);
+    mSizzLauncherSpawner.Init(interfaceFactory, gameServerFactory);
 
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
@@ -370,6 +373,7 @@ int gSpeakerEntIndex;
 void ServerPlugin::LevelInit(char const* pMapName)
 {
     mRocketMode.LevelInit(pMapName);
+    mSizzLauncherSpawner.LevelInit(pMapName);
 
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
@@ -392,12 +396,6 @@ void ServerPlugin::LevelInit(char const* pMapName)
             break;
         }
     }
-}
-
-template<typename T, typename U>
-inline T ByteOffsetFromPointer(U pBase, int byte_offset)
-{
-    return reinterpret_cast<T>((reinterpret_cast<unsigned char*>(pBase) + byte_offset));
 }
 
 void ServerPlugin::GameFrame(bool simulating)
@@ -494,6 +492,15 @@ void ServerPlugin::ClientDisconnect(edict_t* pEntity)
 PLUGIN_RESULT ServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity, const char* pszName, const char* pszAddress, char* reject, int maxrejectlen)
 {
     mRocketMode.ClientConnect();
+    return PLUGIN_CONTINUE;
+}
+
+PLUGIN_RESULT ServerPlugin::ClientCommand(edict_t* pEntity, const CCommand& args)
+{
+    if (mSizzLauncherSpawner.ClientCommand(pEntity, args))
+    {
+        return PLUGIN_STOP;
+    }
     return PLUGIN_CONTINUE;
 }
 

@@ -6,6 +6,8 @@
 
 #include "sourcesdk/game/server/baseentity.h"
 #include "sourcesdk/game/server/iplayerinfo.h"
+#include "sourcesdk/game/shared/econ/econ_item_view.h"
+#include "sourcesdk/game/shared/econ/ihasattributes.h"
 #include "sourcesdk/game/shared/in_buttons.h"
 #include "sourcesdk/game/shared/shareddefs.h"
 #include "sourcesdk/game/shared/usercmd.h"
@@ -471,7 +473,7 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
 
     Vector newVelocity;
     AngleVectors(angRotation, newVelocity);
-    newVelocity *= state.initialSpeed * 0.5f;
+    newVelocity *= state.initialSpeed;
 
     BaseEntityHelpers::SetLocalVelocity(rocketEnt, newVelocity);
 }
@@ -508,13 +510,27 @@ void RocketMode::RocketSpawn(CBaseEntity* rocket)
     // Again inside CTFBaseRocket::Create. m_hLauncher should be set.
 
     CBaseHandle launcherHandle = TFBaseRocketHelpers::GetLauncher(rocket);
-    if (launcherHandle.IsValid())
+    if (!launcherHandle.IsValid())
     {
-        CBaseEntity* launcher = EntityHelpers::HandleToEnt(launcherHandle, mServerTools);
-        if (launcher)
-        {
-            AttachToRocket(rocket);
-        }
+        return;
+    }
+
+    CBaseEntity* launcher = EntityHelpers::HandleToEnt(launcherHandle, mServerTools);
+    if (!launcher)
+    {
+        return;
+    }
+
+    IHasAttributes* attributeInterface = BaseEntityHelpers::GetAttribInterface(launcher);
+    assert(attributeInterface);
+    CAttributeContainer* con = attributeInterface->GetAttributeContainer();
+    assert(con);
+
+    CEconItemView& item = AttributeContainerHelpers::GetItem(con);
+
+    if (item.m_iItemID == 3977757014)
+    {
+        AttachToRocket(rocket);
     }
 }
 
