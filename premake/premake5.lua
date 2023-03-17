@@ -87,7 +87,8 @@ solution "sizzlingvoice"
         files
         {
             "../sizzlingvoice/**.h",
-            "../sizzlingvoice/**.cpp"
+            "../sizzlingvoice/**.cpp",
+            "../sizzlingvoice/**.natvis"
         }
         includedirs
         {
