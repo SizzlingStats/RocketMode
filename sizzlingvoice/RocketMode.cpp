@@ -32,6 +32,7 @@
 string_t RocketMode::tf_projectile_rocket;
 VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> RocketMode::sPlayerRunCommandHook;
 VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> RocketMode::sSetOwnerEntityHook;
+VTableHook<decltype(&RocketMode::RocketSpawnHook)> RocketMode::sRocketSpawnHook;
 
 inline float VectorLength(const Vector& v)
 {
@@ -116,6 +117,7 @@ void RocketMode::Shutdown()
     {
         mGameEventManager->RemoveListener(this);
     }
+    sRocketSpawnHook.Unhook();
     sSetOwnerEntityHook.Unhook();
     sPlayerRunCommandHook.Unhook();
 }
@@ -127,6 +129,8 @@ void RocketMode::LevelInit(const char* pMapName)
     CBaseEntity* ent = mServerTools->CreateEntityByName("tf_projectile_rocket");
     if (ent)
     {
+        TFBaseRocketHelpers::InitializeOffsets(ent);
+
         tf_projectile_rocket = BaseEntityHelpers::GetClassname(ent);
         if (!sSetOwnerEntityHook.GetThisPtr())
         {
@@ -137,6 +141,16 @@ void RocketMode::LevelInit(const char* pMapName)
 #endif
             sSetOwnerEntityHook.Hook(ent, Offset, this, &RocketMode::SetOwnerEntityHook);
         }
+        if (!sRocketSpawnHook.GetThisPtr())
+        {
+#ifdef SDK_COMPAT
+            constexpr int Offset = 22;
+#else
+            constexpr int Offset = 24;
+#endif
+            sRocketSpawnHook.Hook(ent, Offset, this, &RocketMode::RocketSpawnHook);
+        }
+
         mServerTools->RemoveEntityImmediate(ent);
     }
 }
@@ -185,28 +199,35 @@ void RocketMode::ClientDisconnect(edict_t* pEntity)
     mClientStates[clientIndex].Reset();
 }
 
-void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
+void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
 {
-    // can't assert here because we need an entity spawned in order to
-    // get the value of tf_projectile_rocket in the first place.
-    //assert(tf_projectile_rocket);
-
-    // blazing fast early out if not a tf_projectile_rocket.
+    // if not "tf_projectile_rocket"
     const string_t classname = BaseEntityHelpers::GetClassname(pEntity);
     if (!tf_projectile_rocket || (classname != tf_projectile_rocket))
     {
         return;
     }
 
+    edict_t* rocketEdict = mServerGameEnts->BaseEntityToEdict(pEntity);
+    if (rocketEdict)
+    {
+        mEngineSound->StopSound(rocketEdict->m_EdictIndex, CHAN_WEAPON, BOOSTER_LOOP);
+    }
+
+    DetachFromRocket(pEntity);
+}
+
+void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
+{
     // if not networked
-    edict_t* edict = mServerGameEnts->BaseEntityToEdict(pEntity);
+    edict_t* edict = mServerGameEnts->BaseEntityToEdict(rocketEnt);
     if (!edict)
     {
         return;
     }
 
     // if no owner
-    CBaseHandle ownerEntHandle = BaseEntityHelpers::GetOwnerEntity(pEntity);
+    CBaseHandle ownerEntHandle = BaseEntityHelpers::GetOwnerEntity(rocketEnt);
     if (!ownerEntHandle.IsValid())
     {
         return;
@@ -227,15 +248,22 @@ void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
         return;
     }
 
+    CBaseHandle rocketHandle = rocketEnt->GetRefEHandle();
+    State& state = mClientStates[ownerClientIndex];
+    if (rocketHandle == state.rocket)
+    {
+        // already following this rocket.
+        return;
+    }
+
     if (ClientHelpers::SetViewEntity(client, edict))
     {
-        State& state = mClientStates[ownerClientIndex];
-        if (CBaseEntity* rocketEnt = EntityHelpers::HandleToEnt(state.rocket, mServerTools))
+        if (CBaseEntity* prevRocketEnt = EntityHelpers::HandleToEnt(state.rocket, mServerTools))
         {
-            BaseEntityHelpers::SetLocalAngularVelocity(rocketEnt, QAngle(0.0f, 0.0f, 0.0f));
+            BaseEntityHelpers::SetLocalAngularVelocity(prevRocketEnt, QAngle(0.0f, 0.0f, 0.0f));
         }
 
-        state.rocket = pEntity->GetRefEHandle();
+        state.rocket = rocketHandle;
         state.owner = ownerEntHandle;
         state.initialSpeed = 0.0f;
         state.rollAngle = 0.0f;
@@ -249,24 +277,6 @@ void RocketMode::OnEntitySpawned(CBaseEntity* pEntity)
         filter.AddAllPlayers(mServer);
         mEngineSound->EmitSound(filter, edict->m_EdictIndex, CHAN_WEAPON, BOOSTER_LOOP, 1.0f, SNDLVL_80dB);
     }
-}
-
-void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
-{
-    // if not "tf_projectile_rocket"
-    const string_t classname = BaseEntityHelpers::GetClassname(pEntity);
-    if (!tf_projectile_rocket || (classname != tf_projectile_rocket))
-    {
-        return;
-    }
-
-    edict_t* rocketEdict = mServerGameEnts->BaseEntityToEdict(pEntity);
-    if (rocketEdict)
-    {
-        mEngineSound->StopSound(rocketEdict->m_EdictIndex, CHAN_WEAPON, BOOSTER_LOOP);
-    }
-
-    DetachFromRocket(pEntity);
 }
 
 void RocketMode::DetachFromRocket(CBaseEntity* rocketEnt)
@@ -474,12 +484,37 @@ void RocketMode::SetOwnerEntityHook(CBaseEntity* owner)
     sSetOwnerEntityHook.CallOriginalFn(this, owner);
 }
 
-void RocketMode::SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* owner)
+void RocketMode::SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* newOwner)
 {
     CBaseHandle ownerHandle = BaseEntityHelpers::GetOwnerEntity(rocket);
-    if (ownerHandle != owner->GetRefEHandle())
+    if (ownerHandle.IsValid() && (ownerHandle != newOwner->GetRefEHandle()))
     {
         DetachFromRocket(rocket);
+    }
+}
+
+void RocketMode::RocketSpawnHook()
+{
+    RocketMode* thisPtr = sPlayerRunCommandHook.GetThisPtr();
+    CBaseEntity* rocket = reinterpret_cast<CBaseEntity*>(this);
+    thisPtr->RocketSpawn(rocket);
+    sRocketSpawnHook.CallOriginalFn(this);
+}
+
+void RocketMode::RocketSpawn(CBaseEntity* rocket)
+{
+    // Called twice when a rocket spawns.
+    // Once from CBaseEntity::Create. m_hLauncher is not set before this call.
+    // Again inside CTFBaseRocket::Create. m_hLauncher should be set.
+
+    CBaseHandle launcherHandle = TFBaseRocketHelpers::GetLauncher(rocket);
+    if (launcherHandle.IsValid())
+    {
+        CBaseEntity* launcher = EntityHelpers::HandleToEnt(launcherHandle, mServerTools);
+        if (launcher)
+        {
+            AttachToRocket(rocket);
+        }
     }
 }
 

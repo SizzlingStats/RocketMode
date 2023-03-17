@@ -504,7 +504,6 @@ void ServerPlugin::OnEntityCreated(CBaseEntity* pEntity)
 
 void ServerPlugin::OnEntitySpawned(CBaseEntity* pEntity)
 {
-    mRocketMode.OnEntitySpawned(pEntity);
 }
 
 void ServerPlugin::OnEntityDeleted(CBaseEntity* pEntity)

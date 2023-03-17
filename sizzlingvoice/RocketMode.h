@@ -42,10 +42,10 @@ public:
     void ClientActive(edict_t* pEntity);
     void ClientDisconnect(edict_t* pEntity);
 
-    void OnEntitySpawned(CBaseEntity* pEntity);
     void OnEntityDeleted(CBaseEntity* pEntity);
 
 private:
+    void AttachToRocket(CBaseEntity* rocketEnt);
     void DetachFromRocket(CBaseEntity* rocketEnt);
 
     bool ModifyRocketAngularPrecision();
@@ -54,7 +54,10 @@ private:
     void PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelper* moveHelper);
 
     void SetOwnerEntityHook(CBaseEntity* owner);
-    void SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* owner);
+    void SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* newOwner);
+
+    void RocketSpawnHook();
+    void RocketSpawn(CBaseEntity* rocket);
 
     virtual void IGameEventListener2_Destructor() override;
     virtual void FireGameEvent(IGameEvent* event) override;
@@ -62,7 +65,10 @@ private:
 private:
     static string_t tf_projectile_rocket;
     static VTableHook<decltype(&PlayerRunCommandHook)> sPlayerRunCommandHook;
+
+    // CTFProjectile_Rocket hooks 
     static VTableHook<decltype(&SetOwnerEntityHook)> sSetOwnerEntityHook;
+    static VTableHook<decltype(&RocketSpawnHook)> sRocketSpawnHook;
 
 private:
     IVEngineServer* mVEngineServer;

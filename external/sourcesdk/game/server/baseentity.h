@@ -10,6 +10,7 @@ class CGameTrace;
 typedef CGameTrace trace_t;
 struct Ray_t;
 class Vector;
+class CCheckTransmitInfo;
 
 //
 // Base Entity.  All entity types derive from this
@@ -45,6 +46,20 @@ public:
     virtual void SetScriptOwnerEntity(void* pOwner) = 0;
 #endif
 
+    // Only CBaseEntity implements these. CheckTransmit calls the virtual ShouldTransmit to see if the
+    // entity wants to be sent. If so, it calls SetTransmit, which will mark any dependents for transmission too.
+    virtual int ShouldTransmit(const CCheckTransmitInfo* pInfo) = 0;
+
+    // Do NOT call this directly. Use DispatchUpdateTransmitState.
+    virtual int UpdateTransmitState() = 0;
+
+    // This marks the entity for transmission and passes the SetTransmit call to any dependents.
+    virtual void SetTransmit(CCheckTransmitInfo* pInfo, bool bAlways) = 0;
+
+    virtual const char* GetTracerType(void) = 0;
+
+    // initialization
+    virtual void Spawn() = 0;
 
     // Don't need the rest for now.
 };
