@@ -1,5 +1,9 @@
 
 #include "VScriptHelpers.h"
+
+#define USE_VSCRIPT 0
+#if USE_VSCRIPT
+
 #include "sourcesdk/public/vscript/ivscript.h"
 #include "../VTableHook.h"
 #include <assert.h>
@@ -82,3 +86,21 @@ IScriptVM* VScriptHelpers::GetVM()
 {
     return gScriptManagerShim.GetVM();
 }
+
+#else
+
+bool VScriptHelpers::Initialize(CreateInterfaceFn interfaceFactory)
+{
+    return true;
+}
+
+void VScriptHelpers::Shutdown()
+{
+}
+
+IScriptVM* VScriptHelpers::GetVM()
+{
+    return nullptr;
+}
+
+#endif
