@@ -17,6 +17,8 @@ class CBaseHandle;
 class IServerGameEnts;
 class IServerTools;
 class IHasAttributes;
+class CEconItemView;
+class CAttributeContainer;
 
 namespace EntityHelpers
 {
@@ -170,7 +172,7 @@ namespace BaseEntityHelpers
 
 namespace TFBaseRocketHelpers
 {
-    extern int sLauncherOffset;         // m_hLauncher
+    extern int sLauncherOffset;     // m_hLauncher
 
     void InitializeOffsets(CBaseEntity* ent);
 
@@ -178,5 +180,31 @@ namespace TFBaseRocketHelpers
     inline const CBaseHandle& GetLauncher(CBaseEntity* ent)
     {
         return *(CBaseHandle*)((char*)ent + sLauncherOffset);
+    }
+}
+
+namespace TFDroppedWeaponHelpers
+{
+    extern int sItemOffset;     // m_Item
+
+    void InitializeOffsets(CBaseEntity* ent);
+
+    // m_Item
+    inline CEconItemView& GetItem(CBaseEntity* ent)
+    {
+        return *(CEconItemView*)((char*)ent + sItemOffset);
+    }
+}
+
+namespace AttributeContainerHelpers
+{
+    extern int sItemOffset;     // m_Item
+
+    void InitializeOffsets(CAttributeContainer* container);
+
+    // m_Item
+    inline CEconItemView& GetItem(CAttributeContainer* container)
+    {
+        return *(CEconItemView*)((char*)container + sItemOffset);
     }
 }

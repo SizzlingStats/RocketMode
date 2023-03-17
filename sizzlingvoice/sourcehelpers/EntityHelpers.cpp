@@ -10,6 +10,7 @@
 #include "sourcesdk/public/eiface.h"
 #include "sourcesdk/public/server_class.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
+#include "sourcesdk/game/shared/econ/attribute_manager.h"
 
 #include <assert.h>
 #include <string.h>
@@ -459,4 +460,38 @@ void TFBaseRocketHelpers::InitializeOffsets(CBaseEntity* ent)
         sLauncherOffset = prop->GetOffset();
         assert(sLauncherOffset > 0);
     }
+}
+
+int TFDroppedWeaponHelpers::sItemOffset;
+
+void TFDroppedWeaponHelpers::InitializeOffsets(CBaseEntity* ent)
+{
+    if (sItemOffset > 0)
+    {
+        // already initialized
+        return;
+    }
+
+    SendProp* prop = EntityHelpers::GetProp(ent->GetServerClass(), "DT_TFDroppedWeapon", "m_Item");
+    assert(prop);
+
+    sItemOffset = prop->GetOffset();
+    assert(sItemOffset > 0);
+}
+
+int AttributeContainerHelpers::sItemOffset;
+
+void AttributeContainerHelpers::InitializeOffsets(CAttributeContainer* container)
+{
+    if (sItemOffset > 0)
+    {
+        // already initialized
+        return;
+    }
+
+    datamap_t* datamap = container->GetDataDescMap();
+    assert(datamap);
+
+    sItemOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_Item");
+    assert(sItemOffset > 0);
 }
