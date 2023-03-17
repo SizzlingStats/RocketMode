@@ -3,12 +3,7 @@
 
 #include "utlmemory.h"
 #include <string.h>
-
-template <class T>
-inline T* CopyConstruct(T* pMemory, T const& src)
-{
-    return reinterpret_cast<T*>(::new(pMemory) T(src));
-}
+#include <new>
 
 template <class T>
 inline void Destruct(T* pMemory)
@@ -78,7 +73,7 @@ inline int CUtlVector<T, A>::AddToTail(const T& src)
     
     const int index = m_Size;
     GrowVector();
-    CopyConstruct(&Element(index), src);
+    ::new(&Element(index)) T(src);
     return index;
 }
 
