@@ -2,11 +2,11 @@
 #pragma once
 
 #include "../soundflags.h"
+#include "../tier1/utlvector.h"
 
 class Vector;
 class IRecipientFilter;
 struct SndInfo_t;
-template<class T> class CUtlVector;
 
 // Handy defines for EmitSound
 #define SOUND_FROM_UI_PANEL			-2		// Sound being played inside a UI panel on the client
