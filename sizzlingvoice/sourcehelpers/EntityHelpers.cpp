@@ -439,3 +439,24 @@ void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
     sAttributesOffset = sTargetOffset - offsetof(GetAttribInterface_Hack, m_target);
     assert(sAttributesOffset > 0);
 }
+
+int TFBaseRocketHelpers::sLauncherOffset;
+
+void TFBaseRocketHelpers::InitializeOffsets(CBaseEntity* ent)
+{
+    if (sLauncherOffset > 0)
+    {
+        // already initialized
+        return;
+    }
+
+    SendTable* table = EntityHelpers::GetTable(ent->GetServerClass(), "DT_TFBaseRocket");
+    assert(table);
+
+    {
+        SendProp* prop = EntityHelpers::GetProp(table, "m_hLauncher");
+        assert(prop);
+        sLauncherOffset = prop->GetOffset();
+        assert(sLauncherOffset > 0);
+    }
+}

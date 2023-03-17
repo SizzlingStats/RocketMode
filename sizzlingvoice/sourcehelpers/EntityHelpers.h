@@ -167,3 +167,16 @@ namespace BaseEntityHelpers
         return (IHasAttributes*)((char*)ent + sAttributesOffset);
     }
 }
+
+namespace TFBaseRocketHelpers
+{
+    extern int sLauncherOffset;         // m_hLauncher
+
+    void InitializeOffsets(CBaseEntity* ent);
+
+    // m_hLauncher
+    inline const CBaseHandle& GetLauncher(CBaseEntity* ent)
+    {
+        return *(CBaseHandle*)((char*)ent + sLauncherOffset);
+    }
+}
