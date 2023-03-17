@@ -306,16 +306,29 @@ static SendTable* GetTableRecursive(SendTable* table, const char* name)
     return nullptr;
 }
 
+SendTable* EntityHelpers::GetTable(IServerGameDLL* serverGameDll, const char* className, const char* tableName)
+{
+    ServerClass* pClass = GetServerClass(serverGameDll, className);
+    if (pClass)
+    {
+        SendTable* table = GetTableRecursive(pClass->GetTable(), tableName);
+        return table;
+    }
+    return nullptr;
+}
+
+SendTable* EntityHelpers::GetTable(ServerClass* serverClass, const char* tableName)
+{
+    return GetTableRecursive(serverClass->GetTable(), tableName);
+}
+
 SendProp* EntityHelpers::GetProp(IServerGameDLL* serverGameDll, const char* className, const char* tableName, const char* propName)
 {
     ServerClass* pClass = GetServerClass(serverGameDll, className);
     if (pClass)
     {
         SendProp* prop = GetProp(pClass, tableName, propName);
-        if (prop)
-        {
-            return prop;
-        }
+        return prop;
     }
     return nullptr;
 }
@@ -323,11 +336,16 @@ SendProp* EntityHelpers::GetProp(IServerGameDLL* serverGameDll, const char* clas
 SendProp* EntityHelpers::GetProp(ServerClass* serverClass, const char* tableName, const char* propName)
 {
     SendTable* table = GetTableRecursive(serverClass->GetTable(), tableName);
-    if (!table)
+    if (table)
     {
-        return nullptr;
+        SendProp* prop = EntityHelpers::GetProp(table, propName);
+        return prop;
     }
+    return nullptr;
+}
 
+SendProp* EntityHelpers::GetProp(SendTable* table, const char* propName)
+{
     const int numProps = table->GetNumProps();
     for (int i = 0; i < numProps; ++i)
     {

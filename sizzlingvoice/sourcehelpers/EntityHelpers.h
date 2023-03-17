@@ -11,6 +11,7 @@ struct edict_t;
 class IVEngineServer;
 class IServerGameDLL;
 class ServerClass;
+class SendTable;
 class SendProp;
 class CBaseHandle;
 class IServerGameEnts;
@@ -34,8 +35,13 @@ namespace EntityHelpers
     void PrintServerClassTables(IServerGameDLL* serverGameDll, const char* classname);
 
     ServerClass* GetServerClass(IServerGameDLL* serverGameDll, const char* classname);
+
+    SendTable* GetTable(IServerGameDLL* serverGameDll, const char* className, const char* tableName);
+    SendTable* GetTable(ServerClass* serverClass, const char* tableName);
+
     SendProp* GetProp(IServerGameDLL* serverGameDll, const char* className, const char* tableName, const char* propName);
     SendProp* GetProp(ServerClass* serverClass, const char* tableName, const char* propName);
+    SendProp* GetProp(SendTable* table, const char* propName);
 
     CBaseEntity* HandleToEnt(const CBaseHandle& handle, IServerTools* serverTools);
 }
