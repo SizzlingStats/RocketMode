@@ -227,6 +227,7 @@ void SizzLauncherSpawner::RocketLauncherSpawn(CBaseEntity* rocketLauncher)
     {
         { CEconItemAttribute_vtable, 2, 2.0f }, // mult_dmg - 2x damage
         { CEconItemAttribute_vtable, 3, 0.25f }, // mult_clipsize - clip size to 1
+        { CEconItemAttribute_vtable, 99, 2.0f }, // mult_explosion_radius - blast radius multiplier
         //{ CEconItemAttribute_vtable, 118, 0.5f }, // mult_dmg_falloff - splash damage removal
         { CEconItemAttribute_vtable, 488, 1.0f }, // rocket_specialist - +15% rocket speed per point. On direct hits: rocket does maximum damage, stuns target, and blast radius increased +15% per point.
         { CEconItemAttribute_vtable, 521, 1.0f },  // use_large_smoke_explosion - sentrybuster explosion
