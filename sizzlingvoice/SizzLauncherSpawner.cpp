@@ -133,7 +133,7 @@ static void ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverToo
     CEconItemView& item = TFDroppedWeaponHelpers::GetItem(ent);
 
     CTFDroppedWeapon_Hack* tfDroppedWeapon = (CTFDroppedWeapon_Hack*)&item;
-    tfDroppedWeapon->m_nClip = 4;
+    tfDroppedWeapon->m_nClip = 1;
     tfDroppedWeapon->m_nAmmo = 20;
 
     // my festive rocket launcher
