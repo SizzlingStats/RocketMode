@@ -97,7 +97,8 @@ private:
 
         float UpdateRoll(float dt, float target)
         {
-            rollAngle = Math::Lerp(target, rollAngle, Math::ExpDecay2(dt));
+            const float smooth = (target == 0.0f) ? 0.2f : 0.01f;
+            rollAngle = Math::ExpSmooth(rollAngle, target, smooth, dt);
             return rollAngle;
         }
 
