@@ -220,12 +220,6 @@ void RocketMode::GameFrame(bool simulating)
             continue;
         }
 
-        if (mClientStates[i].rocket.IsValid())
-        {
-            // client is in rocket mode
-            continue;
-        }
-
         const int clientEntIndex = i + 1;
         CBaseEntity* clientEnt = mServerTools->GetBaseEntityByEntIndex(clientEntIndex);
         if (!clientEnt)
@@ -238,6 +232,12 @@ void RocketMode::GameFrame(bool simulating)
         if (observerMode == OBS_MODE_NONE)
         {
             // player_spawn event notify handles spec -> respawn transitions.
+            continue;
+        }
+
+        if (mClientStates[i].rocket.IsValid())
+        {
+            // client is in rocket mode
             continue;
         }
 
