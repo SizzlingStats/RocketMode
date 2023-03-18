@@ -37,7 +37,7 @@ static int GetViewEntityOffset(IClient* anyClient, IVEngineServer* engineServer)
     return ((int)&hack->m_pViewEntity - (int)anyClient);
 }
 
-static int sViewEntityOffset;
+int ClientHelpers::sViewEntityOffset;
 
 void ClientHelpers::InitializeOffsets(IClient* anyClient, IVEngineServer* engineServer)
 {

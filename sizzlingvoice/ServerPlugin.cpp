@@ -400,6 +400,7 @@ void ServerPlugin::LevelInit(char const* pMapName)
 
 void ServerPlugin::GameFrame(bool simulating)
 {
+    mRocketMode.GameFrame(simulating);
 }
 
 void ServerPlugin::LevelShutdown()
@@ -444,6 +445,7 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
     const int clientIndex = entIndex - 1;
     IClient* client = mServer->GetClient(clientIndex);
 
+    BasePlayerHelpers::InitializeOffsets(mServerTools->GetBaseEntityByEntIndex(entIndex));
     ClientHelpers::InitializeOffsets(client, mVEngineServer);
 
     mRocketMode.ClientActive(pEntity);

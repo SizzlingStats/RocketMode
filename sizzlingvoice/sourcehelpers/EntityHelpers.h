@@ -186,6 +186,28 @@ namespace BaseEntityHelpers
     }
 }
 
+namespace BasePlayerHelpers
+{
+    extern int sObserverModeOffset;     // m_iObserverMode
+    extern int sObserverTargetOffset;   // m_hObserverTarget
+
+    void InitializeOffsets(CBaseEntity* ent);
+
+    // m_iObserverMode
+    inline int GetObserverMode(CBaseEntity* ent)
+    {
+        assert(sObserverModeOffset > 0);
+        return *(int*)((char*)ent + sObserverModeOffset);
+    }
+
+    // m_hObserverTarget
+    inline const CBaseHandle& GetObserverTarget(CBaseEntity* ent)
+    {
+        assert(sObserverTargetOffset > 0);
+        return *(CBaseHandle*)((char*)ent + sObserverTargetOffset);
+    }
+}
+
 namespace TFBaseRocketHelpers
 {
     extern int sLauncherOffset;     // m_hLauncher

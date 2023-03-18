@@ -35,6 +35,7 @@ public:
     void Shutdown();
 
     void LevelInit(const char* pMapName);
+    void GameFrame(bool simulating);
     void LevelShutdown();
 
     void ClientConnect();

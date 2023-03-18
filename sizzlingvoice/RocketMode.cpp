@@ -100,6 +100,10 @@ bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn game
         return false;
     }
 
+    if (!mGameEventManager->AddListener(this, "player_spawn", true))
+    {
+        return false;
+    }
     if (!mGameEventManager->AddListener(this, "player_death", true))
     {
         return false;
@@ -154,6 +158,90 @@ void RocketMode::LevelInit(const char* pMapName)
         }
 
         mServerTools->RemoveEntityImmediate(ent);
+    }
+}
+
+static int GetObserverTargetIndex(CBaseEntity* ent)
+{
+    if (ent)
+    {
+        CBaseHandle observerTarget = BasePlayerHelpers::GetObserverTarget(ent);
+        const int targetEntIndex = observerTarget.GetEntryIndex();
+        if (targetEntIndex <= MAX_PLAYERS)
+        {
+            return targetEntIndex;
+        }
+    }
+    return 0;
+}
+
+void RocketMode::GameFrame(bool simulating)
+{
+    // Spectator rocket mode update
+    const int clientCount = mServer->GetClientCount();
+    for (int i = 0; i < clientCount; ++i)
+    {
+        IClient* client = mServer->GetClient(i);
+        if (!client || !client->IsActive())
+        {
+            continue;
+        }
+
+        if (mClientStates[i].rocket.IsValid())
+        {
+            // client is in rocket mode
+            continue;
+        }
+
+        const int clientEntIndex = i + 1;
+        CBaseEntity* clientEnt = mServerTools->GetBaseEntityByEntIndex(clientEntIndex);
+        if (!clientEnt)
+        {
+            // shouldn't happen, but for safety
+            continue;
+        }
+
+        const int observerMode = BasePlayerHelpers::GetObserverMode(clientEnt);
+        if (observerMode == OBS_MODE_NONE)
+        {
+            // player_spawn event notify handles spec -> respawn transitions.
+            continue;
+        }
+
+        edict_t* viewEdict = ClientHelpers::GetViewEntity(client);
+
+        // if spectating a player
+        if (observerMode == OBS_MODE_IN_EYE || observerMode == OBS_MODE_CHASE)
+        {
+            // OBS_MODE_CHASE seems to be set when on a fixed map view.
+            // I thought it would be OBS_MODE_FIXED, but whatever.
+            const int targetEntIndex = GetObserverTargetIndex(clientEnt);
+            if (targetEntIndex > 0)
+            {
+                // if target is in rocket mode
+                const int targetClientIndex = targetEntIndex - 1;
+                const State& state = mClientStates[targetClientIndex];
+                if (state.rocket.IsValid())
+                {
+                    // if target's rocket is not our view ent, set it.
+                    CBaseEntity* rocketEnt = EntityHelpers::HandleToEnt(state.rocket, mServerTools);
+                    edict_t* rocketEdict = mServerGameEnts->BaseEntityToEdict(rocketEnt);
+                    if (viewEdict != rocketEdict)
+                    {
+                        ClientHelpers::SetViewEntity(client, rocketEdict);
+                        continue;
+                    }
+                }
+            }
+        }
+
+        if (viewEdict)
+        {
+            // Clear view ent and ent target if we're
+            // not spectating anyone in rocket mode.
+            // For spectator transitions.
+            ClientHelpers::SetViewEntity(client, nullptr);
+        }
     }
 }
 
@@ -538,20 +626,52 @@ void RocketMode::IGameEventListener2_Destructor()
 {
 }
 
+static IClient* UserIdToClient(int userid, IServer* server)
+{
+    const int clientCount = server->GetClientCount();
+    for (int i = 0; i < clientCount; ++i)
+    {
+        IClient* client = server->GetClient(i);
+        if (client && client->IsActive())
+        {
+            if (client->GetUserID() == userid)
+            {
+                return client;
+            }
+        }
+    }
+    return nullptr;
+}
+
 void RocketMode::FireGameEvent(IGameEvent* event)
 {
-    assert(!strcmp(event->GetName(), "player_death"));
-
-    // from CTFGameRules::DeathNotice
-    const int victimEntIndex = event->GetInt("victim_entindex", -1);
-    if (victimEntIndex > 0 && victimEntIndex < MAX_PLAYERS)
+    const char* eventName = event->GetName();
+    if (!strcmp(eventName, "player_spawn"))
     {
-        const int victimClientIndex = victimEntIndex - 1;
-        State& state = mClientStates[victimClientIndex];
-        if (state.rocket.IsValid())
+        const int userid = event->GetInt("userid", -1);
+        IClient* client = UserIdToClient(userid, mServer);
+        if (client)
         {
-            CBaseEntity* rocket = EntityHelpers::HandleToEnt(state.rocket, mServerTools);
-            DetachFromRocket(rocket);
+            edict_t* viewEdict = ClientHelpers::GetViewEntity(client);
+            if (viewEdict)
+            {
+                ClientHelpers::SetViewEntity(client, nullptr);
+            }
+        }
+    }
+    else if (!strcmp(eventName, "player_death"))
+    {
+        // from CTFGameRules::DeathNotice
+        const int victimEntIndex = event->GetInt("victim_entindex", -1);
+        if (victimEntIndex > 0 && victimEntIndex < MAX_PLAYERS)
+        {
+            const int victimClientIndex = victimEntIndex - 1;
+            State& state = mClientStates[victimClientIndex];
+            if (state.rocket.IsValid())
+            {
+                CBaseEntity* rocket = EntityHelpers::HandleToEnt(state.rocket, mServerTools);
+                DetachFromRocket(rocket);
+            }
         }
     }
 }

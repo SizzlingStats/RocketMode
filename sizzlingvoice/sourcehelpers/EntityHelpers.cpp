@@ -441,6 +441,27 @@ void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
     assert(sAttributesOffset > 0);
 }
 
+int BasePlayerHelpers::sObserverModeOffset;
+int BasePlayerHelpers::sObserverTargetOffset;
+
+void BasePlayerHelpers::InitializeOffsets(CBaseEntity* ent)
+{
+    if (sObserverModeOffset > 0)
+    {
+        // already initialized
+        return;
+    }
+
+    datamap_t* datamap = ent->GetDataDescMap();
+    assert(datamap);
+
+    sObserverModeOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iObserverMode");
+    assert(sObserverModeOffset > 0);
+
+    sObserverTargetOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_hObserverTarget");
+    assert(sObserverTargetOffset > 0);
+}
+
 int TFBaseRocketHelpers::sLauncherOffset;
 
 void TFBaseRocketHelpers::InitializeOffsets(CBaseEntity* ent)
