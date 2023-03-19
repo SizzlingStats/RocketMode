@@ -41,7 +41,7 @@ public:
         return m_Index & ENT_ENTRY_MASK;
     }
 
-    int CBaseHandle::GetSerialNumber() const
+    int GetSerialNumber() const
     {
         return m_Index >> NUM_SERIAL_NUM_SHIFT_BITS;
     }
