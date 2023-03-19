@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "engine/iserverplugin.h"
 #include "const.h"
 
 #define PRINTF_FORMAT_STRING
@@ -414,7 +415,6 @@ class CStandardSendProxies;
 typedef void* (*CreateInterfaceFn)(const char* pName, int* pReturnCode);
 class CGlobalVars;
 class CSaveRestoreData;
-enum EQueryCvarValueStatus;
 
 //-----------------------------------------------------------------------------
 // Purpose: These are the interfaces that the game .dll exposes to the engine
