@@ -19,11 +19,11 @@ public:
     SendTable* GetDataTable() const { return m_pDataTable; }
     int GetOffset() const { return m_Offset; }
     const char* GetName() const { return m_pVarName; }
-    int SendProp::GetFlags() const { return m_Flags; }
+    int GetFlags() const { return m_Flags; }
     bool IsExcludeProp() const { return (m_Flags & SPROP_EXCLUDE) != 0; }
     char const* GetExcludeDTName() const { return m_pExcludeDTName; }
-    SendPropType SendProp::GetType() const { return m_Type; }
-    int SendProp::GetNumElements() const { return m_nElements; }
+    SendPropType GetType() const { return m_Type; }
+    int GetNumElements() const { return m_nElements; }
 
 public:
     RecvProp* m_pMatchingRecvProp;	// This is temporary and only used while precalculating
