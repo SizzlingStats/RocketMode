@@ -60,6 +60,7 @@ solution "sizzlingvoice"
     justmycode "Off"
     cppdialect "C++17"
     symbols "On"
+    vectorextensions "SSE2"
 
     --defines { "SDK_COMPAT" }
     defines { "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_WARNINGS", "INSTRSET=2" }
