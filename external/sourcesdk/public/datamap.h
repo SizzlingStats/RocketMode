@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include "tier0/platform.h"
+
 typedef enum _fieldtypes
 {
     FIELD_VOID = 0,         // No type or value
@@ -48,7 +50,7 @@ typedef enum _fieldtypes
 } fieldtype_t;
 
 class ISaveRestoreOps;
-class __single_inheritance CBaseEntity;
+class SINGLE_INHERITANCE CBaseEntity;
 struct inputdata_t;
 
 typedef void (CBaseEntity::* inputfunc_t)(inputdata_t& data);
