@@ -35,8 +35,8 @@ private:
     void DroppedWeaponSpawn(CBaseEntity* droppedWeapon);
 
 private:
-    static VTableHook<decltype(&RocketLauncherSpawnHook)> sRocketLauncherSpawnHook;
-    static VTableHook<decltype(&DroppedWeaponSpawnHook)> sDroppedWeaponSpawnHook;
+    static VTableHook<decltype(&SizzLauncherSpawner::RocketLauncherSpawnHook)> sRocketLauncherSpawnHook;
+    static VTableHook<decltype(&SizzLauncherSpawner::DroppedWeaponSpawnHook)> sDroppedWeaponSpawnHook;
 
 private:
     IServerGameClients* mServerGameClients;

@@ -154,8 +154,8 @@ private:
     RocketMode mRocketMode;
     SizzLauncherSpawner mSizzLauncherSpawner;
 
-    static VTableHook<decltype(&ProcessVoiceDataHook)> sProcessVoiceDataHook;
-    static VTableHook<decltype(&IsProximityHearingClientHook)> sIsProximityHearingClientHook;
+    static VTableHook<decltype(&ServerPlugin::ProcessVoiceDataHook)> sProcessVoiceDataHook;
+    static VTableHook<decltype(&ServerPlugin::IsProximityHearingClientHook)> sIsProximityHearingClientHook;
 };
 
 VTableHook<decltype(&ServerPlugin::ProcessVoiceDataHook)> ServerPlugin::sProcessVoiceDataHook;

@@ -65,11 +65,11 @@ private:
 
 private:
     static string_t tf_projectile_rocket;
-    static VTableHook<decltype(&PlayerRunCommandHook)> sPlayerRunCommandHook;
+    static VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> sPlayerRunCommandHook;
 
     // CTFProjectile_Rocket hooks 
-    static VTableHook<decltype(&SetOwnerEntityHook)> sSetOwnerEntityHook;
-    static VTableHook<decltype(&RocketSpawnHook)> sRocketSpawnHook;
+    static VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> sSetOwnerEntityHook;
+    static VTableHook<decltype(&RocketMode::RocketSpawnHook)> sRocketSpawnHook;
 
 private:
     IVEngineServer* mVEngineServer;
