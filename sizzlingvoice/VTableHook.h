@@ -8,7 +8,7 @@ struct MemFnPtr
 {
     void DummyFunc();
 
-    static constexpr size_t MemFnPtrSize = sizeof(&MemFnPtr::DummyFunc);
+    static constexpr int MemFnPtrSize = sizeof(&MemFnPtr::DummyFunc);
 
     alignas(MemFnPtrSize) unsigned char mData[MemFnPtrSize];
 };
