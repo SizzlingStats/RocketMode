@@ -177,7 +177,7 @@ void* CreateInterface(const char* pName, int* pReturnCode)
     static bool sInitialized = false;
     if (sInitialized)
     {
-        return false;
+        return nullptr;
     }
     sInitialized = true;
 
