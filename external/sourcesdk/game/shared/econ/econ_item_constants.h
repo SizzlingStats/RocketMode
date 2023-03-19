@@ -1,6 +1,45 @@
 
 #pragma once
 
+//-----------------------------------------------------------------------------
+// Origin for an item for CEconItem
+//-----------------------------------------------------------------------------
+// WARNING!!! Values stored in DB.  DO NOT CHANGE EXISTING VALUES.  Add values to the end.
+enum eEconItemOrigin
+{
+    kEconItemOrigin_Invalid = -1,				// should never be stored in the DB! used to indicate "invalid" for in-memory objects only
+
+    kEconItemOrigin_Drop = 0,
+    kEconItemOrigin_Achievement,
+    kEconItemOrigin_Purchased,
+    kEconItemOrigin_Traded,
+    kEconItemOrigin_Crafted,
+    kEconItemOrigin_StorePromotion,
+    kEconItemOrigin_Gifted,
+    kEconItemOrigin_SupportGranted,
+    kEconItemOrigin_FoundInCrate,
+    kEconItemOrigin_Earned,
+    kEconItemOrigin_ThirdPartyPromotion,
+    kEconItemOrigin_GiftWrapped,
+    kEconItemOrigin_HalloweenDrop,
+    kEconItemOrigin_PackageItem,
+    kEconItemOrigin_Foreign,
+    kEconItemOrigin_CDKey,
+    kEconItemOrigin_CollectionReward,
+    kEconItemOrigin_PreviewItem,
+    kEconItemOrigin_SteamWorkshopContribution,
+    kEconItemOrigin_PeriodicScoreReward,
+    kEconItemOrigin_MvMMissionCompletionReward,			// includes loot from both "mission completed" and "tour completed" events
+    kEconItemOrigin_MvMSquadSurplusReward,
+    kEconItemOrigin_RecipeOutput,
+    kEconItemOrigin_QuestDrop,
+    kEconItemOrigin_QuestLoanerItem,
+    kEconItemOrigin_TradeUp,
+    kEconItemOrigin_ViralCompetitiveBetaPassSpread,
+
+    kEconItemOrigin_Max,
+};
+
 enum EEconItemQuality
 {
     AE_UNDEFINED = -1,

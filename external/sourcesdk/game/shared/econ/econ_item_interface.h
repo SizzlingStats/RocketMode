@@ -1,12 +1,12 @@
 
 #pragma once
 
+#include "econ_item_constants.h"
 #include <stdint.h>
 
 using itemid_t = uint64_t;
 using style_index_t = uint8_t;
 using item_definition_index_t = uint16_t;
-enum eEconItemOrigin;
 
 class IEconItemAttributeIterator;
 class CEconItemPaintKitDefinition;
