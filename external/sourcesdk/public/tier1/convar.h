@@ -88,8 +88,8 @@ class ConVar : public ConCommandBase, public IConVar
 public:
     virtual ~ConVar() = 0;
 
-    bool IsEnabled() const { return m_nValue != 0; }
-    int GetInt() const { return m_nValue; };
+    bool IsEnabled() const { return GetInt() != 0; }
+    int GetInt() const { return m_pParent->m_nValue; };
 
     // This either points to "this" or it points to the original declaration of a ConVar.
 	// This allows ConVars to exist in separate modules, and they all use the first one to be declared.
