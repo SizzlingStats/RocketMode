@@ -47,15 +47,15 @@ static float sBFlatMinor[12]    = { -1,  1, -1,  1,  1, -1,  1, -1,  1,  1, -1, 
 // autotalent exports
 extern "C"
 {
-    extern void _init();
-    extern void _fini();
+    extern void init();
+    extern void fini();
 }
 
 class AutoTalent
 {
 public:
-    static void GlobalInit() { _init(); }
-    static void GlobalShutdown() { _fini(); }
+    static void GlobalInit() { init(); }
+    static void GlobalShutdown() { fini(); }
 
     AutoTalent()
     {

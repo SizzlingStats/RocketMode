@@ -1211,8 +1211,7 @@ cleanupAutotalent(LADSPA_Handle Instance) {
 LADSPA_Descriptor* g_psDescriptor;
 
 // Called when first loaded
-void
-_init() {
+void init() {
 
   char** pcPortNames;
   LADSPA_PortDescriptor* piPortDescriptors;
@@ -1648,8 +1647,7 @@ deleteDescriptor(LADSPA_Descriptor* psDescriptor) {
 
 
 // Called when library is unloaded
-void
-_fini() {
+void fini() {
   deleteDescriptor(g_psDescriptor);
 }
 
