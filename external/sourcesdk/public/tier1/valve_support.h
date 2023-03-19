@@ -2,6 +2,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 #include <assert.h>
 
 using uint64 = uint64_t;

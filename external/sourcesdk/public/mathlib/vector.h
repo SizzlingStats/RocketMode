@@ -1,9 +1,8 @@
 
 #pragma once
 
+#include "../tier0/platform.h"
 #include <assert.h>
-
-#define FORCEINLINE __forceinline
 
 class QAngle
 {
