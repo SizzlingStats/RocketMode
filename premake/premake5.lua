@@ -61,6 +61,7 @@ solution "sizzlingvoice"
     cppdialect "C++17"
     symbols "On"
     vectorextensions "SSE2"
+    pic "On"
 
     --defines { "SDK_COMPAT" }
     defines { "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_WARNINGS", "INSTRSET=2" }
@@ -71,9 +72,14 @@ solution "sizzlingvoice"
         defines { "NDEBUG" }
         optimize "Full"
         flags { "NoBufferSecurityCheck", "NoIncrementalLink" }
+    configuration {}
+    
+    filter { "Release", "toolset:msc" }
         buildoptions { "/GL" }
         linkoptions { "/LTCG" }
-    configuration {}
+    filter { "Release", "toolset:not msc" }
+        flags { "LinkTimeOptimization" }
+    filter {}
 
     project "sizzlingvoice"
         kind "SharedLib"
