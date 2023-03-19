@@ -3,6 +3,7 @@
 
 #include "engine/iserverplugin.h"
 #include "const.h"
+#include "soundflags.h"
 #include <stddef.h>
 
 #define PRINTF_FORMAT_STRING
@@ -14,7 +15,6 @@ template <int NUM_BITS> class CBitVec;
 class Vector;
 struct edict_t;
 class INetChannelInfo;
-enum soundlevel_t;
 class ServerClass;
 class bf_write;
 class IRecipientFilter;

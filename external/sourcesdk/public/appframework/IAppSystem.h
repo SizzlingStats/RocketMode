@@ -3,7 +3,13 @@
 
 typedef void* (*CreateInterfaceFn)(const char* pName, int* pReturnCode);
 
-enum InitReturnVal_t;
+enum InitReturnVal_t
+{
+    INIT_FAILED = 0,
+    INIT_OK,
+
+    INIT_LAST_VAL
+};
 
 class IAppSystem
 {
