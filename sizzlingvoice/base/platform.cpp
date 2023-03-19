@@ -7,6 +7,8 @@
 
 #undef GetModuleHandle
 #undef LoadLibrary
+#else
+#include <dlfcn.h>
 #endif
 
 Platform::HModule Platform::LoadLibrary(const char* name)
@@ -23,9 +25,9 @@ void Platform::FreeLibrary(HModule module)
 #ifdef _WIN32
     ::FreeLibrary(static_cast<HMODULE>(module));
 #else
-    if (handle)
+    if (module)
     {
-        dlclose(handle);
+        dlclose(module);
     }
 #endif
 }
