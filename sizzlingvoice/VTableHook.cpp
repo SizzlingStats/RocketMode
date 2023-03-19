@@ -37,15 +37,21 @@ bool VirtualProtect(const void* addr, size_t len, int prot, unsigned int* prev)
 
 #endif
 
-unsigned char* EditVTable(unsigned char** vtable, int slot, unsigned char* replacementFn)
+#ifdef _WIN32
+static_assert(MemFnPtr::MemFnPtrSize == 4);
+#else
+static_assert(MemFnPtr::MemFnPtrSize == 8);
+#endif
+
+MemFnPtr EditVTable(MemFnPtr* vtable, int slot, const MemFnPtr* replacementFn)
 {
-    unsigned char** entry = &vtable[slot];
-    unsigned char* prevFn = vtable[slot];
+    MemFnPtr* entry = &vtable[slot];
+    MemFnPtr prevFn = vtable[slot];
 
     DWORD oldProtect;
-    VirtualProtect(entry, sizeof(unsigned char*), PAGE_EXECUTE_READWRITE, &oldProtect);
-    memcpy(entry, &replacementFn, sizeof(unsigned char*));
-    VirtualProtect(entry, sizeof(unsigned char*), oldProtect, &oldProtect);
+    VirtualProtect(entry, sizeof(MemFnPtr), PAGE_EXECUTE_READWRITE, &oldProtect);
+    memcpy(entry, replacementFn, sizeof(MemFnPtr));
+    VirtualProtect(entry, sizeof(MemFnPtr), oldProtect, &oldProtect);
 
     return prevFn;
 }

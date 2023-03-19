@@ -4,7 +4,16 @@
 template<class T> struct get_class;
 template<class T, class R> struct get_class<R T::*> { using type = T; };
 
-unsigned char* EditVTable(unsigned char** vtable, int slot, unsigned char* replacementFn);
+struct MemFnPtr
+{
+    void DummyFunc();
+
+    static constexpr size_t MemFnPtrSize = sizeof(&MemFnPtr::DummyFunc);
+
+    alignas(MemFnPtrSize) unsigned char mData[MemFnPtrSize];
+};
+
+MemFnPtr EditVTable(MemFnPtr* vtable, int slot, const MemFnPtr* replacementFn);
 
 template<typename HookMemberFnPtr>
 class VTableHook
@@ -13,7 +22,10 @@ class VTableHook
 
 public:
     VTableHook() :
-        mHookThisPtr(nullptr)
+        mHookThisPtr(nullptr),
+        mHookMemberFnPtr(nullptr),
+        mHookedFnSlot(nullptr),
+        mOriginalFn()
     {
     }
 
@@ -28,12 +40,14 @@ public:
             return;
         }
 
+        static_assert(sizeof(hookFn) == sizeof(MemFnPtr));
+
         mHookThisPtr = hookThisPtr;
         mHookMemberFnPtr = hookFn;
 
-        unsigned char** vtable = *(unsigned char***)thisPtr;
+        MemFnPtr* vtable = *(MemFnPtr**)thisPtr;
         mHookedFnSlot = &vtable[vtableSlot];
-        mOriginalFn = EditVTable(vtable, vtableSlot, (unsigned char*&)hookFn);
+        mOriginalFn = EditVTable(vtable, vtableSlot, reinterpret_cast<const MemFnPtr*>(&hookFn));
     }
 
     void Unhook()
@@ -43,7 +57,7 @@ public:
             return;
         }
         mHookThisPtr = nullptr;
-        EditVTable(mHookedFnSlot, 0, mOriginalFn);
+        EditVTable(mHookedFnSlot, 0, &mOriginalFn);
     }
 
     template<typename T, typename... Args>
@@ -61,6 +75,6 @@ private:
     HookClassType* mHookThisPtr;
     HookMemberFnPtr mHookMemberFnPtr;
 
-    unsigned char** mHookedFnSlot;
-    unsigned char* mOriginalFn;
+    MemFnPtr* mHookedFnSlot;
+    MemFnPtr mOriginalFn;
 };
