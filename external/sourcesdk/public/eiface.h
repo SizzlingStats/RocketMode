@@ -3,6 +3,7 @@
 
 #include "engine/iserverplugin.h"
 #include "const.h"
+#include <stddef.h>
 
 #define PRINTF_FORMAT_STRING
 
