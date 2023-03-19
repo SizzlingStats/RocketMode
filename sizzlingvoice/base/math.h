@@ -1,13 +1,7 @@
 
 #pragma once
 
-#if defined( _WIN32 )
-#define FORCEINLINE __forceinline
-#define FORCENOINLINE _declspec(noinline)
-#else
-#define FORCEINLINE __attribute__((always_inline))
-#define FORCENOINLINE __attribute__((noinline))
-#endif
+#include "sourcesdk/public/tier0/platform.h"
 
 namespace Math
 {
