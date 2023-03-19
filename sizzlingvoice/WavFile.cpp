@@ -109,6 +109,11 @@ WavFile::~WavFile()
 
 bool WavFile::Load(const char* file, IBaseFileSystem* fileSystem)
 {
+    static constexpr uint32_t sRIFF = 0x46464952;  // 'FFIR'
+    static constexpr uint32_t sWAVE = 0x45564157;  // 'EVAW'
+    static constexpr uint32_t sFmt = 0x20746d66;   // ' tmf'
+    static constexpr uint32_t sData = 0x61746164;  // 'atad'
+
     char* data;
     const int32_t length = ReadFileToMemory(file, &data, fileSystem);
 
@@ -116,9 +121,9 @@ bool WavFile::Load(const char* file, IBaseFileSystem* fileSystem)
 
     RiffChunk riffChunk;
     reader.ReadBytes(&riffChunk, sizeof(riffChunk));
-    assert(riffChunk.riff == 'FFIR');
+    assert(riffChunk.riff == sRIFF);
     assert((riffChunk.size + 8) == length);
-    assert(riffChunk.wave == 'EVAW');
+    assert(riffChunk.wave == sWAVE);
 
     FmtChunk fmt;
 
@@ -126,7 +131,7 @@ bool WavFile::Load(const char* file, IBaseFileSystem* fileSystem)
     {
         SubChunk subChunk;
         reader.ReadBytes(&subChunk, sizeof(subChunk));
-        if (subChunk.id == ' tmf')
+        if (subChunk.id == sFmt)
         {
             reader.ReadBytes(&fmt, sizeof(fmt));
 
@@ -138,7 +143,7 @@ bool WavFile::Load(const char* file, IBaseFileSystem* fileSystem)
             mNumChannels = fmt.channels;
             mSampleRate = fmt.sampleRate;
         }
-        else if (subChunk.id == 'atad')
+        else if (subChunk.id == sData)
         {
             assert(!mSampleData);
             char* sampleData = static_cast<char*>(malloc(subChunk.size));
