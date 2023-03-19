@@ -1,10 +1,6 @@
 
 #include "vaudioceltcodecmanager.h"
-
-#define VC_EXTRALEAN
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
-
+#include "base/platform.h"
 #include <assert.h>
 
 VAudioCeltCodecManager::VAudioCeltCodecManager() :
@@ -15,10 +11,10 @@ VAudioCeltCodecManager::VAudioCeltCodecManager() :
 
 bool VAudioCeltCodecManager::Init()
 {
-    mVAudioCeltDll = LoadLibrary(TEXT("vaudio_celt.dll"));
+    mVAudioCeltDll = Platform::LoadLibrary("vaudio_celt");
     assert(mVAudioCeltDll);
 
-    mIVAudioVoiceCodecCreateInterfaceFunc = (CreateInterfaceFn)GetProcAddress((HMODULE)mVAudioCeltDll, "CreateInterface");
+    mIVAudioVoiceCodecCreateInterfaceFunc = (CreateInterfaceFn)Platform::GetProcAddress(mVAudioCeltDll, "CreateInterface");
     assert(mIVAudioVoiceCodecCreateInterfaceFunc);
 
     return true;
@@ -26,7 +22,7 @@ bool VAudioCeltCodecManager::Init()
 
 void VAudioCeltCodecManager::Release()
 {
-    FreeLibrary((HMODULE)mVAudioCeltDll);
+    Platform::FreeLibrary(mVAudioCeltDll);
     mVAudioCeltDll = nullptr;
     mIVAudioVoiceCodecCreateInterfaceFunc = nullptr;
 }

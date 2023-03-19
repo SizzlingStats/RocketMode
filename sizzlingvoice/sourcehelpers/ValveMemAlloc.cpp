@@ -1,8 +1,6 @@
 
 #include "ValveMemAlloc.h"
-
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include "base/platform.h"
 #include <assert.h>
 
 class IMemAlloc;
@@ -12,10 +10,10 @@ bool ValveMemAlloc::Init()
 {
     assert(!g_pMemAlloc);
 
-    HMODULE hTier0 = GetModuleHandleA("tier0.dll");
+    Platform::HModule hTier0 = Platform::GetModuleHandle("tier0.dll");
     assert(hTier0);
 
-    g_pMemAlloc = *reinterpret_cast<IMemAlloc**>(GetProcAddress(hTier0, "g_pMemAlloc"));
+    g_pMemAlloc = *reinterpret_cast<IMemAlloc**>(Platform::GetProcAddress(hTier0, "g_pMemAlloc"));
     assert(g_pMemAlloc);
 
     return g_pMemAlloc;

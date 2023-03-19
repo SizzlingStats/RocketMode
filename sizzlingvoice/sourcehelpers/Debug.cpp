@@ -1,15 +1,13 @@
 
 #include "Debug.h"
-
-#define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include "base/platform.h"
 #include <assert.h>
 
 Debug::MsgFn* Debug::Msg;
 
 void Debug::Initialize()
 {
-    HMODULE hTier0 = GetModuleHandleA("tier0");
+    Platform::HModule hTier0 = Platform::GetModuleHandle("tier0");
 
-    Debug::Msg = (MsgFn*)GetProcAddress(hTier0, "Msg");
+    Debug::Msg = (MsgFn*)Platform::GetProcAddress(hTier0, "Msg");
 }
