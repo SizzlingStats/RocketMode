@@ -62,6 +62,7 @@ solution "sizzlingvoice"
     symbols "On"
     vectorextensions "SSE2"
     pic "On"
+    targetprefix ""
 
     --defines { "SDK_COMPAT" }
     defines { "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_WARNINGS", "INSTRSET=2" }
