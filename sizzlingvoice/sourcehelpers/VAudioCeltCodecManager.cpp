@@ -3,6 +3,12 @@
 #include "base/platform.h"
 #include <assert.h>
 
+#ifdef _WIN32
+#define VAUDIO_MODULE "vaudio_celt.dll"
+#else
+#define VAUDIO_MODULE "vaudio_celt.so"
+#endif
+
 VAudioCeltCodecManager::VAudioCeltCodecManager() :
     mVAudioCeltDll(nullptr),
     mIVAudioVoiceCodecCreateInterfaceFunc(nullptr)
@@ -11,7 +17,7 @@ VAudioCeltCodecManager::VAudioCeltCodecManager() :
 
 bool VAudioCeltCodecManager::Init()
 {
-    mVAudioCeltDll = Platform::LoadLibrary("vaudio_celt");
+    mVAudioCeltDll = Platform::LoadLibrary(VAUDIO_MODULE);
     assert(mVAudioCeltDll);
 
     mIVAudioVoiceCodecCreateInterfaceFunc = (CreateInterfaceFn)Platform::GetProcAddress(mVAudioCeltDll, "CreateInterface");
