@@ -33,9 +33,7 @@ public:
 class IGameEventListener2
 {
 public:
-    // Workaround for derived classes trying to destruct.
-    // Pure virtual destructors still need a function body.
-    virtual void IGameEventListener2_Destructor(void) = 0;
+    virtual ~IGameEventListener2();
 
     // FireEvent is called by EventManager if event just occurred
     // KeyValue memory will be freed by manager if not needed anymore

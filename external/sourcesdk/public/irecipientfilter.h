@@ -4,7 +4,7 @@
 class IRecipientFilter
 {
 public:
-    virtual void IRecipientFilter_Destructor() = 0;
+    virtual ~IRecipientFilter();
 
     virtual bool IsReliable() const = 0;
     virtual bool IsInitMessage() const = 0;

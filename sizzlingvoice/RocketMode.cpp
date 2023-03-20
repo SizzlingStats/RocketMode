@@ -652,10 +652,6 @@ void RocketMode::RocketSpawn(CBaseEntity* rocket)
     }
 }
 
-void RocketMode::IGameEventListener2_Destructor()
-{
-}
-
 static IClient* UserIdToClient(int userid, IServer* server)
 {
     const int clientCount = server->GetClientCount();

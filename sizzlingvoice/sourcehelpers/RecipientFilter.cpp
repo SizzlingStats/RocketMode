@@ -4,7 +4,7 @@
 #include "sourcesdk/public/iserver.h"
 #include <assert.h>
 
-void RecipientFilter::IRecipientFilter_Destructor()
+RecipientFilter::~RecipientFilter()
 {
 }
 

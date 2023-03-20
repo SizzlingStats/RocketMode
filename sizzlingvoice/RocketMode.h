@@ -29,7 +29,7 @@ class RocketMode : public IGameEventListener2
 {
 public:
     RocketMode();
-    ~RocketMode();
+    virtual ~RocketMode() override;
 
     bool Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory);
     void Shutdown();
@@ -60,7 +60,6 @@ private:
     void RocketSpawnHook();
     void RocketSpawn(CBaseEntity* rocket);
 
-    virtual void IGameEventListener2_Destructor() override;
     virtual void FireGameEvent(IGameEvent* event) override;
 
 private:

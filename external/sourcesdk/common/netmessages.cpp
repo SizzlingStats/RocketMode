@@ -46,10 +46,6 @@ SVC_VoiceData::~SVC_VoiceData()
 {
 }
 
-void SVC_VoiceData::Destructor()
-{
-}
-
 void SVC_VoiceData::SetNetChannel(INetChannel* netchan)
 {
 }
@@ -121,7 +117,7 @@ void SVC_VoiceData::SetRatePolicy()
 {
 }
 
-void SVC_SetView::Destructor() { }
+SVC_SetView::~SVC_SetView() { }
 void SVC_SetView::SetNetChannel(INetChannel* netchan) { }
 void SVC_SetView::SetReliable(bool state) { }
 bool SVC_SetView::Process() { return false; }

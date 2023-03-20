@@ -48,9 +48,7 @@ class SVC_VoiceData : public CNetMessage
 {
 public:
     SVC_VoiceData();
-    ~SVC_VoiceData();
-
-    virtual void Destructor() override;
+    virtual ~SVC_VoiceData();
 
     virtual void SetNetChannel(INetChannel* netchan) override;
     virtual void SetReliable(bool state) override;
@@ -87,7 +85,7 @@ public:
 class SVC_SetView : public CNetMessage
 {
 public:
-    virtual void Destructor() override;
+    virtual ~SVC_SetView() override;
 
     virtual void SetNetChannel(INetChannel* netchan) override;
     virtual void SetReliable(bool state) override;

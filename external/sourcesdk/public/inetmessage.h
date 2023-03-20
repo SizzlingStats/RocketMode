@@ -9,9 +9,7 @@ class bf_write;
 class INetMessage
 {
 public:
-    // Workaround for derived classes trying to destruct.
-    // Pure virtual destructors still need a function body.
-    virtual	void Destructor() = 0;
+    virtual	~INetMessage();
 
     virtual void	SetNetChannel(INetChannel* netchan) = 0; // netchannel this message is from/for
     virtual void	SetReliable(bool state) = 0;	// set to true if it's a reliable message
