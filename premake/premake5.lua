@@ -80,6 +80,8 @@ solution "sizzlingvoice"
         linkoptions { "/LTCG" }
     filter { "Release", "toolset:not msc" }
         flags { "LinkTimeOptimization" }
+    filter { "toolset:not msc" }
+        linkoptions { "-Wl,--no-undefined,--no-allow-shlib-undefined" }
     filter {}
 
     project "sizzlingvoice"
