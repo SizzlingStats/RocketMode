@@ -23,7 +23,7 @@
 typedef unsigned long ADDRTYPE;
 typedef unsigned int DWORD;
 
-bool VirtualProtect(const void* addr, size_t len, int prot, unsigned int* prev)
+static bool VirtualProtect(const void* addr, size_t len, int prot, unsigned int* prev)
 {
     ADDRTYPE p = (ADDRTYPE)addr & ~(PAGESIZE - 1);
     int ret = mprotect((void*)p, (ADDRTYPE)addr - p + len, prot);
@@ -37,21 +37,15 @@ bool VirtualProtect(const void* addr, size_t len, int prot, unsigned int* prev)
 
 #endif
 
-#ifdef _WIN32
-static_assert(MemFnPtr::MemFnPtrSize == 4);
-#else
-static_assert(MemFnPtr::MemFnPtrSize == 8);
-#endif
-
-MemFnPtr EditVTable(MemFnPtr* vtable, int slot, const MemFnPtr* replacementFn)
+FnPtr EditVTable(FnPtr* vtable, int slot, const FnPtr* replacementFn)
 {
-    MemFnPtr* entry = &vtable[slot];
-    MemFnPtr prevFn = vtable[slot];
+    FnPtr* entry = &vtable[slot];
+    FnPtr prevFn = vtable[slot];
 
     DWORD oldProtect;
-    VirtualProtect(entry, sizeof(MemFnPtr), PAGE_EXECUTE_READWRITE, &oldProtect);
-    memcpy(entry, replacementFn, sizeof(MemFnPtr));
-    VirtualProtect(entry, sizeof(MemFnPtr), oldProtect, &oldProtect);
+    VirtualProtect(entry, sizeof(FnPtr), PAGE_EXECUTE_READWRITE, &oldProtect);
+    memcpy(entry, replacementFn, sizeof(FnPtr));
+    VirtualProtect(entry, sizeof(FnPtr), oldProtect, &oldProtect);
 
     return prevFn;
 }
