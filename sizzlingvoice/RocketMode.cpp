@@ -27,6 +27,7 @@
 #include "sourcehelpers/RecipientFilter.h"
 #include "sourcehelpers/SendTablesFix.h"
 #include "base/math.h"
+#include "HookOffsets.h"
 #include <string.h>
 
 #define BOOSTER_LOOP "ambient/steam_drum.wav"
@@ -140,21 +141,11 @@ void RocketMode::LevelInit(const char* pMapName)
         tf_projectile_rocket = BaseEntityHelpers::GetClassname(ent);
         if (!sSetOwnerEntityHook.GetThisPtr())
         {
-#ifdef SDK_COMPAT
-            constexpr int Offset = 17;
-#else
-            constexpr int Offset = 18;
-#endif
-            sSetOwnerEntityHook.Hook(ent, Offset, this, &RocketMode::SetOwnerEntityHook);
+            sSetOwnerEntityHook.Hook(ent, HookOffsets::SetOwnerEntity, this, &RocketMode::SetOwnerEntityHook);
         }
         if (!sRocketSpawnHook.GetThisPtr())
         {
-#ifdef SDK_COMPAT
-            constexpr int Offset = 22;
-#else
-            constexpr int Offset = 24;
-#endif
-            sRocketSpawnHook.Hook(ent, Offset, this, &RocketMode::RocketSpawnHook);
+            sRocketSpawnHook.Hook(ent, HookOffsets::Spawn, this, &RocketMode::RocketSpawnHook);
         }
 
         mServerTools->RemoveEntityImmediate(ent);
@@ -302,12 +293,7 @@ void RocketMode::ClientActive(edict_t* pEntity)
         CBaseEntity* ent = mServerTools->GetBaseEntityByEntIndex(pEntity->m_EdictIndex);
         assert(ent);
 
-#ifdef SDK_COMPAT
-        constexpr int Offset = 421;
-#else
-        constexpr int Offset = 430;
-#endif
-        sPlayerRunCommandHook.Hook(ent, Offset, this, &RocketMode::PlayerRunCommandHook);
+        sPlayerRunCommandHook.Hook(ent, HookOffsets::PlayerRunCommand, this, &RocketMode::PlayerRunCommandHook);
     }
 }
 

@@ -22,6 +22,7 @@
 #include "sourcehelpers/EntityHelpers.h"
 #include "sourcehelpers/StaticPropMgr.h"
 #include "sourcehelpers/ValveMemAlloc.h"
+#include "HookOffsets.h"
 #include "VTableHook.h"
 #include "sourcehelpers/VAudioCeltCodecManager.h"
 #include "dsp/phaser.h"
@@ -459,15 +460,15 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
     if (!sIsProximityHearingClientHook.GetThisPtr())
     {
         //client->IsProximityHearingClient(0);
-        constexpr int IsProximityHearingClientOffset = 38;
-        sIsProximityHearingClientHook.Hook(client, IsProximityHearingClientOffset, this, &ServerPlugin::IsProximityHearingClientHook);
+        sIsProximityHearingClientHook.Hook(client, HookOffsets::IsProximityHearingClient, this, &ServerPlugin::IsProximityHearingClientHook);
     }
 
     if (!sProcessVoiceDataHook.GetThisPtr())
     {
         const INetMessage* msg = GetCLCVoiceData(netChannel);
-        constexpr int ProcessOffset = 3;
-        sProcessVoiceDataHook.Hook(msg, ProcessOffset, this, &ServerPlugin::ProcessVoiceDataHook);
+        assert(msg);
+
+        sProcessVoiceDataHook.Hook(msg, HookOffsets::ProcessVoiceData, this, &ServerPlugin::ProcessVoiceDataHook);
     }
 
     assert(!mClientState[clientIndex]);

@@ -16,6 +16,7 @@
 #include "sourcesdk/game/shared/econ/econ_item_constants.h"
 
 #include "sourcehelpers/EntityHelpers.h"
+#include "HookOffsets.h"
 
 #include <string.h>
 
@@ -78,12 +79,7 @@ void SizzLauncherSpawner::LevelInit(const char* pMapName)
 
         if (!sRocketLauncherSpawnHook.GetThisPtr())
         {
-#ifdef SDK_COMPAT
-            constexpr int Offset = 22;
-#else
-            constexpr int Offset = 24;
-#endif
-            sRocketLauncherSpawnHook.Hook(ent, Offset, this, &SizzLauncherSpawner::RocketLauncherSpawnHook);
+            sRocketLauncherSpawnHook.Hook(ent, HookOffsets::Spawn, this, &SizzLauncherSpawner::RocketLauncherSpawnHook);
         }
         mServerTools->RemoveEntityImmediate(ent);
     }
@@ -92,12 +88,7 @@ void SizzLauncherSpawner::LevelInit(const char* pMapName)
     {
         if (!sDroppedWeaponSpawnHook.GetThisPtr())
         {
-#ifdef SDK_COMPAT
-            constexpr int Offset = 22;
-#else
-            constexpr int Offset = 24;
-#endif
-            sDroppedWeaponSpawnHook.Hook(droppedWeapon, Offset, this, &SizzLauncherSpawner::DroppedWeaponSpawnHook);
+            sDroppedWeaponSpawnHook.Hook(droppedWeapon, HookOffsets::Spawn, this, &SizzLauncherSpawner::DroppedWeaponSpawnHook);
         }
         mServerTools->RemoveEntityImmediate(droppedWeapon);
     }

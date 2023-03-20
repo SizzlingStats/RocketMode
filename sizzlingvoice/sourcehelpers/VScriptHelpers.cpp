@@ -6,6 +6,7 @@
 
 #include "sourcesdk/public/vscript/ivscript.h"
 #include "../VTableHook.h"
+#include "../HookOffsets.h"
 #include <assert.h>
 
 // Assuming only one vscript instance
@@ -16,13 +17,11 @@ public:
     {
         if (!sCreateVMHook.GetThisPtr())
         {
-            constexpr int Offset = 5;
-            sCreateVMHook.Hook(scriptManager, Offset, this, &ScriptManagerShim::CreateVMHook);
+            sCreateVMHook.Hook(scriptManager, HookOffsets::CreateVM, this, &ScriptManagerShim::CreateVMHook);
         }
         if (!sDestroyVMHook.GetThisPtr())
         {
-            constexpr int Offset = 6;
-            sDestroyVMHook.Hook(scriptManager, Offset, this, &ScriptManagerShim::DestroyVMHook);
+            sDestroyVMHook.Hook(scriptManager, HookOffsets::DestroyVM, this, &ScriptManagerShim::DestroyVMHook);
         }
     }
 
