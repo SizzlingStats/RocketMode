@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "tier0/platform.h"
+
 class INetChannel;
 class bf_read;
 class bf_write;
@@ -9,7 +11,7 @@ class bf_write;
 class INetMessage
 {
 public:
-    virtual	~INetMessage();
+    DECL_DESTRUCTOR(INetMessage);
 
     virtual void	SetNetChannel(INetChannel* netchan) = 0; // netchannel this message is from/for
     virtual void	SetReliable(bool state) = 0;	// set to true if it's a reliable message

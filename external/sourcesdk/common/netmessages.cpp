@@ -4,6 +4,8 @@
 #include "../engine/net.h"
 #include "../public/const.h"
 
+DEFINE_INHERITED_DESTRUCTOR(CNetMessage, INetMessage);
+
 bool SVC_SendTable::WriteToBuffer(bf_write& buffer, bool bNeedsDecoder, const bf_write& dataOut)
 {
     const int length = dataOut.GetNumBitsWritten();
@@ -39,10 +41,6 @@ SVC_VoiceData::SVC_VoiceData() :
     m_xuid(0),
     m_DataIn(),
     m_DataOut(nullptr)
-{
-}
-
-SVC_VoiceData::~SVC_VoiceData()
 {
 }
 
@@ -117,7 +115,6 @@ void SVC_VoiceData::SetRatePolicy()
 {
 }
 
-SVC_SetView::~SVC_SetView() { }
 void SVC_SetView::SetNetChannel(INetChannel* netchan) { }
 void SVC_SetView::SetReliable(bool state) { }
 bool SVC_SetView::Process() { return false; }

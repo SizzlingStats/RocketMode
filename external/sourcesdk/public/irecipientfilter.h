@@ -1,10 +1,12 @@
 
 #pragma once
 
+#include "tier0/platform.h"
+
 class IRecipientFilter
 {
 public:
-    virtual ~IRecipientFilter();
+    DECL_DESTRUCTOR(IRecipientFilter);
 
     virtual bool IsReliable() const = 0;
     virtual bool IsInitMessage() const = 0;

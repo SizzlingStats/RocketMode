@@ -12,7 +12,7 @@ class RecipientFilter : public IRecipientFilter
     static constexpr int sNumRecipientSlots = MAX_PLAYERS + 1;
 
 public:
-    virtual ~RecipientFilter() override;
+    DECL_INHERITED_DESTRUCTOR(IRecipientFilter);
 
     virtual bool IsReliable() const override;
     virtual bool IsInitMessage() const override;

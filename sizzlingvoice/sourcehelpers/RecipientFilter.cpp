@@ -4,9 +4,7 @@
 #include "sourcesdk/public/iserver.h"
 #include <assert.h>
 
-RecipientFilter::~RecipientFilter()
-{
-}
+DEFINE_INHERITED_DESTRUCTOR(RecipientFilter, IRecipientFilter);
 
 bool RecipientFilter::IsReliable() const
 {

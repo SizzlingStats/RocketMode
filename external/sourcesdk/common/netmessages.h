@@ -15,6 +15,7 @@ class CNetMessageRatelimitPolicyBase;
 class CNetMessage : public INetMessage
 {
 public:
+    DECL_INHERITED_DESTRUCTOR(INetMessage);
 #ifndef SDK_COMPAT
     CNetMessageRatelimitPolicyBase* m_RateLimitPolicy;
 #endif
@@ -48,7 +49,6 @@ class SVC_VoiceData : public CNetMessage
 {
 public:
     SVC_VoiceData();
-    virtual ~SVC_VoiceData();
 
     virtual void SetNetChannel(INetChannel* netchan) override;
     virtual void SetReliable(bool state) override;
@@ -85,8 +85,6 @@ public:
 class SVC_SetView : public CNetMessage
 {
 public:
-    virtual ~SVC_SetView() override;
-
     virtual void SetNetChannel(INetChannel* netchan) override;
     virtual void SetReliable(bool state) override;
 

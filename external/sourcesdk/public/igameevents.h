@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "tier0/platform.h"
 #include "tier1/interface.h"
 
 class bf_write;
@@ -33,7 +34,7 @@ public:
 class IGameEventListener2
 {
 public:
-    virtual ~IGameEventListener2();
+    DECL_DESTRUCTOR(IGameEventListener2);
 
     // FireEvent is called by EventManager if event just occurred
     // KeyValue memory will be freed by manager if not needed anymore

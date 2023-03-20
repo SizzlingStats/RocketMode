@@ -72,10 +72,6 @@ RocketMode::RocketMode() :
 {
 }
 
-RocketMode::~RocketMode()
-{
-}
-
 bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory)
 {
     mVEngineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, nullptr);
@@ -654,6 +650,8 @@ static IClient* UserIdToClient(int userid, IServer* server)
     }
     return nullptr;
 }
+
+DEFINE_INHERITED_DESTRUCTOR(RocketMode, IGameEventListener2);
 
 void RocketMode::FireGameEvent(IGameEvent* event)
 {
