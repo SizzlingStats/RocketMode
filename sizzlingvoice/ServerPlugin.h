@@ -4,10 +4,8 @@
 #include "sourcesdk/public/engine/iserverplugin.h"
 
 #ifdef _MSC_VER
-#define NO_VTABLE __declspec( novtable )
 #define DLL_EXPORT extern "C" __declspec( dllexport )
 #else
-#define NO_VTABLE
 #define DLL_EXPORT extern "C" __attribute__ ((visibility("default")))
 #endif
 
@@ -17,7 +15,7 @@ struct edict_t;
 class CCommand;
 typedef int QueryCvarCookie_t;
 
-class NO_VTABLE IServerPluginCallbacks
+class IServerPluginCallbacks
 {
 public:
     virtual bool Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory) = 0;
