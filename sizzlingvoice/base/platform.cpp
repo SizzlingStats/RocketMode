@@ -37,13 +37,7 @@ Platform::HModule Platform::GetModuleHandle(const char* name)
 #ifdef _WIN32
     return ::GetModuleHandleA(name);
 #else
-    void* handle = dlopen(name, RTLD_NOW);
-    if (handle)
-    {
-        // dec ref count from dlopen.
-        dlclose(handle);
-    }
-    return handle;
+    return dlopen(name, RTLD_NOW | RTLD_NOLOAD);
 #endif
 }
 
