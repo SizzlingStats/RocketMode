@@ -75,12 +75,12 @@ solution "sizzlingvoice"
         flags { "NoBufferSecurityCheck", "NoIncrementalLink" }
     configuration {}
     
-    filter { "Release", "toolset:msc" }
+    filter { "Release", "toolset:msc*" }
         buildoptions { "/GL" }
         linkoptions { "/LTCG" }
-    filter { "Release", "toolset:not msc" }
+    filter { "Release", "toolset:not msc*" }
         flags { "LinkTimeOptimization" }
-    filter { "toolset:not msc" }
+    filter { "toolset:not msc*" }
         linkoptions { "-Wl,--no-undefined,--no-allow-shlib-undefined" }
     filter {}
 
