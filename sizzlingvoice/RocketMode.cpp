@@ -249,8 +249,8 @@ void RocketMode::GameFrame(bool simulating)
                     if (viewEdict != rocketEdict)
                     {
                         ClientHelpers::SetViewEntity(client, rocketEdict);
-                        continue;
                     }
+                    continue;
                 }
             }
         }
