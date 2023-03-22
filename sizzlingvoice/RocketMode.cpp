@@ -368,9 +368,11 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
             BaseEntityHelpers::SetLocalAngularVelocity(prevRocketEnt, QAngle(0.0f, 0.0f, 0.0f));
         }
 
+        const Vector& localVelocity = BaseEntityHelpers::GetLocalVelocity(rocketEnt);
+
         state.rocket = rocketHandle;
         state.owner = ownerEntHandle;
-        state.initialSpeed = 0.0f;
+        state.initialSpeed = VectorLength(localVelocity);
         state.rollAngle = 0.0f;
 
         CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
@@ -524,12 +526,6 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
     // Can't do anything about that.
     ucmd->weaponselect = 0;
     ucmd->weaponsubtype = 0;
-
-    if (state.initialSpeed == 0.0f)
-    {
-        const Vector& localVelocity = BaseEntityHelpers::GetLocalVelocity(rocketEnt);
-        state.initialSpeed = VectorLength(localVelocity);
-    }
 
     const bool left = (ucmd->buttons & IN_MOVELEFT) != 0;
     const bool right = (ucmd->buttons & IN_MOVERIGHT) != 0;
