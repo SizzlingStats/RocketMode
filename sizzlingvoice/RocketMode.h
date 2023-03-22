@@ -56,8 +56,10 @@ private:
     void SetOwnerEntityHook(CBaseEntity* owner);
     void SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* newOwner);
 
-    void RocketSpawnHook();
     void RocketSpawn(CBaseEntity* rocket);
+
+    void RocketChangeTeamHook(int team);
+    void RocketChangeTeam(CBaseEntity* rocket, int team);
 
     DECL_INHERITED_DESTRUCTOR(IGameEventListener2);
     virtual void FireGameEvent(IGameEvent* event) override;
@@ -68,7 +70,7 @@ private:
 
     // CTFProjectile_Rocket hooks 
     static VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> sSetOwnerEntityHook;
-    static VTableHook<decltype(&RocketMode::RocketSpawnHook)> sRocketSpawnHook;
+    static VTableHook<decltype(&RocketMode::RocketChangeTeamHook)> sRocketChangeTeamHook;
 
 private:
     IVEngineServer* mVEngineServer;

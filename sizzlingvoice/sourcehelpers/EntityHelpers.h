@@ -62,6 +62,7 @@ namespace BaseEntityHelpers
     extern int sAngVelocityOffset;      // m_vecAngVelocity
     extern int sTargetOffset;           // m_target
     extern int sAttributesOffset;       // m_pAttributes
+    extern int sTeamNumOffset;          // m_iTeamNum
 
     void InitializeOffsets(CBaseEntity* ent);
 
@@ -183,6 +184,13 @@ namespace BaseEntityHelpers
     {
         assert(sAttributesOffset > 0);
         return *(IHasAttributes**)((char*)ent + sAttributesOffset);
+    }
+
+    // m_iTeamNum
+    inline int GetTeam(CBaseEntity* ent)
+    {
+        assert(sTeamNumOffset > 0);
+        return *(int*)((char*)ent + sTeamNumOffset);
     }
 }
 

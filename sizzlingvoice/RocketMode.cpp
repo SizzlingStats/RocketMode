@@ -35,7 +35,7 @@
 string_t RocketMode::tf_projectile_rocket;
 VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> RocketMode::sPlayerRunCommandHook;
 VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> RocketMode::sSetOwnerEntityHook;
-VTableHook<decltype(&RocketMode::RocketSpawnHook)> RocketMode::sRocketSpawnHook;
+VTableHook<decltype(&RocketMode::RocketChangeTeamHook)> RocketMode::sRocketChangeTeamHook;
 
 inline float VectorLength(const Vector& v)
 {
@@ -120,7 +120,7 @@ void RocketMode::Shutdown()
     {
         mGameEventManager->RemoveListener(this);
     }
-    sRocketSpawnHook.Unhook();
+    sRocketChangeTeamHook.Unhook();
     sSetOwnerEntityHook.Unhook();
     sPlayerRunCommandHook.Unhook();
 }
@@ -139,9 +139,9 @@ void RocketMode::LevelInit(const char* pMapName)
         {
             sSetOwnerEntityHook.Hook(ent, HookOffsets::SetOwnerEntity, this, &RocketMode::SetOwnerEntityHook);
         }
-        if (!sRocketSpawnHook.GetThisPtr())
+        if (!sRocketChangeTeamHook.GetThisPtr())
         {
-            sRocketSpawnHook.Hook(ent, HookOffsets::Spawn, this, &RocketMode::RocketSpawnHook);
+            sRocketChangeTeamHook.Hook(ent, HookOffsets::ChangeTeam, this, &RocketMode::RocketChangeTeamHook);
         }
 
         mServerTools->RemoveEntityImmediate(ent);
@@ -595,20 +595,8 @@ void RocketMode::SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* newOwner)
     }
 }
 
-void RocketMode::RocketSpawnHook()
-{
-    RocketMode* thisPtr = sPlayerRunCommandHook.GetThisPtr();
-    CBaseEntity* rocket = reinterpret_cast<CBaseEntity*>(this);
-    thisPtr->RocketSpawn(rocket);
-    sRocketSpawnHook.CallOriginalFn(this);
-}
-
 void RocketMode::RocketSpawn(CBaseEntity* rocket)
 {
-    // Called twice when a rocket spawns.
-    // Once from CBaseEntity::Create. m_hLauncher is not set before this call.
-    // Again inside CTFBaseRocket::Create. m_hLauncher should be set.
-
     CBaseHandle launcherHandle = TFBaseRocketHelpers::GetLauncher(rocket);
     if (!launcherHandle.IsValid())
     {
@@ -632,6 +620,27 @@ void RocketMode::RocketSpawn(CBaseEntity* rocket)
     {
         AttachToRocket(rocket);
     }
+}
+
+void RocketMode::RocketChangeTeamHook(int team)
+{
+    RocketMode* thisPtr = sRocketChangeTeamHook.GetThisPtr();
+    CBaseEntity* rocket = reinterpret_cast<CBaseEntity*>(this);
+    thisPtr->RocketChangeTeam(rocket, team);
+    sRocketChangeTeamHook.CallOriginalFn(this, team);
+}
+
+void RocketMode::RocketChangeTeam(CBaseEntity* rocket, int team)
+{
+    // Called right after spawn. Can treat as initialization
+    if (BaseEntityHelpers::GetTeam(rocket) == 0)
+    {
+        RocketSpawn(rocket);
+        return;
+    }
+
+    // Called from somewhere else, probably pyro deflect.
+    // SetOwnerEntityHook will handle that.
 }
 
 static IClient* UserIdToClient(int userid, IServer* server)

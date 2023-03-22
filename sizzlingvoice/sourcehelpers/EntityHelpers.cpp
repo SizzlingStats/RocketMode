@@ -384,6 +384,7 @@ int BaseEntityHelpers::sAngRotationOffset;
 int BaseEntityHelpers::sAngVelocityOffset;
 int BaseEntityHelpers::sTargetOffset;
 int BaseEntityHelpers::sAttributesOffset;
+int BaseEntityHelpers::sTeamNumOffset;
 
 void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
 {
@@ -439,6 +440,9 @@ void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
     };
     sAttributesOffset = sTargetOffset - offsetof(GetAttribInterface_Hack, m_target);
     assert(sAttributesOffset > 0);
+
+    sTeamNumOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iTeamNum");
+    assert(sTeamNumOffset > 0);
 }
 
 int BasePlayerHelpers::sObserverModeOffset;
