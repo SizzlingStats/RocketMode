@@ -59,6 +59,8 @@ namespace BaseEntityHelpers
     extern int sEFlagsOffset;           // m_iEFlags
     extern int sLocalVelocityOffset;    // m_vecVelocity
     extern int sAngRotationOffset;      // m_angRotation
+    extern int sAbsOriginOffset;        // m_vecAbsOrigin
+    extern int sAbsVelocityOffset;      // m_vecAbsVelocity
     extern int sAngVelocityOffset;      // m_vecAngVelocity
     extern int sTargetOffset;           // m_target
     extern int sAttributesOffset;       // m_pAttributes
@@ -154,6 +156,19 @@ namespace BaseEntityHelpers
     {
         assert(sAngRotationOffset > 0);
         return *(QAngle*)((char*)ent + sAngRotationOffset);
+    }
+
+    inline const Vector& GetAbsOrigin(CBaseEntity* ent)
+    {
+        assert(sAbsOriginOffset > 0);
+        return *(Vector*)((char*)ent + sAbsOriginOffset);
+    }
+
+    // m_vecAbsVelocity
+    inline const Vector& GetAbsVelocity(CBaseEntity* ent)
+    {
+        assert(sAbsVelocityOffset > 0);
+        return *(Vector*)((char*)ent + sAbsVelocityOffset);
     }
 
     // m_vecAngVelocity

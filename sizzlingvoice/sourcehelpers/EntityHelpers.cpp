@@ -381,6 +381,8 @@ int BaseEntityHelpers::sFFlagsOffset;
 int BaseEntityHelpers::sEFlagsOffset;
 int BaseEntityHelpers::sLocalVelocityOffset;
 int BaseEntityHelpers::sAngRotationOffset;
+int BaseEntityHelpers::sAbsOriginOffset;
+int BaseEntityHelpers::sAbsVelocityOffset;
 int BaseEntityHelpers::sAngVelocityOffset;
 int BaseEntityHelpers::sTargetOffset;
 int BaseEntityHelpers::sAttributesOffset;
@@ -422,6 +424,12 @@ void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
 
     sAngRotationOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_angRotation");
     assert(sAngRotationOffset > 0);
+
+    sAbsOriginOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_vecAbsOrigin");
+    assert(sAbsOriginOffset > 0);
+
+    sAbsVelocityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_vecAbsVelocity");
+    assert(sAbsVelocityOffset > 0);
 
     sAngVelocityOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_vecAngVelocity");
     assert(sAngVelocityOffset > 0);
