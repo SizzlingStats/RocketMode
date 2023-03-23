@@ -2,7 +2,7 @@
 #pragma once
 
 template<class T> struct get_class;
-template<class T, class R> struct get_class<R T::*> { using type = T; };
+template<class T, class R> struct get_class<R T::*> { using ret = R; using type = T; };
 
 struct FnPtr
 {
@@ -32,9 +32,31 @@ struct MemFnPtr
     // this ptr byte adjustment before calling function.
     // msvc multiple inheritance and gcc single and multiple use this.
     // msvc single inheritance doesn't have this member.
-    unsigned int mAdjustor = 0;
+    unsigned int mAdjustor;
 #endif
 };
+
+template<typename R, typename... Args>
+R CallVFunc(int vtableOffset, void* thisPtr, Args... args)
+{
+    FnPtr* vtable = *(FnPtr**)thisPtr;
+
+    struct Dummy
+    {
+        union
+        {
+            R (Dummy::*fn)(Args...);
+            MemFnPtr mfn;
+        };
+    };
+    static_assert(sizeof(MemFnPtr) == sizeof(Dummy::fn));
+    Dummy dummy;
+    dummy.mfn.mFunc = vtable[vtableOffset];
+#ifndef _MSC_VER
+    dummy.mfn.mAdjustor = 0;
+#endif
+    return (reinterpret_cast<Dummy*>(thisPtr)->*dummy.fn)(args...);
+}
 
 FnPtr EditVTable(FnPtr* vtable, int slot, const FnPtr* replacementFn);
 
@@ -70,6 +92,9 @@ public:
         FnPtr* vtable = *(FnPtr**)thisPtr;
         mHookedFnSlot = &vtable[vtableSlot];
         mOriginalFn.mFunc = EditVTable(vtable, vtableSlot, &reinterpret_cast<const MemFnPtr&>(hookFn).mFunc);
+#ifndef _MSC_VER
+        mOriginalFn.mAdjustor = 0;
+#endif
     }
 
     void Unhook()
