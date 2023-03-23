@@ -13,10 +13,12 @@
 #include "sourcesdk/game/shared/usercmd.h"
 #include "sourcesdk/public/engine/IEngineSound.h"
 #include "sourcesdk/public/basehandle.h"
+#include "sourcesdk/public/bspflags.h"
 #include "sourcesdk/public/const.h"
 #include "sourcesdk/public/dt_send.h"
 #include "sourcesdk/public/edict.h"
 #include "sourcesdk/public/eiface.h"
+#include "sourcesdk/public/gametrace.h"
 #include "sourcesdk/public/iclient.h"
 #include "sourcesdk/public/icvar.h"
 #include "sourcesdk/public/iserver.h"
@@ -26,6 +28,7 @@
 
 #include "sourcehelpers/RecipientFilter.h"
 #include "sourcehelpers/SendTablesFix.h"
+#include "sourcehelpers/Vector.h"
 #include "base/math.h"
 #include "HookOffsets.h"
 #include <string.h>
@@ -68,6 +71,7 @@ RocketMode::RocketMode() :
     mEngineSound(nullptr),
     mSendTables(nullptr),
     mTFBaseRocketClass(nullptr),
+    mGameRules(nullptr),
     mClientStates()
 {
 }
@@ -146,6 +150,21 @@ void RocketMode::LevelInit(const char* pMapName)
 
         mServerTools->RemoveEntityImmediate(ent);
     }
+}
+
+void RocketMode::ServerActivate(edict_t* pEdictList, int edictCount, int clientMax)
+{
+    SendProp* pSendProp = EntityHelpers::GetProp(mServerGameDll, "CTFGameRulesProxy", "DT_TeamplayRoundBasedRulesProxy", "teamplayroundbased_gamerules_data");
+    if (pSendProp)
+    {
+        SendTableProxyFn proxyFn = pSendProp->GetDataTableProxyFn();
+        if (proxyFn)
+        {
+            CSendProxyRecipients recp;
+            mGameRules = reinterpret_cast<CGameRules*>(proxyFn(nullptr, nullptr, nullptr, &recp, 0));
+        }
+    }
+    assert(mGameRules);
 }
 
 static int GetObserverTargetIndex(CBaseEntity* ent)
@@ -267,6 +286,7 @@ void RocketMode::GameFrame(bool simulating)
 
 void RocketMode::LevelShutdown()
 {
+    mGameRules = nullptr;
     tf_projectile_rocket = nullptr;
 }
 
@@ -359,6 +379,31 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
     {
         // already following this rocket.
         return;
+    }
+
+    {
+        constexpr float collideWithTeammatesDelay = 0.25f;
+        const SourceVector absVelocity = BaseEntityHelpers::GetAbsVelocity(rocketEnt);
+        const SourceVector start = BaseEntityHelpers::GetAbsOrigin(rocketEnt);
+        
+        const Vector startVec = start;
+        const Vector end = SourceVector(start + (absVelocity * collideWithTeammatesDelay));
+
+        const int rocketTeam = BaseEntityHelpers::GetTeam(rocketEnt);
+        const unsigned int mask = MASK_SOLID | ((rocketTeam == 2) ? CONTENTS_TEAM1 : CONTENTS_TEAM2);
+
+        trace_t trace;
+
+        // float CGameRules::WeaponTraceEntity(CBaseEntity *pEntity, const Vector &vecStart, const Vector &vecEnd, unsigned int mask, trace_t *ptr);
+        CallVFunc<float, CBaseEntity*, const Vector&, const Vector&, unsigned int, trace_t*>(
+            HookOffsets::WeaponTraceEntity, mGameRules, rocketEnt, startVec, end, mask, &trace);
+
+        // Rocket will likely hit something within 0.25s.
+        // Avoid entering rocket mode.
+        if (trace.m_pEnt)
+        {
+            return;
+        }
     }
 
     if (ClientHelpers::SetViewEntity(client, edict))

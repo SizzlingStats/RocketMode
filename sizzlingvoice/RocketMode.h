@@ -24,6 +24,7 @@ class IConVar;
 class ServerClass;
 class IServerGameEnts;
 class IEngineSound;
+class CGameRules;
 
 class RocketMode : public IGameEventListener2
 {
@@ -34,6 +35,7 @@ public:
     void Shutdown();
 
     void LevelInit(const char* pMapName);
+    void ServerActivate(edict_t* pEdictList, int edictCount, int clientMax);
     void GameFrame(bool simulating);
     void LevelShutdown();
 
@@ -85,6 +87,7 @@ private:
 
     IConVar* mSendTables;
     ServerClass* mTFBaseRocketClass;
+    CGameRules* mGameRules;
 
     struct State
     {

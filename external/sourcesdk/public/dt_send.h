@@ -2,14 +2,29 @@
 #pragma once
 
 #include "dt_common.h"
+#include "const.h"
+#include "bitvec.h"
 
 class SendTable;
 class RecvProp;
-enum SendPropType;
+class SendProp;
 using ArrayLengthSendProxyFn = void*;
 using SendVarProxyFn = void*;
-using SendTableProxyFn = void*;
 class CSendTablePrecalc;
+
+class CSendProxyRecipients
+{
+public:
+    // Make sure we have enough room for the max possible player count
+    CBitVec<ABSOLUTE_PLAYER_LIMIT> m_Bits;
+};
+
+typedef void* (*SendTableProxyFn)(
+    const SendProp* pProp,
+    const void* pStructBase,
+    const void* pData,
+    CSendProxyRecipients* pRecipients,
+    int objectID);
 
 class SendProp
 {
@@ -24,6 +39,7 @@ public:
     char const* GetExcludeDTName() const { return m_pExcludeDTName; }
     SendPropType GetType() const { return m_Type; }
     int GetNumElements() const { return m_nElements; }
+    SendTableProxyFn GetDataTableProxyFn() const { return m_DataTableProxyFn; }
 
 public:
     RecvProp* m_pMatchingRecvProp;	// This is temporary and only used while precalculating

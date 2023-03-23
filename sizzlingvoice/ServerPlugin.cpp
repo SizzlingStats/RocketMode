@@ -100,7 +100,7 @@ public:
     virtual void UnPause(void) {}
     virtual const char* GetPluginDescription(void) { return "ServerPlugin"; }
     virtual void LevelInit(char const* pMapName);
-    virtual void ServerActivate(edict_t* pEdictList, int edictCount, int clientMax) {}
+    virtual void ServerActivate(edict_t* pEdictList, int edictCount, int clientMax);
     virtual void GameFrame(bool simulating);
     virtual void LevelShutdown(void);
     virtual void ClientActive(edict_t* pEntity);
@@ -397,6 +397,11 @@ void ServerPlugin::LevelInit(char const* pMapName)
             break;
         }
     }
+}
+
+void ServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int clientMax)
+{
+    mRocketMode.ServerActivate(pEdictList, edictCount, clientMax);
 }
 
 void ServerPlugin::GameFrame(bool simulating)

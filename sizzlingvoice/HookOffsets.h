@@ -42,6 +42,10 @@ namespace HookOffsets
 
     inline constexpr int DestroyVMOffsets[NUM_CONFIGS] = { -1, 6, 7 };
     inline constexpr int DestroyVM = DestroyVMOffsets[OFFSET_INDEX];
+
+    // CGameRules
+    inline constexpr int WeaponTraceEntityOffsets[NUM_CONFIGS] = { 121, 121, 122 };
+    inline constexpr int WeaponTraceEntity = WeaponTraceEntityOffsets[OFFSET_INDEX];
 }
 
 #undef OFFSET_INDEX
