@@ -59,7 +59,7 @@ private:
     void RocketSpawn(CBaseEntity* rocket);
 
     void RocketChangeTeamHook(int team);
-    void RocketChangeTeam(CBaseEntity* rocket, int team);
+    void RocketChangeTeam(CBaseEntity* rocket, int oldTeam);
 
     DECL_INHERITED_DESTRUCTOR(IGameEventListener2);
     virtual void FireGameEvent(IGameEvent* event) override;

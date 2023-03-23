@@ -622,14 +622,15 @@ void RocketMode::RocketChangeTeamHook(int team)
 {
     RocketMode* thisPtr = sRocketChangeTeamHook.GetThisPtr();
     CBaseEntity* rocket = reinterpret_cast<CBaseEntity*>(this);
-    thisPtr->RocketChangeTeam(rocket, team);
+    const int oldTeam = BaseEntityHelpers::GetTeam(rocket);
     sRocketChangeTeamHook.CallOriginalFn(this, team);
+    thisPtr->RocketChangeTeam(rocket, oldTeam);
 }
 
-void RocketMode::RocketChangeTeam(CBaseEntity* rocket, int team)
+void RocketMode::RocketChangeTeam(CBaseEntity* rocket, int oldTeam)
 {
     // Called right after spawn. Can treat as initialization
-    if (BaseEntityHelpers::GetTeam(rocket) == 0)
+    if (oldTeam == 0)
     {
         RocketSpawn(rocket);
         return;
