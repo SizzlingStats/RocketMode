@@ -495,6 +495,27 @@ void TFBaseRocketHelpers::InitializeOffsets(CBaseEntity* ent)
     }
 }
 
+int TFProjectileRocketHelpers::sCriticalOffset;
+
+void TFProjectileRocketHelpers::InitializeOffsets(CBaseEntity* ent)
+{
+    if (sCriticalOffset > 0)
+    {
+        // already initialized
+        return;
+    }
+
+    SendTable* table = EntityHelpers::GetTable(ent->GetServerClass(), "DT_TFProjectile_Rocket");
+    assert(table);
+
+    {
+        SendProp* prop = EntityHelpers::GetProp(table, "m_bCritical");
+        assert(prop);
+        sCriticalOffset = prop->GetOffset();
+        assert(sCriticalOffset > 0);
+    }
+}
+
 int TFDroppedWeaponHelpers::sItemOffset;
 
 void TFDroppedWeaponHelpers::InitializeOffsets(CBaseEntity* ent)

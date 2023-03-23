@@ -245,6 +245,20 @@ namespace TFBaseRocketHelpers
     }
 }
 
+namespace TFProjectileRocketHelpers
+{
+    extern int sCriticalOffset;     // m_bCritical
+
+    void InitializeOffsets(CBaseEntity* ent);
+
+    // m_hLauncher
+    inline bool IsCritical(CBaseEntity* ent)
+    {
+        assert(sCriticalOffset > 0);
+        return *(bool*)((char*)ent + sCriticalOffset);
+    }
+}
+
 namespace TFDroppedWeaponHelpers
 {
     extern int sItemOffset;     // m_Item
