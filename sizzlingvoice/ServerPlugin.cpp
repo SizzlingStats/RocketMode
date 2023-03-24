@@ -39,6 +39,7 @@
 #include "WavFile.h"
 #include "RocketMode.h"
 #include "SizzLauncherSpawner.h"
+#include "SizzlingVoice.h"
 #include <string.h>
 #include <float.h>
 
@@ -154,6 +155,7 @@ private:
     WavFile mSpeakerIR;
     RocketMode mRocketMode;
     SizzLauncherSpawner mSizzLauncherSpawner;
+    SizzlingVoice mSizzlingVoice;
 
     static VTableHook<decltype(&ServerPlugin::ProcessVoiceDataHook)> sProcessVoiceDataHook;
     static VTableHook<decltype(&ServerPlugin::IsProximityHearingClientHook)> sIsProximityHearingClientHook;
@@ -325,8 +327,10 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         return false;
     }
 
+    // TODO: return false on error
     mRocketMode.Init(interfaceFactory, gameServerFactory);
     mSizzLauncherSpawner.Init(interfaceFactory, gameServerFactory);
+    mSizzlingVoice.Init(interfaceFactory, gameServerFactory);
 
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
@@ -335,6 +339,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
 
 void ServerPlugin::Unload(void)
 {
+    mSizzlingVoice.Shutdown();
     mRocketMode.Shutdown();
 
     mCvarHelper.DestroyConVar(sSizzVoiceEnabled);
@@ -447,6 +452,8 @@ static const INetMessage* GetCLCVoiceData(INetChannel* channel)
 
 void ServerPlugin::ClientActive(edict_t* pEntity)
 {
+    mSizzlingVoice.ClientActive(pEntity);
+
     const int entIndex = pEntity->m_EdictIndex;
     const int clientIndex = entIndex - 1;
     IClient* client = mServer->GetClient(clientIndex);
@@ -468,13 +475,13 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
         sIsProximityHearingClientHook.Hook(client, HookOffsets::IsProximityHearingClient, this, &ServerPlugin::IsProximityHearingClientHook);
     }
 
-    if (!sProcessVoiceDataHook.GetThisPtr())
-    {
-        const INetMessage* msg = GetCLCVoiceData(netChannel);
-        assert(msg);
+    //if (!sProcessVoiceDataHook.GetThisPtr())
+    //{
+    //    const INetMessage* msg = GetCLCVoiceData(netChannel);
+    //    assert(msg);
 
-        sProcessVoiceDataHook.Hook(msg, HookOffsets::ProcessVoiceData, this, &ServerPlugin::ProcessVoiceDataHook);
-    }
+    //    sProcessVoiceDataHook.Hook(msg, HookOffsets::ProcessVoiceData, this, &ServerPlugin::ProcessVoiceDataHook);
+    //}
 
     assert(!mClientState[clientIndex]);
     delete mClientState[clientIndex];
