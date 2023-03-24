@@ -22,7 +22,7 @@ namespace HookOffsets
     inline constexpr int SpawnOffsets[NUM_CONFIGS] = { 22, 24, 25 };
     inline constexpr int Spawn = SpawnOffsets[OFFSET_INDEX];
 
-    inline constexpr int ChangeTeamOffsets[NUM_CONFIGS] = { 94, 96, 97 };
+    inline constexpr int ChangeTeamOffsets[NUM_CONFIGS] = { 91, 96, 97 };
     inline constexpr int ChangeTeam = ChangeTeamOffsets[OFFSET_INDEX];
 
     // CBasePlayer
