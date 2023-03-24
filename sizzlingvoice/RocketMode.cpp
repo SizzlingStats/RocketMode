@@ -433,6 +433,7 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
         filter.AddAllPlayers(mServer);
         mEngineSound->EmitSound(filter, edict->m_EdictIndex, CHAN_WEAPON, BOOSTER_LOOP, 1.0f, SNDLVL_80dB);
 
+        // currently broken. m_bCritical isn't set yet.
         if (TFProjectileRocketHelpers::IsCritical(rocketEnt))
         {
             mEngineSound->EmitSound(filter, state.rocket.GetEntryIndex(), CHAN_STATIC, CRIT_LOOP, 1.0f, SNDLVL_180dB);
