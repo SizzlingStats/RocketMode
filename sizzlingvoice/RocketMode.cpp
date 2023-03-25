@@ -394,7 +394,7 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
         const Vector end = SourceVector(start + (absVelocity * collideWithTeammatesDelay));
 
         const int rocketTeam = BaseEntityHelpers::GetTeam(rocketEnt);
-        const unsigned int mask = MASK_SOLID | ((rocketTeam == 2) ? CONTENTS_TEAM1 : CONTENTS_TEAM2);
+        const unsigned int mask = MASK_SOLID | ((rocketTeam == 2) ? CONTENTS_TEAM2 : CONTENTS_TEAM1 );
 
         trace_t trace;
 
