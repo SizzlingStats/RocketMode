@@ -17,6 +17,7 @@
 
 #include "sourcehelpers/EntityHelpers.h"
 #include "HookOffsets.h"
+#include "SizzLauncherInfo.h"
 
 #include <string.h>
 
@@ -128,13 +129,13 @@ static void ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverToo
     tfDroppedWeapon->m_nAmmo = 20;
 
     // my festive rocket launcher
-    item.m_iItemDefinitionIndex = 658;
-    item.m_iEntityQuality = EEconItemQuality::AE_UNIQUE;
-    item.m_iEntityLevel = 1;
-    item.m_iItemID = 3977757014;
-    item.m_iItemIDHigh = 0;
-    item.m_iItemIDLow = 3977757014;
-    item.m_iAccountID = 28707326;
+    item.m_iItemDefinitionIndex = SizzLauncherInfo::ItemDefinitionIndex;
+    item.m_iEntityQuality = SizzLauncherInfo::EntityQuality;
+    item.m_iEntityLevel = SizzLauncherInfo::EntityLevel;
+    item.m_iItemID = SizzLauncherInfo::ItemID;
+    item.m_iItemIDHigh = SizzLauncherInfo::ItemIDHigh;
+    item.m_iItemIDLow = SizzLauncherInfo::ItemIDLow;
+    item.m_iAccountID = SizzLauncherInfo::AccountID;
     item.m_iInventoryPosition = 0;// 2147484044;
     item.m_pNonSOEconItem.m_iItemID = -1;
     item.m_pNonSOEconItem.m_pItem = nullptr;
@@ -197,7 +198,7 @@ void SizzLauncherSpawner::RocketLauncherSpawn(CBaseEntity* rocketLauncher)
     assert(con);
 
     CEconItemView& item = AttributeContainerHelpers::GetItem(con);
-    if (item.m_iItemID != 3977757014)
+    if (item.m_iItemID != SizzLauncherInfo::ItemID)
     {
         return;
     }
@@ -277,7 +278,7 @@ void SizzLauncherSpawner::DroppedWeaponSpawn(CBaseEntity* droppedWeapon)
 
     TFDroppedWeaponHelpers::InitializeOffsets(droppedWeapon);
     CEconItemView& item = TFDroppedWeaponHelpers::GetItem(droppedWeapon);
-    if (item.m_iItemID == 3977757014)
+    if (item.m_iItemID == SizzLauncherInfo::ItemID)
     {
         mTfDroppedWeaponLifetime->m_pParent->m_fValue = 30.0f;
     }

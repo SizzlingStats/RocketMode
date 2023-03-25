@@ -31,6 +31,7 @@
 #include "sourcehelpers/Vector.h"
 #include "base/math.h"
 #include "HookOffsets.h"
+#include "SizzLauncherInfo.h"
 #include <string.h>
 
 #define BOOSTER_LOOP "ambient/steam_drum.wav"
@@ -667,7 +668,7 @@ void RocketMode::RocketSpawn(CBaseEntity* rocket)
 
     CEconItemView& item = AttributeContainerHelpers::GetItem(con);
 
-    if (item.m_iItemID == 3977757014)
+    if (item.m_iItemID == SizzLauncherInfo::ItemID)
     {
         AttachToRocket(rocket);
     }
