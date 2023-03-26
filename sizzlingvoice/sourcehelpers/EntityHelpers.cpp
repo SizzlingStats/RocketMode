@@ -430,6 +430,18 @@ void BasePlayerHelpers::InitializeOffsets(CBaseEntity* player)
     assert(sObserverTargetOffset > 0);
 }
 
+void BasePlayerHelpers::SetObserverTarget(CBaseEntity* player, const CBaseHandle& target, IServerGameEnts* gameEnts, IVEngineServer* engineServer)
+{
+    assert(sObserverTargetOffset > 0);
+    const int offset = sObserverTargetOffset;
+    CBaseHandle& observerTarget = *(CBaseHandle*)((char*)player + sObserverTargetOffset);
+    if (observerTarget != target)
+    {
+        observerTarget = target;
+        EntityHelpers::StateChanged(player, offset, gameEnts, engineServer);
+    }
+}
+
 int TFBaseRocketHelpers::sLauncherOffset;
 
 void TFBaseRocketHelpers::InitializeOffsets(CBaseEntity* ent)

@@ -229,6 +229,8 @@ namespace BasePlayerHelpers
         assert(sObserverTargetOffset > 0);
         return *(CBaseHandle*)((char*)player + sObserverTargetOffset);
     }
+
+    void SetObserverTarget(CBaseEntity* player, const CBaseHandle& target, IServerGameEnts* gameEnts, IVEngineServer* engineServer);
 }
 
 namespace TFBaseRocketHelpers
