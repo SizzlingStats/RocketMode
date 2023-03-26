@@ -175,6 +175,7 @@ void RocketMode::ServerActivate(edict_t* pEdictList, int edictCount, int clientM
         CBaseEntity* funcRespawnRoom = mServerTools->FindEntityByClassname(nullptr, "func_respawnroom");
         if (funcRespawnRoom)
         {
+            BaseTriggerHelpers::InitializeOffsets(funcRespawnRoom);
             sFuncRespawnRoomStartTouchHook.Hook(funcRespawnRoom, HookOffsets::StartTouch, this, &RocketMode::FuncRespawnRoomStartTouchHook);
         }
     }
@@ -771,6 +772,11 @@ void RocketMode::FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity
     assert(tf_projectile_rocket);
     const string_t classname = BaseEntityHelpers::GetClassname(other);
     if (classname != tf_projectile_rocket)
+    {
+        return;
+    }
+
+    if (BaseTriggerHelpers::IsDisabled(respawnRoom))
     {
         return;
     }
