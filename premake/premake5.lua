@@ -81,7 +81,8 @@ solution "sizzlingvoice"
     filter { "Release", "toolset:not msc*" }
         flags { "LinkTimeOptimization" }
     filter { "toolset:not msc*" }
-        linkoptions { "-Wl,--no-undefined,--no-allow-shlib-undefined" }
+        buildoptions { "-fvisibility=hidden", "-ffunction-sections", "-fdata-sections" }
+        linkoptions { "-Wl,--no-undefined,--no-allow-shlib-undefined,--gc-sections" }
     filter {}
 
     project "sizzlingvoice"
