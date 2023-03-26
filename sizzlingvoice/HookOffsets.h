@@ -25,6 +25,9 @@ namespace HookOffsets
     inline constexpr int ChangeTeamOffsets[NUM_CONFIGS] = { 91, 96, 97 };
     inline constexpr int ChangeTeam = ChangeTeamOffsets[OFFSET_INDEX];
 
+    inline constexpr int StartTouchOffsets[NUM_CONFIGS] = { 98, 103, 104 };
+    inline constexpr int StartTouch = StartTouchOffsets[OFFSET_INDEX];
+
     // CBasePlayer
     inline constexpr int GetNextObserverSearchStartPointOffsets[NUM_CONFIGS] = { -1, 390, 391 };
     inline constexpr int GetNextObserverSearchStartPoint = GetNextObserverSearchStartPointOffsets[OFFSET_INDEX];

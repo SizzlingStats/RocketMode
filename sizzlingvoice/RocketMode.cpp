@@ -42,6 +42,7 @@ VTableHook<decltype(&RocketMode::GetNextObserverSearchStartPointHook)> RocketMod
 VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> RocketMode::sPlayerRunCommandHook;
 VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> RocketMode::sSetOwnerEntityHook;
 VTableHook<decltype(&RocketMode::RocketChangeTeamHook)> RocketMode::sRocketChangeTeamHook;
+VTableHook<decltype(&RocketMode::FuncRespawnRoomStartTouchHook)> RocketMode::sFuncRespawnRoomStartTouchHook;
 
 inline float VectorLength(const Vector& v)
 {
@@ -123,6 +124,7 @@ void RocketMode::Shutdown()
     {
         mGameEventManager->RemoveListener(this);
     }
+    sFuncRespawnRoomStartTouchHook.Unhook();
     sGetNextObserverSearchStartPointHook.Unhook();
     sRocketChangeTeamHook.Unhook();
     sSetOwnerEntityHook.Unhook();
@@ -167,6 +169,15 @@ void RocketMode::ServerActivate(edict_t* pEdictList, int edictCount, int clientM
         }
     }
     assert(mGameRules);
+
+    if (!sFuncRespawnRoomStartTouchHook.GetThisPtr())
+    {
+        CBaseEntity* funcRespawnRoom = mServerTools->FindEntityByClassname(nullptr, "func_respawnroom");
+        if (funcRespawnRoom)
+        {
+            sFuncRespawnRoomStartTouchHook.Hook(funcRespawnRoom, HookOffsets::StartTouch, this, &RocketMode::FuncRespawnRoomStartTouchHook);
+        }
+    }
 }
 
 void RocketMode::GameFrame(bool simulating)
@@ -745,6 +756,31 @@ void RocketMode::RocketChangeTeam(CBaseEntity* rocket, int oldTeam)
 
     // Called from somewhere else, probably pyro deflect.
     // SetOwnerEntityHook will handle that.
+}
+
+void RocketMode::FuncRespawnRoomStartTouchHook(CBaseEntity* other)
+{
+    RocketMode* thisPtr = sFuncRespawnRoomStartTouchHook.GetThisPtr();
+    CBaseEntity* respawnRoom = reinterpret_cast<CBaseEntity*>(this);
+    thisPtr->FuncRespawnRoomStartTouch(respawnRoom, other);
+    sFuncRespawnRoomStartTouchHook.CallOriginalFn(this, other);
+}
+
+void RocketMode::FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity* other)
+{
+    assert(tf_projectile_rocket);
+    const string_t classname = BaseEntityHelpers::GetClassname(other);
+    if (classname != tf_projectile_rocket)
+    {
+        return;
+    }
+
+    const int respawnRoomTeam = BaseEntityHelpers::GetTeam(respawnRoom);
+    const int rocketTeam = BaseEntityHelpers::GetTeam(other);
+    if (respawnRoomTeam != rocketTeam)
+    {
+        DetachFromRocket(other);
+    }
 }
 
 static IClient* UserIdToClient(int userid, IServer* server)

@@ -66,6 +66,9 @@ private:
     void RocketChangeTeamHook(int team);
     void RocketChangeTeam(CBaseEntity* rocket, int oldTeam);
 
+    void FuncRespawnRoomStartTouchHook(CBaseEntity* other);
+    void FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity* other);
+
     DECL_INHERITED_DESTRUCTOR(IGameEventListener2);
     virtual void FireGameEvent(IGameEvent* event) override;
 
@@ -78,6 +81,9 @@ private:
     // CTFProjectile_Rocket hooks 
     static VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> sSetOwnerEntityHook;
     static VTableHook<decltype(&RocketMode::RocketChangeTeamHook)> sRocketChangeTeamHook;
+
+    // CFuncRespawnRoom hooks
+    static VTableHook<decltype(&RocketMode::FuncRespawnRoomStartTouchHook)> sFuncRespawnRoomStartTouchHook;
 
 private:
     IVEngineServer* mVEngineServer;
