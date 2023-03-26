@@ -535,6 +535,9 @@ bool RocketMode::ModifyRocketAngularPrecision()
 
 int RocketMode::GetNextObserverSearchStartPointHook(bool bReverse)
 {
+    // This returns the next spec target after the current target (depending on bReverse).
+    // We'll make it up ourselves.
+    sGetNextObserverSearchStartPointHook.CallOriginalFn(this, bReverse);
     RocketMode* thisPtr = sGetNextObserverSearchStartPointHook.GetThisPtr();
     CBaseEntity* playerEnt = reinterpret_cast<CBaseEntity*>(this);
     return thisPtr->GetNextObserverSearchStartPoint(playerEnt, bReverse);
@@ -542,29 +545,47 @@ int RocketMode::GetNextObserverSearchStartPointHook(bool bReverse)
 
 int RocketMode::GetNextObserverSearchStartPoint(CBaseEntity* player, bool bReverse)
 {
-    CUtlVector<CBaseHandle>& playerObjects = TFPlayerHelpers::GetPlayerObjects(player);
-    
-    // add and remove all rockets so they gets added to
-    // CTFPlayer::m_hObservableEntities.
-    // CTFPlayer::FindNextObserverTarget will then be able to spec those.
-    for (int i = 0; i < MAX_PLAYERS; ++i)
+    const CBaseHandle currentObserverTarget = BasePlayerHelpers::GetObserverTarget(player);
+    CUtlVector<CBaseHandle>& observableEntities = TFPlayerHelpers::GetObservableEntities(player);
+    const int maxClients = mGlobals->maxClients;
+    int newObserverIndex = -1;
+
+    // Add any rocket mode rockets to the observable entities list.
+    // A player's rocket is inserted right after the player.
+    for (int i = 0; i < observableEntities.Count(); ++i)
     {
-        const State& state = mClientStates[i];
-        if (state.rocket.IsValid())
+        CBaseHandle ent = observableEntities.Element(i);
+        if (currentObserverTarget == ent)
         {
-            playerObjects.AddToTail(state.rocket);
+            newObserverIndex = i;
+        }
+
+        const int entIndex = ent.GetEntryIndex();
+        if (entIndex > 0 && entIndex <= maxClients)
+        {
+            const int clientIndex = entIndex - 1;
+            assert((clientIndex >= 0) && (clientIndex < MAX_PLAYERS));
+
+            const State& state = mClientStates[clientIndex];
+            if (state.rocket.IsValid())
+            {
+                i = observableEntities.InsertAfter(i, state.rocket);
+            }
         }
     }
-    const int retVal = sGetNextObserverSearchStartPointHook.CallOriginalFn(reinterpret_cast<RocketMode*>(player), bReverse);
-    for (int i = 0; i < MAX_PLAYERS; ++i)
+
+    // handle wraparound
+    const int numObservableEntities = observableEntities.Count();
+    newObserverIndex += (bReverse ? -1 : 1);
+    if (newObserverIndex >= numObservableEntities)
     {
-        const State& state = mClientStates[i];
-        if (state.rocket.IsValid())
-        {
-            playerObjects.FindAndFastRemove(state.rocket);
-        }
+        newObserverIndex = 0;
     }
-    return retVal;
+    else if (newObserverIndex < 0)
+    {
+        newObserverIndex = numObservableEntities - 1;
+    }
+    return newObserverIndex;
 }
 
 bool RocketMode::PlayerRunCommandHook(CUserCmd* ucmd, IMoveHelper* moveHelper)
