@@ -444,6 +444,7 @@ void BasePlayerHelpers::SetObserverTarget(CBaseEntity* player, const CBaseHandle
 }
 
 int TFPlayerHelpers::sPlayerObjectsOffset;
+int TFPlayerHelpers::sObservableEntitiesOffset;
 
 void TFPlayerHelpers::InitializeOffsets(IServerGameDLL* serverGameDll)
 {
@@ -517,6 +518,20 @@ void TFPlayerHelpers::InitializeOffsets(IServerGameDLL* serverGameDll)
     assert(playerObjectsCountOffset > 0);
     sPlayerObjectsOffset = playerObjectsCountOffset - offsetof(CUtlVector<CBaseHandle>, m_Size);
     assert(sPlayerObjectsOffset > 0);
+
+    // from CTFPlayer
+    struct TFPlayerObservableEntitiesHack
+    {
+        CUtlVector<EHANDLE>	m_aObjects; // List of player objects
+        bool m_bIsClassMenuOpen;
+        Vector m_vecLastDeathPosition;
+        float m_flSpawnTime;
+        float m_flLastAction;
+        float m_flTimeInSpawn;
+        CUtlVector<EHANDLE>	m_hObservableEntities;
+    };
+    sObservableEntitiesOffset = sPlayerObjectsOffset + offsetof(TFPlayerObservableEntitiesHack, m_hObservableEntities);
+    assert(sObservableEntitiesOffset > 0);
 }
 
 int TFBaseRocketHelpers::sLauncherOffset;

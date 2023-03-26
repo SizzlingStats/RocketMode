@@ -236,7 +236,8 @@ namespace BasePlayerHelpers
 
 namespace TFPlayerHelpers
 {
-    extern int sPlayerObjectsOffset;    // m_aObjects
+    extern int sPlayerObjectsOffset;        // m_aObjects
+    extern int sObservableEntitiesOffset;   // m_hObservableEntities
 
     void InitializeOffsets(IServerGameDLL* serverGameDll);
 
@@ -245,6 +246,13 @@ namespace TFPlayerHelpers
     {
         assert(sPlayerObjectsOffset > 0);
         return *(CUtlVector<CBaseHandle>*)((char*)tfPlayer + sPlayerObjectsOffset);
+    }
+
+    // m_hObservableEntities
+    inline CUtlVector<CBaseHandle>& GetObservableEntities(CBaseEntity* tfPlayer)
+    {
+        assert(sObservableEntitiesOffset > 0);
+        return *(CUtlVector<CBaseHandle>*)((char*)tfPlayer + sObservableEntitiesOffset);
     }
 }
 
