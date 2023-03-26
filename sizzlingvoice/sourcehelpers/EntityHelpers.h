@@ -214,20 +214,20 @@ namespace BasePlayerHelpers
     extern int sObserverModeOffset;     // m_iObserverMode
     extern int sObserverTargetOffset;   // m_hObserverTarget
 
-    void InitializeOffsets(CBaseEntity* ent);
+    void InitializeOffsets(CBaseEntity* player);
 
     // m_iObserverMode
-    inline int GetObserverMode(CBaseEntity* ent)
+    inline int GetObserverMode(CBaseEntity* player)
     {
         assert(sObserverModeOffset > 0);
-        return *(int*)((char*)ent + sObserverModeOffset);
+        return *(int*)((char*)player + sObserverModeOffset);
     }
 
     // m_hObserverTarget
-    inline const CBaseHandle& GetObserverTarget(CBaseEntity* ent)
+    inline const CBaseHandle& GetObserverTarget(CBaseEntity* player)
     {
         assert(sObserverTargetOffset > 0);
-        return *(CBaseHandle*)((char*)ent + sObserverTargetOffset);
+        return *(CBaseHandle*)((char*)player + sObserverTargetOffset);
     }
 }
 

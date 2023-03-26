@@ -412,7 +412,7 @@ void BaseEntityHelpers::InitializeOffsets(CBaseEntity* ent)
 int BasePlayerHelpers::sObserverModeOffset;
 int BasePlayerHelpers::sObserverTargetOffset;
 
-void BasePlayerHelpers::InitializeOffsets(CBaseEntity* ent)
+void BasePlayerHelpers::InitializeOffsets(CBaseEntity* player)
 {
     if (sObserverModeOffset > 0)
     {
@@ -420,7 +420,7 @@ void BasePlayerHelpers::InitializeOffsets(CBaseEntity* ent)
         return;
     }
 
-    datamap_t* datamap = ent->GetDataDescMap();
+    datamap_t* datamap = player->GetDataDescMap();
     assert(datamap);
 
     sObserverModeOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_iObserverMode");
