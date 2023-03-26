@@ -454,22 +454,25 @@ static const INetMessage* GetCLCVoiceData(INetChannel* channel)
 
 void ServerPlugin::ClientActive(edict_t* pEntity)
 {
-    mSizzlingVoice.ClientActive(pEntity);
-
     const int entIndex = pEntity->m_EdictIndex;
     const int clientIndex = entIndex - 1;
     IClient* client = mServer->GetClient(clientIndex);
-
-    BasePlayerHelpers::InitializeOffsets(mServerTools->GetBaseEntityByEntIndex(entIndex));
-    ClientHelpers::InitializeOffsets(client, mVEngineServer);
-
-    mRocketMode.ClientActive(pEntity);
+    if (client->IsFakeClient())
+    {
+        return;
+    }
 
     INetChannel* netChannel = client->GetNetChannel();
     if (!netChannel)
     {
         return;
     }
+
+    BasePlayerHelpers::InitializeOffsets(mServerTools->GetBaseEntityByEntIndex(entIndex));
+    ClientHelpers::InitializeOffsets(client, mVEngineServer);
+
+    mSizzlingVoice.ClientActive(pEntity);
+    mRocketMode.ClientActive(pEntity);
 
     if (!sIsProximityHearingClientHook.GetThisPtr())
     {
