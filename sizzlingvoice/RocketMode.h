@@ -52,6 +52,9 @@ private:
 
     bool ModifyRocketAngularPrecision();
 
+    int GetNextObserverSearchStartPointHook(bool bReverse);
+    int GetNextObserverSearchStartPoint(CBaseEntity* player, bool bReverse);
+
     bool PlayerRunCommandHook(CUserCmd* ucmd, IMoveHelper* moveHelper);
     void PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelper* moveHelper);
 
@@ -68,6 +71,8 @@ private:
 
 private:
     static string_t tf_projectile_rocket;
+    // CBasePlayer hooks
+    static VTableHook<decltype(&RocketMode::GetNextObserverSearchStartPointHook)> sGetNextObserverSearchStartPointHook;
     static VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> sPlayerRunCommandHook;
 
     // CTFProjectile_Rocket hooks 

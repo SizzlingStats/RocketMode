@@ -38,6 +38,7 @@
 #define CRIT_LOOP "weapons/crit_power.wav"
 
 string_t RocketMode::tf_projectile_rocket;
+VTableHook<decltype(&RocketMode::GetNextObserverSearchStartPointHook)> RocketMode::sGetNextObserverSearchStartPointHook;
 VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> RocketMode::sPlayerRunCommandHook;
 VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> RocketMode::sSetOwnerEntityHook;
 VTableHook<decltype(&RocketMode::RocketChangeTeamHook)> RocketMode::sRocketChangeTeamHook;
@@ -122,6 +123,7 @@ void RocketMode::Shutdown()
     {
         mGameEventManager->RemoveListener(this);
     }
+    sGetNextObserverSearchStartPointHook.Unhook();
     sRocketChangeTeamHook.Unhook();
     sSetOwnerEntityHook.Unhook();
     sPlayerRunCommandHook.Unhook();
@@ -202,59 +204,6 @@ void RocketMode::GameFrame(bool simulating)
         //Debug::Msg("frame angRot %i: %f %f %f\n", mGlobals->framecount, angRotation.x, angRotation.y, angRotation.z);
         BaseEntityHelpers::SetLocalRotation(rocketEnt, angRotation);
     }
-
-    // Spectator rocket mode update
-    for (int i = 0; i < clientCount; ++i)
-    {
-        IClient* client = mServer->GetClient(i);
-        if (!client || !client->IsActive())
-        {
-            continue;
-        }
-
-        const int clientEntIndex = i + 1;
-        CBaseEntity* clientEnt = mServerTools->GetBaseEntityByEntIndex(clientEntIndex);
-        if (!clientEnt)
-        {
-            // shouldn't happen, but for safety
-            continue;
-        }
-
-        const int observerMode = BasePlayerHelpers::GetObserverMode(clientEnt);
-        if (observerMode == OBS_MODE_NONE)
-        {
-            // player_spawn event notify handles spec -> respawn transitions.
-            continue;
-        }
-
-        if (mClientStates[i].rocket.IsValid())
-        {
-            // client is in rocket mode
-            continue;
-        }
-
-        // if spectating a player
-        if (observerMode == OBS_MODE_IN_EYE || observerMode == OBS_MODE_CHASE)
-        {
-            // OBS_MODE_CHASE seems to be set when on a fixed map view.
-            // I thought it would be OBS_MODE_FIXED, but whatever.
-            CBaseHandle observerTarget = BasePlayerHelpers::GetObserverTarget(clientEnt);
-            if (observerTarget.IsValid())
-            {
-                // if target is in rocket mode
-                const int targetClientIndex = observerTarget.GetEntryIndex() - 1;
-                if (targetClientIndex >= 0 && targetClientIndex < MAX_PLAYERS)
-                {
-                    const State& state = mClientStates[targetClientIndex];
-                    if (state.rocket.IsValid() && (observerTarget != state.rocket))
-                    {
-                        // if target's rocket is not our observer target, set it.
-                        BasePlayerHelpers::SetObserverTarget(clientEnt, state.rocket, mServerGameEnts, mVEngineServer);
-                    }
-                }
-            }
-        }
-    }
 }
 
 void RocketMode::LevelShutdown()
@@ -277,6 +226,13 @@ void RocketMode::ClientConnect()
 
 void RocketMode::ClientActive(edict_t* pEntity)
 {
+    if (!sGetNextObserverSearchStartPointHook.GetThisPtr())
+    {
+        CBaseEntity* ent = mServerTools->GetBaseEntityByEntIndex(pEntity->m_EdictIndex);
+        assert(ent);
+
+        sGetNextObserverSearchStartPointHook.Hook(ent, HookOffsets::GetNextObserverSearchStartPoint, this, &RocketMode::GetNextObserverSearchStartPointHook);
+    }
     if (!sPlayerRunCommandHook.GetThisPtr())
     {
         CBaseEntity* ent = mServerTools->GetBaseEntityByEntIndex(pEntity->m_EdictIndex);
@@ -382,6 +338,42 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
 
     if (ClientHelpers::SetViewEntity(client, edict))
     {
+        // send all spectators of this player or the player's current rocket to the new rocket
+        {
+            const int clientCount = mServer->GetClientCount();
+            for (int i = 0; i < clientCount; ++i)
+            {
+                IClient* client = mServer->GetClient(i);
+                if (!client->IsActive())
+                {
+                    continue;
+                }
+
+                const int clientEntIndex = i + 1;
+                CBaseEntity* clientEnt = mServerTools->GetBaseEntityByEntIndex(clientEntIndex);
+                if (!clientEnt)
+                {
+                    // shouldn't happen, but for safety
+                    continue;
+                }
+
+                // if spectating a player
+                const int observerMode = BasePlayerHelpers::GetObserverMode(clientEnt);
+                if (observerMode == OBS_MODE_IN_EYE || observerMode == OBS_MODE_CHASE)
+                {
+                    // OBS_MODE_CHASE seems to be set when on a fixed map view.
+                    // I thought it would be OBS_MODE_FIXED, but whatever.
+                    CBaseHandle observerTarget = BasePlayerHelpers::GetObserverTarget(clientEnt);
+                    const bool spectatingPrevRocket = state.rocket.IsValid() && (observerTarget == state.rocket);
+                    const bool spectatingOwner = observerTarget == ownerEntHandle;
+                    if (spectatingPrevRocket || spectatingOwner)
+                    {
+                        BasePlayerHelpers::SetObserverTarget(clientEnt, rocketHandle, mServerGameEnts, mVEngineServer);
+                    }
+                }
+            }
+        }
+
         if (CBaseEntity* prevRocketEnt = EntityHelpers::HandleToEnt(state.rocket, mServerTools))
         {
             BaseEntityHelpers::SetLocalAngularVelocity(prevRocketEnt, QAngle(0.0f, 0.0f, 0.0f));
@@ -539,6 +531,40 @@ bool RocketMode::ModifyRocketAngularPrecision()
 
     angRotationProp->m_fHighLowMul = static_cast<float>(iHighValue / range);
     return true;
+}
+
+int RocketMode::GetNextObserverSearchStartPointHook(bool bReverse)
+{
+    RocketMode* thisPtr = sGetNextObserverSearchStartPointHook.GetThisPtr();
+    CBaseEntity* playerEnt = reinterpret_cast<CBaseEntity*>(this);
+    return thisPtr->GetNextObserverSearchStartPoint(playerEnt, bReverse);
+}
+
+int RocketMode::GetNextObserverSearchStartPoint(CBaseEntity* player, bool bReverse)
+{
+    CUtlVector<CBaseHandle>& playerObjects = TFPlayerHelpers::GetPlayerObjects(player);
+    
+    // add and remove all rockets so they gets added to
+    // CTFPlayer::m_hObservableEntities.
+    // CTFPlayer::FindNextObserverTarget will then be able to spec those.
+    for (int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        const State& state = mClientStates[i];
+        if (state.rocket.IsValid())
+        {
+            playerObjects.AddToTail(state.rocket);
+        }
+    }
+    const int retVal = sGetNextObserverSearchStartPointHook.CallOriginalFn(reinterpret_cast<RocketMode*>(player), bReverse);
+    for (int i = 0; i < MAX_PLAYERS; ++i)
+    {
+        const State& state = mClientStates[i];
+        if (state.rocket.IsValid())
+        {
+            playerObjects.FindAndFastRemove(state.rocket);
+        }
+    }
+    return retVal;
 }
 
 bool RocketMode::PlayerRunCommandHook(CUserCmd* ucmd, IMoveHelper* moveHelper)
