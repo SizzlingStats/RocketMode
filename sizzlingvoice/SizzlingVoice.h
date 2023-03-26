@@ -33,6 +33,4 @@ private:
 private:
     IServer* mServer;
     ConVar* mVoiceEnable;
-
-    uint16_t mSourceEntOverride[MAX_PLAYERS];
 };

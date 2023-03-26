@@ -19,8 +19,7 @@ VTableHook<decltype(&SizzlingVoice::CLCVoiceDataProcessHook)> SizzlingVoice::sCL
 
 SizzlingVoice::SizzlingVoice() :
     mServer(nullptr),
-    mVoiceEnable(nullptr),
-    mSourceEntOverride()
+    mVoiceEnable(nullptr)
 {
 }
 
