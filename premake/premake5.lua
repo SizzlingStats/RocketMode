@@ -110,7 +110,8 @@ solution "sizzlingvoice"
         {
             "sourcesdk",
             "vectorclass",
-            "autotalent"
+            "autotalent",
+            "hde32"
         }
         add_tag("SDLCheck", "false", "sizzlingvoice")
         add_tag("ControlFlowGuard", "false", "sizzlingvoice")
@@ -119,3 +120,4 @@ solution "sizzlingvoice"
     dofile "sourcesdk.lua"
     dofile "vectorclass.lua"
     dofile "autotalent.lua"
+    dofile "hde32.lua"
