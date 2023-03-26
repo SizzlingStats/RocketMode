@@ -311,3 +311,18 @@ namespace AttributeContainerHelpers
         return *(CEconItemView*)((char*)container + sItemOffset);
     }
 }
+
+// CBaseTrigger
+namespace BaseTriggerHelpers
+{
+    extern int sDisabledOffset;     // m_bDisabled
+
+    void InitializeOffsets(CBaseEntity* baseTrigger);
+
+    // m_bDisabled
+    inline bool IsDisabled(CBaseEntity* baseTrigger)
+    {
+        assert(sDisabledOffset > 0);
+        return *(bool*)((char*)baseTrigger + sDisabledOffset);
+    }
+}

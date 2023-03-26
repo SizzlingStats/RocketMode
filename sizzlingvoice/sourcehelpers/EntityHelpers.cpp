@@ -609,3 +609,20 @@ void AttributeContainerHelpers::InitializeOffsets(CAttributeContainer* container
     sItemOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_Item");
     assert(sItemOffset > 0);
 }
+
+int BaseTriggerHelpers::sDisabledOffset;
+
+void BaseTriggerHelpers::InitializeOffsets(CBaseEntity* baseTrigger)
+{
+    if (sDisabledOffset > 0)
+    {
+        // already initialized
+        return;
+    }
+
+    datamap_t* datamap = baseTrigger->GetDataDescMap();
+    assert(datamap);
+
+    sDisabledOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_bDisabled");
+    assert(sDisabledOffset > 0);
+}
