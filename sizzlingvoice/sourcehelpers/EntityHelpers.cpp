@@ -35,7 +35,7 @@ public:
         char* thisStr = mString;
 
         int index = 0;
-        while ((length < N) && (str[index] != '\0'))
+        while ((length < (N - 1)) && (str[index] != '\0'))
         {
             thisStr[length++] = str[index++];
         }
@@ -61,7 +61,7 @@ public:
 
 private:
     int mLength;
-    char mString[N + 1];
+    char mString[N];
 };
 
 int EntityHelpers::GetDatamapVarOffset(datamap_t* pDatamap, const char* szVarName)
