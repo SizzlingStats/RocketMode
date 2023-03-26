@@ -8,7 +8,6 @@
 class SendTable;
 class RecvProp;
 class SendProp;
-using ArrayLengthSendProxyFn = void*;
 using SendVarProxyFn = void*;
 class CSendTablePrecalc;
 
@@ -26,6 +25,8 @@ typedef void* (*SendTableProxyFn)(
     CSendProxyRecipients* pRecipients,
     int objectID);
 
+typedef int (*ArrayLengthSendProxyFn)(const void* pStruct, int objectID);
+
 class SendProp
 {
 public:
@@ -40,6 +41,7 @@ public:
     SendPropType GetType() const { return m_Type; }
     int GetNumElements() const { return m_nElements; }
     SendTableProxyFn GetDataTableProxyFn() const { return m_DataTableProxyFn; }
+    ArrayLengthSendProxyFn	GetArrayLengthProxy() const { return m_ArrayLengthProxy; }
 
 public:
     RecvProp* m_pMatchingRecvProp;	// This is temporary and only used while precalculating

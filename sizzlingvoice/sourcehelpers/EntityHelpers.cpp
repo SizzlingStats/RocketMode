@@ -12,6 +12,7 @@
 #include "sourcesdk/public/toolframework/itoolentity.h"
 #include "sourcesdk/game/shared/econ/attribute_manager.h"
 #include "base/stringbuilder.h"
+#include "hde32/hde32.h"
 
 #include <assert.h>
 #include <string.h>
@@ -440,6 +441,82 @@ void BasePlayerHelpers::SetObserverTarget(CBaseEntity* player, const CBaseHandle
         observerTarget = target;
         EntityHelpers::StateChanged(player, offset, gameEnts, engineServer);
     }
+}
+
+int TFPlayerHelpers::sPlayerObjectsOffset;
+
+void TFPlayerHelpers::InitializeOffsets(IServerGameDLL* serverGameDll)
+{
+    if (sPlayerObjectsOffset > 0)
+    {
+        // already initialized
+        return;
+    }
+
+    ServerClass* tfPlayerClass = EntityHelpers::GetServerClass(serverGameDll, "CTFPlayer");
+    assert(tfPlayerClass);
+
+    SendProp* playerObjectArray = EntityHelpers::GetProp(tfPlayerClass, "DT_TFLocalPlayerExclusive", "\"player_object_array\"");
+    assert(playerObjectArray);
+
+    SendTable* tfPlayerTable = EntityHelpers::GetTable(tfPlayerClass, "DT_TFPlayer");
+    assert(tfPlayerTable);
+
+    SendProp* flMVMLastDamageTimeProp = EntityHelpers::GetProp(tfPlayerTable, "m_flMvMLastDamageTime");
+    assert(flMVMLastDamageTimeProp);
+    const int flMVMLastDamageTimeOffset = flMVMLastDamageTimeProp->GetOffset();
+
+    SendProp* bInPowerPlayProp = EntityHelpers::GetProp(tfPlayerTable, "m_bInPowerPlay");
+    assert(bInPowerPlayProp);
+    const int bInPowerPlayOffset = bInPowerPlayProp->GetOffset();
+
+    // verification for m_aObjects offset:
+    // class CTFPlayer {
+    // net prop m_flMvMLastDamageTime
+    // ...
+    // m_aObjects
+    // ...
+    // net prop m_bInPowerPlay
+    // 
+    // filter for offsets between those two net props.
+
+    ArrayLengthSendProxyFn lengthProxyFn = playerObjectArray->GetArrayLengthProxy();
+
+    int playerObjectsCountOffset = 0;
+    // scan 10 instructions at SendProxyArrayLength_PlayerObjects
+    // looking for the disp32 offset.
+    //
+    // arg_0 = dword ptr 8
+    // 55                   push    ebp
+    // 8B EC                mov     ebp, esp
+    // 8B 45 08             mov     eax, [ebp + arg_0]
+    // 8B 80 BC 22 00 00    mov     eax, [eax + 22BCh] <- looking for this
+    // 5D                   pop     ebp
+    // C3                   retn
+    //
+    unsigned char* instr = reinterpret_cast<unsigned char*>(lengthProxyFn);
+    hde32s hs;
+    for (int i = 0; i < 10; ++i)
+    {
+        hde32_disasm(instr, &hs);
+        if ((hs.flags & F_ERROR) != 0)
+        {
+            break;
+        }
+        if ((hs.flags & F_DISP32) != 0)
+        {
+            const int offset = static_cast<int>(hs.disp.disp32);
+            if (offset > flMVMLastDamageTimeOffset && offset < bInPowerPlayOffset)
+            {
+                playerObjectsCountOffset = offset;
+                break;
+            }
+        }
+        instr += hs.len;
+    }
+    assert(playerObjectsCountOffset > 0);
+    sPlayerObjectsOffset = playerObjectsCountOffset - offsetof(CUtlVector<CBaseHandle>, m_Size);
+    assert(sPlayerObjectsOffset > 0);
 }
 
 int TFBaseRocketHelpers::sLauncherOffset;

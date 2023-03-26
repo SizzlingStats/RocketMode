@@ -327,6 +327,8 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         return false;
     }
 
+    TFPlayerHelpers::InitializeOffsets(mServerGameDll);
+
     // TODO: return false on error
     mRocketMode.Init(interfaceFactory, gameServerFactory);
     mSizzLauncherSpawner.Init(interfaceFactory, gameServerFactory);

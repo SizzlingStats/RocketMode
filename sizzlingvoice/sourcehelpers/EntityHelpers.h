@@ -4,6 +4,7 @@
 #include "sourcesdk/public/string_t.h"
 #include "sourcesdk/game/shared/shareddefs.h"
 #include "sourcesdk/public/mathlib/vector.h"
+#include "sourcesdk/public/tier1/utlvector.h"
 #include <assert.h>
 
 struct datamap_t;
@@ -231,6 +232,20 @@ namespace BasePlayerHelpers
     }
 
     void SetObserverTarget(CBaseEntity* player, const CBaseHandle& target, IServerGameEnts* gameEnts, IVEngineServer* engineServer);
+}
+
+namespace TFPlayerHelpers
+{
+    extern int sPlayerObjectsOffset;    // m_aObjects
+
+    void InitializeOffsets(IServerGameDLL* serverGameDll);
+
+    // m_aObjects
+    inline CUtlVector<CBaseHandle>& GetPlayerObjects(CBaseEntity* tfPlayer)
+    {
+        assert(sPlayerObjectsOffset > 0);
+        return *(CUtlVector<CBaseHandle>*)((char*)tfPlayer + sPlayerObjectsOffset);
+    }
 }
 
 namespace TFBaseRocketHelpers
