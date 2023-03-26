@@ -11,6 +11,7 @@
 #include "sourcesdk/public/server_class.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
 #include "sourcesdk/game/shared/econ/attribute_manager.h"
+#include "sourcesdk/game/shared/gamerules.h"
 #include "base/stringbuilder.h"
 #include "hde32/hde32.h"
 
@@ -625,4 +626,21 @@ void BaseTriggerHelpers::InitializeOffsets(CBaseEntity* baseTrigger)
 
     sDisabledOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_bDisabled");
     assert(sDisabledOffset > 0);
+}
+
+int TeamplayRoundBasedRulesHelpers::sRoundStateOffset;
+
+void TeamplayRoundBasedRulesHelpers::InitializeOffsets(IServerGameDLL* serverGameDll)
+{
+    if (sRoundStateOffset > 0)
+    {
+        // already initialized
+        return;
+    }
+
+    SendProp* prop = EntityHelpers::GetProp(serverGameDll, "CTeamplayRoundBasedRulesProxy", "DT_TeamplayRoundBasedRules", "m_iRoundState");
+    assert(prop);
+
+    sRoundStateOffset = prop->GetOffset();
+    assert(sRoundStateOffset > 0);
 }

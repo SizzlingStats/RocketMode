@@ -21,6 +21,7 @@ class IServerTools;
 class IHasAttributes;
 class CEconItemView;
 class CAttributeContainer;
+class CTeamplayRoundBasedRules;
 
 namespace EntityHelpers
 {
@@ -324,5 +325,20 @@ namespace BaseTriggerHelpers
     {
         assert(sDisabledOffset > 0);
         return *(bool*)((char*)baseTrigger + sDisabledOffset);
+    }
+}
+
+// CTeamplayRoundBasedRules. Not a CBaseEntity, but meh.
+namespace TeamplayRoundBasedRulesHelpers
+{
+    extern int sRoundStateOffset;   // m_iRoundState
+
+    void InitializeOffsets(IServerGameDLL* serverGameDll);
+
+    // m_iRoundState
+    inline int GetRoundState(const CTeamplayRoundBasedRules* teamplayRoundBasedRules)
+    {
+        assert(sRoundStateOffset > 0);
+        return *(int*)((char*)teamplayRoundBasedRules + sRoundStateOffset);
     }
 }

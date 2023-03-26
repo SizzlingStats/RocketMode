@@ -115,6 +115,8 @@ bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn game
         return false;
     }
 
+    TeamplayRoundBasedRulesHelpers::InitializeOffsets(mServerGameDll);
+
     return true;
 }
 
@@ -772,6 +774,14 @@ void RocketMode::FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity
     assert(tf_projectile_rocket);
     const string_t classname = BaseEntityHelpers::GetClassname(other);
     if (classname != tf_projectile_rocket)
+    {
+        return;
+    }
+
+    // should probably make this type safe by defining the whole CTeamplayRoundBasedRules hierarchy.
+    CTeamplayRoundBasedRules* rules = reinterpret_cast<CTeamplayRoundBasedRules*>(mGameRules);
+    const int roundState = TeamplayRoundBasedRulesHelpers::GetRoundState(rules);
+    if (roundState == 5) // GR_STATE_TEAM_WIN
     {
         return;
     }
