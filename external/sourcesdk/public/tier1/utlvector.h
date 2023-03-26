@@ -20,6 +20,7 @@ class CUtlVector
 {
 public:
     T& Element(int i);
+    const T& Element(int i) const;
 
     // Gets the base address (can change when adding elements!)
     T* Base() { return m_Memory.Base(); }
@@ -33,6 +34,8 @@ public:
 
     // Adds an element, uses copy constructor
     int AddToTail(const T& src);
+    int InsertBefore(int elem, const T& src);
+    int InsertAfter(int elem, const T& src);
 
     // Finds an element (element needs operator== defined)
     int Find(const T& src) const;
@@ -44,6 +47,9 @@ public:
 protected:
     // Grows the vector
     void GrowVector(int num = 1);
+
+    // Shifts elements....
+    void ShiftElementsRight(int elem, int num = 1);
 
 public:
     A m_Memory;
@@ -66,15 +72,47 @@ inline T& CUtlVector<T, A>::Element(int i)
 }
 
 template< typename T, class A >
+inline const T& CUtlVector<T, A>::Element(int i) const
+{
+    // Do an inline unsigned check for maximum debug-build performance.
+    Assert((unsigned)i < (unsigned)m_Size);
+    //StagingUtlVectorBoundsCheck(i, m_Size);
+    return m_Memory[i];
+}
+
+template< typename T, class A >
 inline int CUtlVector<T, A>::AddToTail(const T& src)
 {
     // Can't insert something that's in the list... reallocation may hose us
-    Assert((Base() == NULL) || (&src < Base()) || (&src >= (Base() + Count())));
+    Assert((Base() == nullptr) || (&src < Base()) || (&src >= (Base() + Count())));
     
     const int index = m_Size;
     GrowVector();
     ::new(&Element(index)) T(src);
     return index;
+}
+
+template< typename T, class A >
+int CUtlVector<T, A>::InsertBefore(int elem, const T& src)
+{
+    // Can't insert something that's in the list... reallocation may hose us
+    Assert((Base() == nullptr) || (&src < Base()) || (&src >= (Base() + Count())));
+
+    // Can insert at the end
+    Assert((elem == Count()) || IsValidIndex(elem));
+
+    GrowVector();
+    ShiftElementsRight(elem);
+    ::new(&Element(elem)) T(src);
+    return elem;
+}
+
+template< typename T, class A >
+inline int CUtlVector<T, A>::InsertAfter(int elem, const T& src)
+{
+    // Can't insert something that's in the list... reallocation may hose us
+    Assert((Base() == nullptr) || (&src < Base()) || (&src >= (Base() + Count())));
+    return InsertBefore(elem + 1, src);
 }
 
 //-----------------------------------------------------------------------------
@@ -139,4 +177,16 @@ void CUtlVector<T, A>::GrowVector(int num)
     }
     m_Size = newSize;
     ResetDbgInfo();
+}
+
+//-----------------------------------------------------------------------------
+// Shifts elements
+//-----------------------------------------------------------------------------
+template< typename T, class A >
+void CUtlVector<T, A>::ShiftElementsRight(int elem, int num)
+{
+    Assert(IsValidIndex(elem) || (m_Size == 0) || (num == 0));
+    int numToMove = m_Size - elem - num;
+    if ((numToMove > 0) && (num > 0))
+        memmove(&Element(elem + num), &Element(elem), numToMove * sizeof(T));
 }
