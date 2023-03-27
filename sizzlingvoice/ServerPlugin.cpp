@@ -427,16 +427,19 @@ void ServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int clien
     assert(gameRules);
 
     mRocketMode.ServerActivate(gameRules);
+    mSizzLauncherSpawner.ServerActivate(gameRules);
 }
 
 void ServerPlugin::GameFrame(bool simulating)
 {
     mRocketMode.GameFrame(simulating);
+    mSizzLauncherSpawner.GameFrme(simulating);
 }
 
 void ServerPlugin::LevelShutdown()
 {
     mRocketMode.LevelShutdown();
+    mSizzLauncherSpawner.LevelShutdown();
 }
 
 static const INetMessage* GetCLCVoiceData(INetChannel* channel)

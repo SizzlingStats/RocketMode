@@ -9,13 +9,17 @@
 #include "sourcesdk/public/eiface.h"
 #include "sourcesdk/public/edict.h"
 #include "sourcesdk/public/icvar.h"
+#include "sourcesdk/public/iserver.h"
 #include "sourcesdk/public/tier1/convar.h"
+#include "sourcesdk/game/server/iplayerinfo.h"
 #include "sourcesdk/game/shared/econ/econ_item_view.h"
 #include "sourcesdk/game/shared/econ/ihasattributes.h"
 #include "sourcesdk/game/shared/econ/attribute_manager.h"
 #include "sourcesdk/game/shared/econ/econ_item_constants.h"
+#include "sourcesdk/game/shared/teamplayroundbased_gamerules.h"
 
 #include "sourcehelpers/EntityHelpers.h"
+#include "sourcehelpers/VStdlibRandom.h"
 #include "HookOffsets.h"
 #include "SizzLauncherInfo.h"
 
@@ -27,10 +31,16 @@ VTableHook<decltype(&SizzLauncherSpawner::DroppedWeaponSpawnHook)> SizzLauncherS
 SizzLauncherSpawner::SizzLauncherSpawner() :
     mServerGameClients(nullptr),
     mServerTools(nullptr),
-    mTfDroppedWeaponLifetime(nullptr)
-    //mServerGameDll(nullptr),
-    //mServerGameEnts(nullptr),
-    //mVEngineServer(nullptr)
+    mPlayerInfoManager(nullptr),
+    mVEngineServer(nullptr),
+    mServer(nullptr),
+    mGlobals(nullptr),
+    mGameRules(nullptr),
+    mTfDroppedWeaponLifetime(nullptr),
+    mInitialSpawnIntervalTicks(0),
+    mSpawnIntervalTicks(0),
+    mNextSpawnTick(0),
+    mRoundState(0)
 {
 }
 
@@ -42,11 +52,20 @@ bool SizzLauncherSpawner::Init(CreateInterfaceFn interfaceFactory, CreateInterfa
 {
     mServerGameClients = (IServerGameClients*)gameServerFactory(INTERFACEVERSION_SERVERGAMECLIENTS, nullptr);
     mServerTools = (IServerTools*)gameServerFactory(VSERVERTOOLS_INTERFACE_VERSION, nullptr);
-    //mServerGameDll = (IServerGameDLL*)gameServerFactory(INTERFACEVERSION_SERVERGAMEDLL, nullptr);
-    //mServerGameEnts = (IServerGameEnts*)gameServerFactory(INTERFACEVERSION_SERVERGAMEENTS, nullptr);
-    //mVEngineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, nullptr);
+    mVEngineServer = (IVEngineServer*)interfaceFactory(INTERFACEVERSION_VENGINESERVER, nullptr);
+    if (mVEngineServer)
+    {
+        mServer = mVEngineServer->GetIServer();
+    }
     ICvar* cvar = (ICvar*)interfaceFactory(CVAR_INTERFACE_VERSION, nullptr);
-    if (!mServerGameClients || !mServerTools || !cvar)// || !mServerGameDll || !mServerGameEnts || !mVEngineServer)
+
+    mPlayerInfoManager = (IPlayerInfoManager*)gameServerFactory(INTERFACEVERSION_PLAYERINFOMANAGER, nullptr);
+    if (mPlayerInfoManager)
+    {
+        mGlobals = mPlayerInfoManager->GetGlobalVars();
+    }
+
+    if (!mServerGameClients || !mServerTools || !mServer || !cvar || !mGlobals)// || !mServerGameDll || !mServerGameEnts || !mVEngineServer)
     {
         return false;
     }
@@ -68,6 +87,9 @@ void SizzLauncherSpawner::Shutdown()
 
 void SizzLauncherSpawner::LevelInit(const char* pMapName)
 {
+    mInitialSpawnIntervalTicks = static_cast<uint32_t>(sInitialSpawnIntervalSeconds / mGlobals->interval_per_tick);
+    mSpawnIntervalTicks = static_cast<uint32_t>(sSpawnIntervalSeconds / mGlobals->interval_per_tick);
+
     CBaseEntity* ent = mServerTools->CreateEntityByName("tf_weapon_rocketlauncher");
     if (ent)
     {
@@ -87,12 +109,94 @@ void SizzLauncherSpawner::LevelInit(const char* pMapName)
     CBaseEntity* droppedWeapon = mServerTools->CreateEntityByName("tf_dropped_weapon");
     if (droppedWeapon)
     {
+        TFDroppedWeaponHelpers::InitializeOffsets(droppedWeapon);
         if (!sDroppedWeaponSpawnHook.GetThisPtr())
         {
             sDroppedWeaponSpawnHook.Hook(droppedWeapon, HookOffsets::Spawn, this, &SizzLauncherSpawner::DroppedWeaponSpawnHook);
         }
         mServerTools->RemoveEntityImmediate(droppedWeapon);
     }
+}
+
+void SizzLauncherSpawner::ServerActivate(CGameRules* gameRules)
+{
+    mGameRules = gameRules;
+
+    CTeamplayRoundBasedRules* rules = reinterpret_cast<CTeamplayRoundBasedRules*>(mGameRules);
+    mRoundState = TeamplayRoundBasedRulesHelpers::GetRoundState(rules);
+}
+
+void SizzLauncherSpawner::GameFrme(bool bSimulating)
+{
+    if (!bSimulating)
+    {
+        return;
+    }
+
+    if (mGameRules)
+    {
+        CTeamplayRoundBasedRules* rules = reinterpret_cast<CTeamplayRoundBasedRules*>(mGameRules);
+        const int roundState = TeamplayRoundBasedRulesHelpers::GetRoundState(rules);
+        bool roundStateChanged = false;
+        if (mRoundState != roundState)
+        {
+            roundStateChanged = true;
+            mRoundState = roundState;
+        }
+
+        if (roundState == GR_STATE_RND_RUNNING)
+        {
+            const uint32_t curTick = mGlobals->tickcount;
+            if (roundStateChanged)
+            {
+                mNextSpawnTick = curTick + mInitialSpawnIntervalTicks;
+            }
+
+            if (curTick >= mNextSpawnTick)
+            {
+                mNextSpawnTick = curTick + mSpawnIntervalTicks;
+
+                uint8_t elgibleSpawnPoints[MAX_PLAYERS];
+                int numElgibleSpawnPoints = 0;
+
+                const int numClients = mServer->GetClientCount();
+                for (int i = 0; i < numClients; ++i)
+                {
+                    const int entIndex = i + 1;
+                    edict_t* edict = mVEngineServer->PEntityOfEntIndex(entIndex);
+                    if (!edict)
+                    {
+                        continue;
+                    }
+
+                    IPlayerInfo* playerInfo = mPlayerInfoManager->GetPlayerInfo(edict);
+                    if (playerInfo &&
+                        !playerInfo->IsHLTV() && !playerInfo->IsReplay() &&
+                        !playerInfo->IsDead() && !playerInfo->IsObserver())
+                    {
+                        elgibleSpawnPoints[numElgibleSpawnPoints++] = entIndex;
+                    }
+                }
+
+                if (numElgibleSpawnPoints > 0)
+                {
+                    const int spawnPointIndex = VStdlibRandom::RandomInt(0, numElgibleSpawnPoints - 1);
+                    const int spawnPointEnt = elgibleSpawnPoints[spawnPointIndex];
+
+                    edict_t* edict = mVEngineServer->PEntityOfEntIndex(spawnPointEnt);
+
+                    Vector origin;
+                    mServerGameClients->ClientEarPosition(edict, &origin);
+                    SpawnLauncher(origin);
+                }
+            }
+        }
+    }
+}
+
+void SizzLauncherSpawner::LevelShutdown()
+{
+    mGameRules = nullptr;
 }
 
 struct CTFDroppedWeapon_Hack
@@ -122,6 +226,7 @@ static void ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverToo
     BaseEntityHelpers::SetModelName(ent, modelName);
     serverTools->SetKeyValue(ent, "targetname", "");
 
+    TFDroppedWeaponHelpers::InitializeOffsets(ent);
     CEconItemView& item = TFDroppedWeaponHelpers::GetItem(ent);
 
     CTFDroppedWeapon_Hack* tfDroppedWeapon = (CTFDroppedWeapon_Hack*)&item;

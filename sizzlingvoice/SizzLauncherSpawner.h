@@ -3,18 +3,21 @@
 
 #include "sourcesdk/public/basehandle.h"
 #include "VTableHook.h"
+#include <stdint.h>
 
 typedef void* (*CreateInterfaceFn)(const char* pName, int* pReturnCode);
 class IServerGameClients;
 class IServerTools;
-//class IServerGameDLL;
-//class IServerGameEnts;
-//class IVEngineServer;
+class IPlayerInfoManager;
+class IVEngineServer;
+class IServer;
+class CGlobalVars;
 struct edict_t;
 class CCommand;
 class CBaseEntity;
 class ConVar;
 class Vector;
+class CGameRules;
 
 class SizzLauncherSpawner
 {
@@ -26,6 +29,9 @@ public:
     void Shutdown();
 
     void LevelInit(const char* pMapName);
+    void ServerActivate(CGameRules* gameRules);
+    void GameFrme(bool bSimulating);
+    void LevelShutdown();
 
     bool ClientCommand(edict_t* pEntity, const CCommand& args);
 
@@ -45,8 +51,19 @@ private:
 private:
     IServerGameClients* mServerGameClients;
     IServerTools* mServerTools;
+    IPlayerInfoManager* mPlayerInfoManager;
+    IVEngineServer* mVEngineServer;
+    IServer* mServer;
+    CGlobalVars* mGlobals;
+    CGameRules* mGameRules;
+
     ConVar* mTfDroppedWeaponLifetime;
-    //IServerGameDLL* mServerGameDll;
-    //IServerGameEnts* mServerGameEnts;
-    //IVEngineServer* mVEngineServer;
+
+    static constexpr float sInitialSpawnIntervalSeconds = 15.0f;
+    static constexpr float sSpawnIntervalSeconds = 60.0f;
+    uint32_t mInitialSpawnIntervalTicks;
+    uint32_t mSpawnIntervalTicks;
+    uint32_t mNextSpawnTick;
+
+    int32_t mRoundState;
 };
