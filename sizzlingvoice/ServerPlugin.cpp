@@ -1,6 +1,7 @@
 
 #include "ServerPlugin.h"
 #include "sourcesdk/public/bitvec.h"
+#include "sourcesdk/public/dt_send.h"
 #include "sourcesdk/public/edict.h"
 #include "sourcesdk/public/eiface.h"
 #include "sourcesdk/public/filesystem.h"
@@ -42,6 +43,8 @@
 #include "SizzlingVoice.h"
 #include <string.h>
 #include <float.h>
+
+class CGameRules;
 
 struct ClientState
 {
@@ -408,7 +411,20 @@ void ServerPlugin::LevelInit(char const* pMapName)
 
 void ServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int clientMax)
 {
-    mRocketMode.ServerActivate(pEdictList, edictCount, clientMax);
+    CGameRules* gameRules = nullptr;
+    SendProp* gameRulesProp = EntityHelpers::GetProp(mServerGameDll, "CTFGameRulesProxy", "DT_TeamplayRoundBasedRulesProxy", "teamplayroundbased_gamerules_data");
+    if (gameRulesProp)
+    {
+        SendTableProxyFn proxyFn = gameRulesProp->GetDataTableProxyFn();
+        if (proxyFn)
+        {
+            CSendProxyRecipients recp;
+            gameRules = reinterpret_cast<CGameRules*>(proxyFn(nullptr, nullptr, nullptr, &recp, 0));
+        }
+    }
+    assert(gameRules);
+
+    mRocketMode.ServerActivate(gameRules);
 }
 
 void ServerPlugin::GameFrame(bool simulating)

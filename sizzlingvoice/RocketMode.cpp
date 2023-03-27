@@ -159,19 +159,9 @@ void RocketMode::LevelInit(const char* pMapName)
     }
 }
 
-void RocketMode::ServerActivate(edict_t* pEdictList, int edictCount, int clientMax)
+void RocketMode::ServerActivate(CGameRules* gameRules)
 {
-    SendProp* pSendProp = EntityHelpers::GetProp(mServerGameDll, "CTFGameRulesProxy", "DT_TeamplayRoundBasedRulesProxy", "teamplayroundbased_gamerules_data");
-    if (pSendProp)
-    {
-        SendTableProxyFn proxyFn = pSendProp->GetDataTableProxyFn();
-        if (proxyFn)
-        {
-            CSendProxyRecipients recp;
-            mGameRules = reinterpret_cast<CGameRules*>(proxyFn(nullptr, nullptr, nullptr, &recp, 0));
-        }
-    }
-    assert(mGameRules);
+    mGameRules = gameRules;
 
     if (!sFuncRespawnRoomStartTouchHook.GetThisPtr())
     {

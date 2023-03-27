@@ -35,7 +35,7 @@ public:
     void Shutdown();
 
     void LevelInit(const char* pMapName);
-    void ServerActivate(edict_t* pEdictList, int edictCount, int clientMax);
+    void ServerActivate(CGameRules* gameRules);
     void GameFrame(bool simulating);
     void LevelShutdown();
 
