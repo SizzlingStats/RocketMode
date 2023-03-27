@@ -316,7 +316,8 @@ namespace AttributeContainerHelpers
 // CBaseTrigger
 namespace BaseTriggerHelpers
 {
-    extern int sDisabledOffset;     // m_bDisabled
+    extern int sDisabledOffset;         // m_bDisabled
+    extern int sTouchingEntitiesOffset; // m_hTouchingEntities  
 
     void InitializeOffsets(CBaseEntity* baseTrigger);
 
@@ -325,6 +326,13 @@ namespace BaseTriggerHelpers
     {
         assert(sDisabledOffset > 0);
         return *(bool*)((char*)baseTrigger + sDisabledOffset);
+    }
+
+    // m_hTouchingEntities
+    inline const CUtlVector<CBaseHandle>& GetTouchingEntities(CBaseEntity* baseTrigger)
+    {
+        assert(sTouchingEntitiesOffset > 0);
+        return *(CUtlVector<CBaseHandle>*)((char*)baseTrigger + sTouchingEntitiesOffset);
     }
 }
 

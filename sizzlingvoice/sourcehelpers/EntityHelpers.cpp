@@ -626,6 +626,9 @@ void BaseTriggerHelpers::InitializeOffsets(CBaseEntity* baseTrigger)
 
     sDisabledOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_bDisabled");
     assert(sDisabledOffset > 0);
+
+    sTouchingEntitiesOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_hTouchingEntities");
+    assert(sTouchingEntitiesOffset > 0);
 }
 
 int TeamplayRoundBasedRulesHelpers::sRoundStateOffset;
