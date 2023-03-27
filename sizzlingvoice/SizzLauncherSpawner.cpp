@@ -387,7 +387,7 @@ void SizzLauncherSpawner::DroppedWeaponSpawn(CBaseEntity* droppedWeapon)
     CEconItemView& item = TFDroppedWeaponHelpers::GetItem(droppedWeapon);
     if (item.m_iItemID == SizzLauncherInfo::ItemID)
     {
-        mTfDroppedWeaponLifetime->m_pParent->m_fValue = 30.0f;
+        mTfDroppedWeaponLifetime->m_pParent->m_fValue = 60.0f;
     }
     sDroppedWeaponSpawnHook.CallOriginalFn(reinterpret_cast<SizzLauncherSpawner*>(droppedWeapon));
 
