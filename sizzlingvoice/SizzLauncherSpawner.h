@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include "sourcesdk/public/basehandle.h"
 #include "VTableHook.h"
 
 typedef void* (*CreateInterfaceFn)(const char* pName, int* pReturnCode);
