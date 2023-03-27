@@ -7,6 +7,4 @@ namespace Debug
 
     using MsgFn = void(const char* fmt, ...);
     extern MsgFn* Msg;
-
-
 }
