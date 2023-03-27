@@ -10,6 +10,7 @@
 #include "sourcesdk/game/shared/econ/ihasattributes.h"
 #include "sourcesdk/game/shared/in_buttons.h"
 #include "sourcesdk/game/shared/shareddefs.h"
+#include "sourcesdk/game/shared/teamplayroundbased_gamerules.h"
 #include "sourcesdk/game/shared/usercmd.h"
 #include "sourcesdk/public/engine/IEngineSound.h"
 #include "sourcesdk/public/basehandle.h"
@@ -781,7 +782,7 @@ void RocketMode::FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity
     // should probably make this type safe by defining the whole CTeamplayRoundBasedRules hierarchy.
     CTeamplayRoundBasedRules* rules = reinterpret_cast<CTeamplayRoundBasedRules*>(mGameRules);
     const int roundState = TeamplayRoundBasedRulesHelpers::GetRoundState(rules);
-    if (roundState == 5) // GR_STATE_TEAM_WIN
+    if (roundState >= GR_STATE_TEAM_WIN)
     {
         return;
     }
