@@ -612,6 +612,7 @@ void AttributeContainerHelpers::InitializeOffsets(CAttributeContainer* container
 }
 
 int BaseTriggerHelpers::sDisabledOffset;
+int BaseTriggerHelpers::sTouchingEntitiesOffset;
 
 void BaseTriggerHelpers::InitializeOffsets(CBaseEntity* baseTrigger)
 {
