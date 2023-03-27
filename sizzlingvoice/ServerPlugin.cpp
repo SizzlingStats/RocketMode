@@ -37,6 +37,7 @@
 #include "sourcehelpers/ClientHelpers.h"
 #include "sourcehelpers/Debug.h"
 #include "sourcehelpers/VScriptHelpers.h"
+#include "sourcehelpers/VStdlibRandom.h"
 #include "WavFile.h"
 #include "RocketMode.h"
 #include "SizzLauncherSpawner.h"
@@ -233,6 +234,7 @@ ServerPlugin::ServerPlugin() :
 bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn gameServerFactory)
 {
     Debug::Initialize();
+    VStdlibRandom::Initialize();
 
     if (!ValveMemAlloc::Init())
     {
