@@ -158,28 +158,30 @@ static void ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverToo
 bool SizzLauncherSpawner::ClientCommand(edict_t* pEntity, const CCommand& args)
 {
     const char* command = args.Arg(0);
-    if (!strcmp(command, "spawn") && (args.ArgC() > 1))
+    if (!strcmp(command, "spawnlauncher") && (args.ArgC() > 1))
     {
-        CBaseEntity* ent = mServerTools->CreateEntityByName("tf_dropped_weapon");
-        if (ent)
-        {
-            TFDroppedWeaponHelpers::InitializeOffsets(ent);
+        Vector origin;
+        mServerGameClients->ClientEarPosition(pEntity, &origin);
 
-            if (!strcmp(args.Arg(1), "launcher"))
-            {
-                ApplyFestiveRocketLauncher(ent, mServerTools);
-            }
-
-            Vector origin;
-            mServerGameClients->ClientEarPosition(pEntity, &origin);
-            mServerTools->SetKeyValue(ent, "origin", origin);
-
-            mServerTools->DispatchSpawn(ent);
-        }
+        SpawnLauncher(origin);
         return true;
     }
 
     return false;
+}
+
+CBaseHandle SizzLauncherSpawner::SpawnLauncher(const Vector& origin)
+{
+    CBaseEntity* ent = mServerTools->CreateEntityByName("tf_dropped_weapon");
+    if (ent)
+    {
+        ApplyFestiveRocketLauncher(ent, mServerTools);
+
+        mServerTools->SetKeyValue(ent, "origin", origin);
+        mServerTools->DispatchSpawn(ent);
+        return ent->GetRefEHandle();
+    }
+    return CBaseHandle();
 }
 
 void SizzLauncherSpawner::RocketLauncherSpawnHook()

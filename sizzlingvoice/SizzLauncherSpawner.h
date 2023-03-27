@@ -13,6 +13,7 @@ struct edict_t;
 class CCommand;
 class CBaseEntity;
 class ConVar;
+class Vector;
 
 class SizzLauncherSpawner
 {
@@ -28,6 +29,8 @@ public:
     bool ClientCommand(edict_t* pEntity, const CCommand& args);
 
 private:
+    CBaseHandle SpawnLauncher(const Vector& origin);
+
     void RocketLauncherSpawnHook();
     void RocketLauncherSpawn(CBaseEntity* rocketLauncher);
 
