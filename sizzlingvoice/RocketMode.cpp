@@ -575,6 +575,10 @@ int RocketMode::GetNextObserverSearchStartPoint(CBaseEntity* player, bool bRever
             if (state.rocket.IsValid())
             {
                 i = observableEntities.InsertAfter(i, state.rocket);
+                if (currentObserverTarget == state.rocket)
+                {
+                    newObserverIndex = i;
+                }
             }
         }
     }
