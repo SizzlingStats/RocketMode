@@ -495,11 +495,11 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
     mSizzlingVoice.ClientActive(pEntity);
     mRocketMode.ClientActive(pEntity);
 
-    if (!sIsProximityHearingClientHook.GetThisPtr())
-    {
-        //client->IsProximityHearingClient(0);
-        sIsProximityHearingClientHook.Hook(client, HookOffsets::IsProximityHearingClient, this, &ServerPlugin::IsProximityHearingClientHook);
-    }
+    //if (!sIsProximityHearingClientHook.GetThisPtr())
+    //{
+    //    //client->IsProximityHearingClient(0);
+    //    sIsProximityHearingClientHook.Hook(client, HookOffsets::IsProximityHearingClient, this, &ServerPlugin::IsProximityHearingClientHook);
+    //}
 
     //if (!sProcessVoiceDataHook.GetThisPtr())
     //{
