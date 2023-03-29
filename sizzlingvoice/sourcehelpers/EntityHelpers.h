@@ -213,8 +213,11 @@ namespace BaseEntityHelpers
 
 namespace BasePlayerHelpers
 {
-    extern int sObserverModeOffset;     // m_iObserverMode
-    extern int sObserverTargetOffset;   // m_hObserverTarget
+    extern int sLocalOffset;                // m_Local
+    extern int sObserverModeOffset;         // m_iObserverMode
+    extern int sObserverLastModeOffset;     // m_iObserverLastMode
+    extern int sObserverTargetOffset;       // m_hObserverTarget
+    extern int sForcedObserverModeOffset;   // m_bForcedObserverMode
 
     void InitializeOffsets(CBaseEntity* player);
 
@@ -225,6 +228,33 @@ namespace BasePlayerHelpers
         return *(int*)((char*)player + sObserverModeOffset);
     }
 
+    // m_iObserverMode
+    inline void SetObserverMode(CBaseEntity* player, int mode, IServerGameEnts* gameEnts, IVEngineServer* engineServer)
+    {
+        assert(sObserverModeOffset > 0);
+        const int offset = sObserverModeOffset;
+        *(int*)((char*)player + offset) = mode;
+
+        EntityHelpers::StateChanged(player, offset, gameEnts, engineServer);
+    }
+
+    // m_iObserverLastMode
+    inline int GetObserverLastMode(CBaseEntity* player)
+    {
+        assert(sObserverLastModeOffset > 0);
+        return *(int*)((char*)player + sObserverLastModeOffset);
+    }
+
+    // m_iObserverLastMode
+    inline void SetObserverLastMode(CBaseEntity* player, int mode, IServerGameEnts* gameEnts, IVEngineServer* engineServer)
+    {
+        assert(sObserverLastModeOffset > 0);
+        const int offset = sObserverLastModeOffset;
+        *(int*)((char*)player + offset) = mode;
+
+        EntityHelpers::StateChanged(player, offset, gameEnts, engineServer);
+    }
+
     // m_hObserverTarget
     inline const CBaseHandle& GetObserverTarget(CBaseEntity* player)
     {
@@ -232,7 +262,25 @@ namespace BasePlayerHelpers
         return *(CBaseHandle*)((char*)player + sObserverTargetOffset);
     }
 
+    // m_hObserverTarget
     void SetObserverTarget(CBaseEntity* player, const CBaseHandle& target, IServerGameEnts* gameEnts, IVEngineServer* engineServer);
+
+    // m_bForcedObserverMode
+    inline void SetForcedObserverMode(CBaseEntity* player, bool forcedOn, IServerGameEnts* gameEnts, IVEngineServer* engineServer)
+    {
+        assert(sForcedObserverModeOffset > 0);
+        const int offset = sForcedObserverModeOffset;
+        *(bool*)((char*)player + offset) = forcedOn;
+
+        EntityHelpers::StateChanged(player, offset, gameEnts, engineServer);
+    }
+
+    // m_bForcedObserverMode
+    inline bool GetForcedObserverMode(CBaseEntity* player)
+    {
+        assert(sForcedObserverModeOffset > 0);
+        return *(bool*)((char*)player + sForcedObserverModeOffset);
+    }
 }
 
 namespace TFPlayerHelpers
