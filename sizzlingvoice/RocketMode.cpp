@@ -942,23 +942,6 @@ void RocketMode::FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity
     }
 }
 
-static IClient* UserIdToClient(int userid, IServer* server)
-{
-    const int clientCount = server->GetClientCount();
-    for (int i = 0; i < clientCount; ++i)
-    {
-        IClient* client = server->GetClient(i);
-        if (client && client->IsActive())
-        {
-            if (client->GetUserID() == userid)
-            {
-                return client;
-            }
-        }
-    }
-    return nullptr;
-}
-
 DEFINE_INHERITED_DESTRUCTOR(RocketMode, IGameEventListener2);
 
 void RocketMode::FireGameEvent(IGameEvent* event)
