@@ -263,7 +263,7 @@ static void ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverToo
 bool SizzLauncherSpawner::ClientCommand(edict_t* pEntity, const CCommand& args)
 {
     const char* command = args.Arg(0);
-    if (!strcmp(command, "spawnlauncher") && (args.ArgC() > 1))
+    if (!strcmp(command, "spawnlauncher"))
     {
         Vector origin;
         mServerGameClients->ClientEarPosition(pEntity, &origin);
