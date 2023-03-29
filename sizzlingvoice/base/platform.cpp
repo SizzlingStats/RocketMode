@@ -9,6 +9,10 @@
 #undef LoadLibrary
 #else
 #include <dlfcn.h>
+
+__asm__(".symver dlopen,dlopen@GLIBC_2.0");
+__asm__(".symver dlsym,dlsym@GLIBC_2.0");
+__asm__(".symver dlclose,dlclose@GLIBC_2.0");
 #endif
 
 Platform::HModule Platform::LoadLibrary(const char* name)
