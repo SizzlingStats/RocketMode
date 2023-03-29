@@ -46,6 +46,7 @@ VTableHook<decltype(&RocketMode::GetNextObserverSearchStartPointHook)> RocketMod
 VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> RocketMode::sPlayerRunCommandHook;
 VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> RocketMode::sSetOwnerEntityHook;
 VTableHook<decltype(&RocketMode::RocketChangeTeamHook)> RocketMode::sRocketChangeTeamHook;
+VTableHook<decltype(&RocketMode::RocketIsDeflectableHook)> RocketMode::sIsDeflectableHook;
 VTableHook<decltype(&RocketMode::FuncRespawnRoomStartTouchHook)> RocketMode::sFuncRespawnRoomStartTouchHook;
 
 inline float VectorLength(const Vector& v)
@@ -132,6 +133,7 @@ void RocketMode::Shutdown()
         mGameEventManager->RemoveListener(this);
     }
     sFuncRespawnRoomStartTouchHook.Unhook();
+    sIsDeflectableHook.Unhook();
     sGetNextObserverSearchStartPointHook.Unhook();
     sRocketChangeTeamHook.Unhook();
     sSetOwnerEntityHook.Unhook();
@@ -158,7 +160,10 @@ void RocketMode::LevelInit(const char* pMapName)
         {
             sRocketChangeTeamHook.Hook(ent, HookOffsets::ChangeTeam, this, &RocketMode::RocketChangeTeamHook);
         }
-
+        if (!sIsDeflectableHook.GetThisPtr())
+        {
+            sIsDeflectableHook.Hook(ent, HookOffsets::IsDeflectable, this, &RocketMode::RocketIsDeflectableHook);
+        }
         mServerTools->RemoveEntityImmediate(ent);
     }
 }
@@ -892,6 +897,11 @@ void RocketMode::RocketChangeTeam(CBaseEntity* rocket, int oldTeam)
 
     // Called from somewhere else, probably pyro deflect.
     // SetOwnerEntityHook will handle that.
+}
+
+bool RocketMode::RocketIsDeflectableHook()
+{
+    return false;
 }
 
 void RocketMode::FuncRespawnRoomStartTouchHook(CBaseEntity* other)

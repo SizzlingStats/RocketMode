@@ -28,6 +28,9 @@ namespace HookOffsets
     inline constexpr int StartTouchOffsets[NUM_CONFIGS] = { 98, 103, 104 };
     inline constexpr int StartTouch = StartTouchOffsets[OFFSET_INDEX];
 
+    inline constexpr int IsDeflectableOffset[NUM_CONFIGS] = { 153, 158, 159 };
+    inline constexpr int IsDeflectable = IsDeflectableOffset[OFFSET_INDEX];
+
     // CBasePlayer
     inline constexpr int GetNextObserverSearchStartPointOffsets[NUM_CONFIGS] = { 381, 390, 391 };
     inline constexpr int GetNextObserverSearchStartPoint = GetNextObserverSearchStartPointOffsets[OFFSET_INDEX];

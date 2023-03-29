@@ -68,6 +68,8 @@ private:
     void RocketChangeTeamHook(int team);
     void RocketChangeTeam(CBaseEntity* rocket, int oldTeam);
 
+    bool RocketIsDeflectableHook();
+
     void FuncRespawnRoomStartTouchHook(CBaseEntity* other);
     void FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity* other);
 
@@ -83,6 +85,7 @@ private:
     // CTFProjectile_Rocket hooks 
     static VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> sSetOwnerEntityHook;
     static VTableHook<decltype(&RocketMode::RocketChangeTeamHook)> sRocketChangeTeamHook;
+    static VTableHook<decltype(&RocketMode::RocketIsDeflectableHook)> sIsDeflectableHook;
 
     // CFuncRespawnRoom hooks
     static VTableHook<decltype(&RocketMode::FuncRespawnRoomStartTouchHook)> sFuncRespawnRoomStartTouchHook;
