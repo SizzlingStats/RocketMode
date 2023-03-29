@@ -10,25 +10,25 @@ class SetSingleConvar : public INetMessage
 public:
     DECL_INHERITED_DESTRUCTOR(INetMessage);
 
-    virtual void SetNetChannel(INetChannel* netchan);
-    virtual void SetReliable(bool state);
+    virtual void SetNetChannel(INetChannel* netchan) override;
+    virtual void SetReliable(bool state) override;
 
-    virtual bool Process(void);
+    virtual bool Process() override;
 
-    virtual	bool ReadFromBuffer(bf_read& buffer);
-    virtual	bool WriteToBuffer(bf_write& buffer);
+    virtual	bool ReadFromBuffer(bf_read& buffer) override;
+    virtual	bool WriteToBuffer(bf_write& buffer) override;
 
-    virtual bool IsReliable(void) const;
+    virtual bool IsReliable() const override;
 
-    virtual int GetType(void) const;
-    virtual int GetGroup(void) const;
-    virtual const char* GetName(void) const;
-    virtual INetChannel* GetNetChannel(void) const;
-    virtual const char* ToString(void) const;
+    virtual int GetType() const override;
+    virtual int GetGroup() const override;
+    virtual const char* GetName() const override;
+    virtual INetChannel* GetNetChannel() const override;
+    virtual const char* ToString() const override;
 
-    virtual bool BIncomingMessageForProcessing(double, int) const;
-    virtual int GetSize() const;
-    virtual void SetRatePolicy();
+    virtual bool BIncomingMessageForProcessing(double, int) const override;
+    virtual int GetSize() const override;
+    virtual void SetRatePolicy() override;
 
     void Set(const char* name, const char* value)
     {
