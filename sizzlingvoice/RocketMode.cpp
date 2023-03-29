@@ -224,7 +224,7 @@ void RocketMode::GameFrame(bool simulating)
         for (int i = 0; i < clientCount; ++i)
         {
             IClient* client = mServer->GetClient(i);
-            if (!client || !client->IsActive())
+            if (!client || !client->IsActive() || client->IsFakeClient())
             {
                 continue;
             }
@@ -480,7 +480,7 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
         for (int i = 0; i < clientCount; ++i)
         {
             IClient* client = mServer->GetClient(i);
-            if (!client->IsActive())
+            if (!client->IsActive() || client->IsFakeClient())
             {
                 continue;
             }
@@ -568,7 +568,7 @@ void RocketMode::DetachFromRocket(CBaseEntity* rocketEnt)
         for (int i = 0; i < clientCount; ++i)
         {
             IClient* client = mServer->GetClient(i);
-            if (!client->IsActive())
+            if (!client->IsActive() || client->IsFakeClient())
             {
                 continue;
             }
