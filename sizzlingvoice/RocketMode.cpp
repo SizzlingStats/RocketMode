@@ -431,11 +431,9 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
         BaseEntityHelpers::SetLocalAngularVelocity(prevRocketEnt, QAngle(0.0f, 0.0f, 0.0f));
     }
 
-    const Vector& localVelocity = BaseEntityHelpers::GetLocalVelocity(rocketEnt);
-
     state.rocket = rocketHandle;
     state.owner = ownerEntHandle;
-    state.initialSpeed = VectorLength(localVelocity);
+    state.initialSpeed = 0.0f;
     state.rollAngle = 0.0f;
 
     BaseEntityHelpers::AddFlag(ownerEnt, FL_FROZEN, mServerGameEnts, mVEngineServer);
@@ -443,12 +441,6 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
     RecipientFilter filter;
     filter.AddAllPlayers(mServer);
     mEngineSound->EmitSound(filter, edict->m_EdictIndex, CHAN_WEAPON, BOOSTER_LOOP, 1.0f, SNDLVL_80dB);
-
-    // currently broken. m_bCritical isn't set yet.
-    if (TFProjectileRocketHelpers::IsCritical(rocketEnt))
-    {
-        mEngineSound->EmitSound(filter, state.rocket.GetEntryIndex(), CHAN_STATIC, CRIT_LOOP, 1.0f, SNDLVL_180dB);
-    }
 }
 
 void RocketMode::DetachFromRocket(CBaseEntity* rocketEnt)
@@ -690,6 +682,19 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
     //    DetachFromRocket(rocketEnt);
     //    return;
     //}
+
+    if (state.initialSpeed == 0.0f)
+    {
+        const Vector& localVelocity = BaseEntityHelpers::GetLocalVelocity(rocketEnt);
+        state.initialSpeed = VectorLength(localVelocity);
+
+        if (TFProjectileRocketHelpers::IsCritical(rocketEnt))
+        {
+            RecipientFilter filter;
+            filter.AddAllPlayers(mServer);
+            mEngineSound->EmitSound(filter, state.rocket.GetEntryIndex(), CHAN_STATIC, CRIT_LOOP, 1.0f, SNDLVL_180dB);
+        }
+    }
 
     // Disable weapnon switching while in rocket mode.
     // Clients will predict incorrectly and flicker the hud a bit.
