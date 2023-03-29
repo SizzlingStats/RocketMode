@@ -96,7 +96,7 @@ static void SV_MaybeWriteSendTable(SendTable* pTable, bf_write& pBuf, bool bNeed
 
     pTable->SetWriteFlag(true);
 
-    byte tmpbuf[4096];
+    alignas(4) byte tmpbuf[4096];
     bf_write dataOut;
     dataOut.StartWriting(tmpbuf, sizeof(tmpbuf));
 
