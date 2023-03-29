@@ -230,8 +230,8 @@ static void ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverToo
     CEconItemView& item = TFDroppedWeaponHelpers::GetItem(ent);
 
     CTFDroppedWeapon_Hack* tfDroppedWeapon = (CTFDroppedWeapon_Hack*)&item;
-    tfDroppedWeapon->m_nClip = 1;
-    tfDroppedWeapon->m_nAmmo = 20;
+    tfDroppedWeapon->m_nClip = SizzLauncherInfo::InitialClip;
+    tfDroppedWeapon->m_nAmmo = SizzLauncherInfo::InitialAmmoReserves;
 
     // my festive rocket launcher
     item.m_iItemDefinitionIndex = SizzLauncherInfo::ItemDefinitionIndex;
@@ -324,13 +324,14 @@ void SizzLauncherSpawner::RocketLauncherSpawn(CBaseEntity* rocketLauncher)
     // Or check items_game.txt
     const CEconItemAttribute attrs[] =
     {
-        { CEconItemAttribute_vtable, 2, 1.5f }, // mult_dmg - 1.5x damage
-        { CEconItemAttribute_vtable, 3, 0.25f }, // mult_clipsize - clip size to 1
-        { CEconItemAttribute_vtable, 99, 2.0f }, // mult_explosion_radius - blast radius multiplier
-        //{ CEconItemAttribute_vtable, 118, 0.5f }, // mult_dmg_falloff - splash damage removal
-        { CEconItemAttribute_vtable, 488, 1.0f }, // rocket_specialist - +15% rocket speed per point. On direct hits: rocket does maximum damage, stuns target, and blast radius increased +15% per point.
-        //{ CEconItemAttribute_vtable, 521, 1.0f },  // use_large_smoke_explosion - sentrybuster explosion
-        { CEconItemAttribute_vtable, 104, 0.5f },  // mult_projectile_speed - halve rocket speed
+        { CEconItemAttribute_vtable, 2, 1.5f },     // mult_dmg - 1.5x damage
+        { CEconItemAttribute_vtable, 3, 0.25f },    // mult_clipsize - clip size to 1
+        { CEconItemAttribute_vtable, 77, 0.5f },    // mult_maxammo_primary - 0.5x max primary ammo
+        { CEconItemAttribute_vtable, 99, 2.0f },    // mult_explosion_radius - blast radius multiplier
+        //{ CEconItemAttribute_vtable, 118, 0.5f },   // mult_dmg_falloff - splash damage removal
+        { CEconItemAttribute_vtable, 488, 1.0f },   // rocket_specialist - +15% rocket speed per point. On direct hits: rocket does maximum damage, stuns target, and blast radius increased +15% per point.
+        //{ CEconItemAttribute_vtable, 521, 1.0f },   // use_large_smoke_explosion - sentrybuster explosion
+        { CEconItemAttribute_vtable, 104, 0.5f },   // mult_projectile_speed - 0.5x rocket speed
     };
 
     CUtlVector<CEconItemAttribute>* attrLists[] =
