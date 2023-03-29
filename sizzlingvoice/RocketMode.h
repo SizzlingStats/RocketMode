@@ -131,7 +131,7 @@ private:
 
     struct SpecState
     {
-        unsigned int nextHintSendTick = 0;
+        int nextHintSendTick = 0;
         CBaseHandle rocketSpecTarget;
     };
     SpecState mSpecStates[MAX_PLAYERS];
