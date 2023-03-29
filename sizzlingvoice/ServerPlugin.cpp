@@ -538,7 +538,6 @@ PLUGIN_RESULT ServerPlugin::ClientConnect(bool* bAllowConnect, edict_t* pEntity,
 
 PLUGIN_RESULT ServerPlugin::ClientCommand(edict_t* pEntity, const CCommand& args)
 {
-    if (mSizzLauncherSpawner.ClientCommand(pEntity, args))
     if (mRocketMode.ClientCommand(pEntity, args))
     {
         return PLUGIN_STOP;
