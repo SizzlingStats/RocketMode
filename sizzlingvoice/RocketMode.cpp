@@ -14,6 +14,7 @@
 #include "sourcesdk/game/shared/usercmd.h"
 #include "sourcesdk/public/engine/IEngineSound.h"
 #include "sourcesdk/public/basehandle.h"
+#include "sourcesdk/public/tier1/bitbuf.h"
 #include "sourcesdk/public/bspflags.h"
 #include "sourcesdk/public/const.h"
 #include "sourcesdk/public/dt_send.h"
@@ -32,6 +33,7 @@
 #include "sourcehelpers/SendTablesFix.h"
 #include "sourcehelpers/Vector.h"
 #include "base/math.h"
+#include "base/stringbuilder.h"
 #include "HookOffsets.h"
 #include "SizzLauncherInfo.h"
 #include <string.h>
@@ -78,7 +80,8 @@ RocketMode::RocketMode() :
     mSendTables(nullptr),
     mTFBaseRocketClass(nullptr),
     mGameRules(nullptr),
-    mClientStates()
+    mClientStates(),
+    mSpecStates()
 {
 }
 
@@ -209,6 +212,82 @@ void RocketMode::GameFrame(bool simulating)
         angRotation.z = mClientStates[i].UpdateRoll(mGlobals->frametime, localAngVel.y * -0.16f); // 20 degrees of tilt
         //Debug::Msg("frame angRot %i: %f %f %f\n", mGlobals->framecount, angRotation.x, angRotation.y, angRotation.z);
         BaseEntityHelpers::SetLocalRotation(rocketEnt, angRotation);
+    }
+
+    if (tf_projectile_rocket)
+    {
+        for (int i = 0; i < clientCount; ++i)
+        {
+            IClient* client = mServer->GetClient(i);
+            if (!client || !client->IsActive())
+            {
+                continue;
+            }
+
+            const int entIndex = i + 1;
+            CBaseEntity* player = mServerTools->GetBaseEntityByEntIndex(entIndex);
+            if (!player)
+            {
+                continue;
+            }
+
+            SpecState& state = mSpecStates[i];
+
+            const int observerMode = BasePlayerHelpers::GetObserverMode(player);
+            if (observerMode == OBS_MODE_FIXED || observerMode == OBS_MODE_IN_EYE || observerMode == OBS_MODE_CHASE)
+            {
+                const CBaseHandle targetHandle = BasePlayerHelpers::GetObserverTarget(player);
+                CBaseEntity* targetEnt = EntityHelpers::HandleToEnt(targetHandle, mServerTools);
+                if (targetEnt)
+                {
+                    if (tf_projectile_rocket == BaseEntityHelpers::GetClassname(targetEnt))
+                    {
+                        const CBaseHandle rocketOwnerHandle = BaseEntityHelpers::GetOwnerEntity(targetEnt);
+                        const CBaseEntity* rocketOwner = EntityHelpers::HandleToEnt(rocketOwnerHandle, mServerTools);
+                        if (rocketOwner && (rocketOwner != player))
+                        {
+                            // client is spectating a rocket that's not its own.
+                            if ((state.rocketSpecTarget != targetHandle) || (state.nextHintSendTick <= mGlobals->tickcount))
+                            {
+                                state.nextHintSendTick = mGlobals->tickcount + static_cast<int>(5.0f / mGlobals->interval_per_tick);
+                                state.rocketSpecTarget = targetHandle;
+
+                                const char* ownerName = BasePlayerHelpers::GetPlayerName(rocketOwner);
+                                StringBuilder<64> targetId;
+                                targetId.Append(ownerName);
+                                const char lastChar = targetId.last();
+                                targetId.Append('\'');
+                                if (lastChar != 's' && lastChar != 'S')
+                                {
+                                    targetId.Append('s');
+                                }
+                                targetId.Append(" Rocket");
+
+                                RecipientFilter filter;
+                                filter.SetSingleRecipient(entIndex);
+                                bf_write* buf = mVEngineServer->UserMessageBegin(&filter, 19); // HintText
+                                buf->WriteString(targetId.c_str());
+                                mVEngineServer->MessageEnd();
+                            }
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            if (state.rocketSpecTarget.IsValid())
+            {
+                state.nextHintSendTick = 0;
+                state.rocketSpecTarget.Term();
+
+                RecipientFilter filter;
+                filter.SetSingleRecipient(entIndex);
+                bf_write* buf = mVEngineServer->UserMessageBegin(&filter, 6); // ResetHUD
+                buf->WriteByte(0);
+                mVEngineServer->MessageEnd();
+
+            }
+        }
     }
 }
 

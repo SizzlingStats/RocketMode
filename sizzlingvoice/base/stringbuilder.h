@@ -11,6 +11,17 @@ public:
         mString[0] = '\0';
     }
 
+    void Append(char c)
+    {
+        int length = mLength;
+        char* thisStr = mString;
+
+        thisStr[length++] = c;
+        thisStr[length] = '\0';
+
+        mLength = length;
+    }
+
     void Append(const char* str)
     {
         int length = mLength;
@@ -39,6 +50,11 @@ public:
     const char* c_str() const
     {
         return mString;
+    }
+
+    char last() const
+    {
+        return (mLength > 0) ? mString[mLength-1] : '\0';
     }
 
 private:

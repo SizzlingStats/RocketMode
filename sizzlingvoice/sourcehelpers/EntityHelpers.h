@@ -213,11 +213,11 @@ namespace BaseEntityHelpers
 
 namespace BasePlayerHelpers
 {
-    extern int sLocalOffset;                // m_Local
     extern int sObserverModeOffset;         // m_iObserverMode
     extern int sObserverLastModeOffset;     // m_iObserverLastMode
     extern int sObserverTargetOffset;       // m_hObserverTarget
     extern int sForcedObserverModeOffset;   // m_bForcedObserverMode
+    extern int sPlayerNameOffset;           // m_szNetname
 
     void InitializeOffsets(CBaseEntity* player);
 
@@ -280,6 +280,13 @@ namespace BasePlayerHelpers
     {
         assert(sForcedObserverModeOffset > 0);
         return *(bool*)((char*)player + sForcedObserverModeOffset);
+    }
+
+    // m_szNetname
+    inline const char* GetPlayerName(const CBaseEntity* player)
+    {
+        assert(sPlayerNameOffset > 0);
+        return (const char*)((char*)player + sPlayerNameOffset);
     }
 }
 

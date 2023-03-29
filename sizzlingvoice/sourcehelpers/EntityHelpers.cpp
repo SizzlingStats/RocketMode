@@ -415,6 +415,7 @@ int BasePlayerHelpers::sObserverModeOffset;
 int BasePlayerHelpers::sObserverLastModeOffset;
 int BasePlayerHelpers::sObserverTargetOffset;
 int BasePlayerHelpers::sForcedObserverModeOffset;
+int BasePlayerHelpers::sPlayerNameOffset;
 
 void BasePlayerHelpers::InitializeOffsets(CBaseEntity* player)
 {
@@ -438,6 +439,9 @@ void BasePlayerHelpers::InitializeOffsets(CBaseEntity* player)
 
     sForcedObserverModeOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_bForcedObserverMode");
     assert(sForcedObserverModeOffset > 0);
+
+    sPlayerNameOffset = EntityHelpers::GetDatamapVarOffset(datamap, "m_szNetname");
+    assert(sPlayerNameOffset > 0);
 }
 
 void BasePlayerHelpers::SetObserverTarget(CBaseEntity* player, const CBaseHandle& target, IServerGameEnts* gameEnts, IVEngineServer* engineServer)

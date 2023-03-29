@@ -125,4 +125,11 @@ private:
         float rollAngle = 0.0f;
     };
     State mClientStates[MAX_PLAYERS];
+
+    struct SpecState
+    {
+        unsigned int nextHintSendTick = 0;
+        CBaseHandle rocketSpecTarget;
+    };
+    SpecState mSpecStates[MAX_PLAYERS];
 };
