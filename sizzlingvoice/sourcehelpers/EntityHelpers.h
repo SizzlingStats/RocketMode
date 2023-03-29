@@ -49,6 +49,7 @@ namespace EntityHelpers
     SendProp* GetProp(SendTable* table, const char* propName);
 
     CBaseEntity* HandleToEnt(const CBaseHandle& handle, IServerTools* serverTools);
+    CEconItemView* GetEconItemFromWeapon(CBaseHandle weaponHandle, IServerTools* serverTools);
 }
 
 namespace BaseEntityHelpers

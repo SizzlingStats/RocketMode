@@ -853,25 +853,10 @@ void RocketMode::SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* newOwner)
 void RocketMode::RocketSpawn(CBaseEntity* rocket)
 {
     CBaseHandle launcherHandle = TFBaseRocketHelpers::GetLauncher(rocket);
-    if (!launcherHandle.IsValid())
-    {
-        return;
-    }
+    CEconItemView* item = EntityHelpers::GetEconItemFromWeapon(launcherHandle, mServerTools);
+    assert(item);
 
-    CBaseEntity* launcher = EntityHelpers::HandleToEnt(launcherHandle, mServerTools);
-    if (!launcher)
-    {
-        return;
-    }
-
-    IHasAttributes* attributeInterface = BaseEntityHelpers::GetAttribInterface(launcher);
-    assert(attributeInterface);
-    CAttributeContainer* con = attributeInterface->GetAttributeContainer();
-    assert(con);
-
-    CEconItemView& item = AttributeContainerHelpers::GetItem(con);
-
-    if (item.m_iItemID == SizzLauncherInfo::ItemID)
+    if (item->m_iItemID == SizzLauncherInfo::ItemID)
     {
         AttachToRocket(rocket);
     }

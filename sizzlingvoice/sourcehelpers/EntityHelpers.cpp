@@ -11,6 +11,7 @@
 #include "sourcesdk/public/server_class.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
 #include "sourcesdk/game/shared/econ/attribute_manager.h"
+#include "sourcesdk/game/shared/econ/ihasattributes.h"
 #include "sourcesdk/game/shared/gamerules.h"
 #include "base/stringbuilder.h"
 #include "hde32/hde32.h"
@@ -329,6 +330,26 @@ CBaseEntity* EntityHelpers::HandleToEnt(const CBaseHandle& handle, IServerTools*
         return ent;
     }
     return nullptr;
+}
+
+CEconItemView* EntityHelpers::GetEconItemFromWeapon(CBaseHandle weaponHandle, IServerTools* serverTools)
+{
+    CBaseEntity* weapon = EntityHelpers::HandleToEnt(weaponHandle, serverTools);
+    if (!weapon)
+    {
+        return nullptr;
+    }
+
+    IHasAttributes* attributeInterface = BaseEntityHelpers::GetAttribInterface(weapon);
+    if (!attributeInterface)
+    {
+        return nullptr;
+    }
+
+    CAttributeContainer* con = attributeInterface->GetAttributeContainer();
+    assert(con);
+
+    return &AttributeContainerHelpers::GetItem(con);
 }
 
 int BaseEntityHelpers::sClassnameOffset;
