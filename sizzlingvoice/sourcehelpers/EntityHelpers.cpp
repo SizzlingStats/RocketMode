@@ -464,7 +464,12 @@ void TFPlayerHelpers::InitializeOffsets(IServerGameDLL* serverGameDll)
     SendTable* tfPlayerTable = EntityHelpers::GetTable(tfPlayerClass, "DT_TFPlayer");
     assert(tfPlayerTable);
 
-    SendProp* flMVMLastDamageTimeProp = EntityHelpers::GetProp(tfPlayerTable, "m_flMvMLastDamageTime");
+#ifdef SDK_COMPAT
+    constexpr const char* lastDamageName = "m_flLastDamageTime";
+#else
+    constexpr const char* lastDamageName = "m_flMvMLastDamageTime";
+#endif
+    SendProp* flMVMLastDamageTimeProp = EntityHelpers::GetProp(tfPlayerTable, lastDamageName);
     assert(flMVMLastDamageTimeProp);
     const int flMVMLastDamageTimeOffset = flMVMLastDamageTimeProp->GetOffset();
 
