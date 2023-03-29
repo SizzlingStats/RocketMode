@@ -27,6 +27,7 @@
 #include "sourcesdk/public/tier1/convar.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
 
+#include "sourcehelpers/NetMessageHelpers.h"
 #include "sourcehelpers/RecipientFilter.h"
 #include "sourcehelpers/SendTablesFix.h"
 #include "sourcehelpers/Vector.h"
@@ -229,6 +230,38 @@ void RocketMode::ClientConnect()
     SendTablesFix::ReconstructFullSendTablesForModification(mTFBaseRocketClass, mVEngineServer);
 }
 
+bool RocketMode::ClientCommand(edict_t* pEntity, const CCommand& args)
+{
+    const char* command = args.Arg(0);
+
+    const bool bSpecPrev = !strcmp(command, "spec_prev");
+    if (bSpecPrev ||
+        !strcmp(command, "spec_next") ||
+        !strcmp(command, "spec_mode") ||
+        !strcmp(command, "spec_menu") ||
+        !strcmp(command, "spec_autodirector"))
+    {
+        const int clientIndex = pEntity->m_EdictIndex - 1;
+        if (clientIndex >= 0 && clientIndex < MAX_PLAYERS)
+        {
+            State& state = mClientStates[clientIndex];
+            if (state.rocket.IsValid())
+            {
+                if (bSpecPrev)
+                {
+                    CBaseEntity* rocketEnt = EntityHelpers::HandleToEnt(state.rocket, mServerTools);
+                    if (rocketEnt)
+                    {
+                        DetachFromRocket(rocketEnt);
+                    }
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void RocketMode::ClientActive(edict_t* pEntity)
 {
     if (!sGetNextObserverSearchStartPointHook.GetThisPtr())
@@ -341,70 +374,80 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
         }
     }
 
-    if (ClientHelpers::SetViewEntity(client, edict))
+    CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
+    assert(ownerEnt);
+
+    BasePlayerHelpers::SetObserverMode(ownerEnt, OBS_MODE_FIXED, mServerGameEnts, mVEngineServer);
+    BasePlayerHelpers::SetObserverLastMode(ownerEnt, OBS_MODE_FIXED, mServerGameEnts, mVEngineServer);
+    BasePlayerHelpers::SetObserverTarget(ownerEnt, rocketHandle, mServerGameEnts, mVEngineServer);
+    BasePlayerHelpers::SetForcedObserverMode(ownerEnt, false, mServerGameEnts, mVEngineServer);
+
+    // Bandaid for client prediction causing weird view offset errors.
+    // To reproduce, stand on a slanted surface and shoot rocket.
+    SetSingleConvar setsingleconvar;
+    setsingleconvar.Set("sv_client_predict", "0");
+    client->SendNetMsg(setsingleconvar, true);
+
+    ClientHelpers::SetViewEntity(client, edict);
+
+    // send all spectators of this player or the player's current rocket to the new rocket
     {
-        // send all spectators of this player or the player's current rocket to the new rocket
+        const int clientCount = mServer->GetClientCount();
+        for (int i = 0; i < clientCount; ++i)
         {
-            const int clientCount = mServer->GetClientCount();
-            for (int i = 0; i < clientCount; ++i)
+            IClient* client = mServer->GetClient(i);
+            if (!client->IsActive())
             {
-                IClient* client = mServer->GetClient(i);
-                if (!client->IsActive())
-                {
-                    continue;
-                }
+                continue;
+            }
 
-                const int clientEntIndex = i + 1;
-                CBaseEntity* clientEnt = mServerTools->GetBaseEntityByEntIndex(clientEntIndex);
-                if (!clientEnt)
-                {
-                    // shouldn't happen, but for safety
-                    continue;
-                }
+            const int clientEntIndex = i + 1;
+            CBaseEntity* clientEnt = mServerTools->GetBaseEntityByEntIndex(clientEntIndex);
+            if (!clientEnt)
+            {
+                // shouldn't happen, but for safety
+                continue;
+            }
 
-                // if spectating a player
-                const int observerMode = BasePlayerHelpers::GetObserverMode(clientEnt);
-                if (observerMode == OBS_MODE_IN_EYE || observerMode == OBS_MODE_CHASE)
+            // if spectating a player
+            const int observerMode = BasePlayerHelpers::GetObserverMode(clientEnt);
+            if (observerMode == OBS_MODE_IN_EYE || observerMode == OBS_MODE_CHASE)
+            {
+                // OBS_MODE_CHASE seems to be set when on a fixed map view.
+                // I thought it would be OBS_MODE_FIXED, but whatever.
+                CBaseHandle observerTarget = BasePlayerHelpers::GetObserverTarget(clientEnt);
+                const bool spectatingPrevRocket = state.rocket.IsValid() && (observerTarget == state.rocket);
+                const bool spectatingOwner = observerTarget == ownerEntHandle;
+                if (spectatingPrevRocket || spectatingOwner)
                 {
-                    // OBS_MODE_CHASE seems to be set when on a fixed map view.
-                    // I thought it would be OBS_MODE_FIXED, but whatever.
-                    CBaseHandle observerTarget = BasePlayerHelpers::GetObserverTarget(clientEnt);
-                    const bool spectatingPrevRocket = state.rocket.IsValid() && (observerTarget == state.rocket);
-                    const bool spectatingOwner = observerTarget == ownerEntHandle;
-                    if (spectatingPrevRocket || spectatingOwner)
-                    {
-                        BasePlayerHelpers::SetObserverTarget(clientEnt, rocketHandle, mServerGameEnts, mVEngineServer);
-                    }
+                    BasePlayerHelpers::SetObserverTarget(clientEnt, rocketHandle, mServerGameEnts, mVEngineServer);
                 }
             }
         }
+    }
 
-        if (CBaseEntity* prevRocketEnt = EntityHelpers::HandleToEnt(state.rocket, mServerTools))
-        {
-            BaseEntityHelpers::SetLocalAngularVelocity(prevRocketEnt, QAngle(0.0f, 0.0f, 0.0f));
-        }
+    if (CBaseEntity* prevRocketEnt = EntityHelpers::HandleToEnt(state.rocket, mServerTools))
+    {
+        BaseEntityHelpers::SetLocalAngularVelocity(prevRocketEnt, QAngle(0.0f, 0.0f, 0.0f));
+    }
 
-        const Vector& localVelocity = BaseEntityHelpers::GetLocalVelocity(rocketEnt);
+    const Vector& localVelocity = BaseEntityHelpers::GetLocalVelocity(rocketEnt);
 
-        state.rocket = rocketHandle;
-        state.owner = ownerEntHandle;
-        state.initialSpeed = VectorLength(localVelocity);
-        state.rollAngle = 0.0f;
+    state.rocket = rocketHandle;
+    state.owner = ownerEntHandle;
+    state.initialSpeed = VectorLength(localVelocity);
+    state.rollAngle = 0.0f;
 
-        CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
-        assert(ownerEnt);
+    BaseEntityHelpers::AddFlag(ownerEnt, FL_FROZEN, mServerGameEnts, mVEngineServer);
 
-        BaseEntityHelpers::AddFlag(ownerEnt, FL_FROZEN, mServerGameEnts, mVEngineServer);
+    RecipientFilter filter;
+    filter.AddAllPlayers(mServer);
+    mEngineSound->EmitSound(filter, edict->m_EdictIndex, CHAN_WEAPON, BOOSTER_LOOP, 1.0f, SNDLVL_80dB);
 
-        RecipientFilter filter;
-        filter.AddAllPlayers(mServer);
-        mEngineSound->EmitSound(filter, edict->m_EdictIndex, CHAN_WEAPON, BOOSTER_LOOP, 1.0f, SNDLVL_80dB);
-
-        // currently broken. m_bCritical isn't set yet.
-        if (TFProjectileRocketHelpers::IsCritical(rocketEnt))
-        {
-            mEngineSound->EmitSound(filter, state.rocket.GetEntryIndex(), CHAN_STATIC, CRIT_LOOP, 1.0f, SNDLVL_180dB);
-        }
+    // currently broken. m_bCritical isn't set yet.
+    if (TFProjectileRocketHelpers::IsCritical(rocketEnt))
+    {
+        mEngineSound->EmitSound(filter, state.rocket.GetEntryIndex(), CHAN_STATIC, CRIT_LOOP, 1.0f, SNDLVL_180dB);
     }
 }
 
@@ -480,17 +523,27 @@ void RocketMode::DetachFromRocket(CBaseEntity* rocketEnt)
 
     BaseEntityHelpers::SetLocalAngularVelocity(rocketEnt, QAngle(0.0f, 0.0f, 0.0f));
 
+    CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
+    assert(ownerEnt);
+
+    BasePlayerHelpers::SetObserverMode(ownerEnt, OBS_MODE_NONE, mServerGameEnts, mVEngineServer);
+    BasePlayerHelpers::SetObserverLastMode(ownerEnt, OBS_MODE_NONE, mServerGameEnts, mVEngineServer);
+    BasePlayerHelpers::SetObserverTarget(ownerEnt, CBaseHandle(), mServerGameEnts, mVEngineServer);
+    BasePlayerHelpers::SetForcedObserverMode(ownerEnt, false, mServerGameEnts, mVEngineServer);
+
     // Clear state, reset view
     state.Reset();
 
     IClient* client = mServer->GetClient(ownerClientIndex);
-    if (client && ClientHelpers::SetViewEntity(client, nullptr))
-    {
-        CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
-        assert(ownerEnt);
+    assert(client);
 
-        BaseEntityHelpers::RemoveFlag(ownerEnt, FL_FROZEN, mServerGameEnts, mVEngineServer);
-    }
+    ClientHelpers::SetViewEntity(client, nullptr);
+
+    SetSingleConvar setsingleconvar;
+    setsingleconvar.Set("sv_client_predict", "1");
+    client->SendNetMsg(setsingleconvar, true);
+
+    BaseEntityHelpers::RemoveFlag(ownerEnt, FL_FROZEN, mServerGameEnts, mVEngineServer);
 }
 
 bool RocketMode::ModifyRocketAngularPrecision()
@@ -630,12 +683,13 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
         return;
     }
 
-    const bool attack2 = (ucmd->buttons & IN_ATTACK2);
-    if (attack2)
-    {
-        DetachFromRocket(rocketEnt);
-        return;
-    }
+    // Now handled by ClientCommand spec_prev
+    //const bool attack2 = (ucmd->buttons & IN_ATTACK2);
+    //if (attack2)
+    //{
+    //    DetachFromRocket(rocketEnt);
+    //    return;
+    //}
 
     // Disable weapnon switching while in rocket mode.
     // Clients will predict incorrectly and flicker the hud a bit.

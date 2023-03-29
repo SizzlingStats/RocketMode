@@ -44,25 +44,3 @@ void ClientHelpers::InitializeOffsets(IClient* anyClient, IVEngineServer* engine
     sViewEntityOffset = GetViewEntityOffset(anyClient, engineServer);
     assert(sViewEntityOffset > 0);
 }
-
-bool ClientHelpers::SetViewEntity(IClient* client, edict_t* viewTarget)
-{
-    SVC_SetView setview;
-    if (viewTarget)
-    {
-        setview.m_nEntityIndex = viewTarget->m_EdictIndex;
-    }
-    else
-    {
-        const int entIndex = client->GetPlayerSlot() + 1;
-        setview.m_nEntityIndex = entIndex;
-    }
-
-    if (client->SendNetMsg(setview, true))
-    {
-        edict_t** viewEntity = (edict_t**)((char*)client + sViewEntityOffset);
-        *viewEntity = viewTarget;
-        return true;
-    }
-    return false;
-}

@@ -25,6 +25,7 @@ class ServerClass;
 class IServerGameEnts;
 class IEngineSound;
 class CGameRules;
+class CCommand;
 
 class RocketMode : public IGameEventListener2
 {
@@ -40,6 +41,7 @@ public:
     void LevelShutdown();
 
     void ClientConnect();
+    bool ClientCommand(edict_t* pEntity, const CCommand& args);
 
     void ClientActive(edict_t* pEntity);
     void ClientDisconnect(edict_t* pEntity);
