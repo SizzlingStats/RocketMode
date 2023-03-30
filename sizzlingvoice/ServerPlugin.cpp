@@ -331,10 +331,20 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
 
     TFPlayerHelpers::InitializeOffsets(mServerGameDll);
 
-    // TODO: return false on error
-    mRocketMode.Init(interfaceFactory, gameServerFactory);
-    mSizzLauncherSpawner.Init(interfaceFactory, gameServerFactory);
-    mSizzlingVoice.Init(interfaceFactory, gameServerFactory);
+    if (!mRocketMode.Init(interfaceFactory, gameServerFactory))
+    {
+        return false;
+    }
+
+    if (!mSizzLauncherSpawner.Init(interfaceFactory, gameServerFactory))
+    {
+        return false;
+    }
+
+    if (!mSizzlingVoice.Init(interfaceFactory, gameServerFactory))
+    {
+        return false;
+    }
 
     mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
