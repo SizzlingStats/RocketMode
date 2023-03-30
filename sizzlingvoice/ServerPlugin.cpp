@@ -124,21 +124,9 @@ public:
     void OnEntitySpawned(CBaseEntity* pEntity);
     void OnEntityDeleted(CBaseEntity* pEntity);
 
-    bool ProcessVoiceDataHook()
-    {
-        ServerPlugin* thisPtr = sProcessVoiceDataHook.GetThisPtr();
-        if (thisPtr->ProcessVoiceData(reinterpret_cast<INetMessage*>(this)))
-        {
-            return sProcessVoiceDataHook.CallOriginalFn(this);
-        }
-        return true;
-    }
-
     bool ProcessVoiceData(INetMessage* VoiceDataNetMsg);
     void ProcessVoiceData(ClientState* clientState, bf_read voiceData, int numEncodedBits, bool sirenFx);
     int GetClosestBotSlot(const Vector& position);
-
-    bool IsProximityHearingClientHook(int index);
 
 private:
     IVEngineServer* mVEngineServer;
@@ -158,13 +146,7 @@ private:
     RocketMode mRocketMode;
     SizzLauncherSpawner mSizzLauncherSpawner;
     SizzlingVoice mSizzlingVoice;
-
-    static VTableHook<decltype(&ServerPlugin::ProcessVoiceDataHook)> sProcessVoiceDataHook;
-    static VTableHook<decltype(&ServerPlugin::IsProximityHearingClientHook)> sIsProximityHearingClientHook;
 };
-
-VTableHook<decltype(&ServerPlugin::ProcessVoiceDataHook)> ServerPlugin::sProcessVoiceDataHook;
-VTableHook<decltype(&ServerPlugin::IsProximityHearingClientHook)> ServerPlugin::sIsProximityHearingClientHook;
 
 static ServerPlugin sServerPlugin;
 
@@ -383,8 +365,6 @@ void ServerPlugin::Unload(void)
     VScriptHelpers::Shutdown();
 
     mCeltCodecManager.Release();
-    sIsProximityHearingClientHook.Unhook();
-    sProcessVoiceDataHook.Unhook();
 
     ValveMemAlloc::Release();
 }
@@ -450,37 +430,6 @@ void ServerPlugin::LevelShutdown()
     mSizzLauncherSpawner.LevelShutdown();
 }
 
-static const INetMessage* GetCLCVoiceData(INetChannel* channel)
-{
-    // excerpt from CNetChan. Used so we can get to m_NetMessages
-    struct CNetChanHack
-    {
-        INetChannelHandler* m_MessageHandler;   // who registers and processes messages
-        CUtlVector<INetMessage*> m_NetMessages; // list of registered message
-    };
-
-    INetChannelHandler* messageHandler = channel->GetMsgHandler();
-    INetChannelHandler** searchPtr = reinterpret_cast<INetChannelHandler**>(channel);
-    while (*searchPtr != messageHandler)
-    {
-        searchPtr += 1;
-    }
-    CNetChanHack* hack = reinterpret_cast<CNetChanHack*>(searchPtr);
-    
-    const int numMessages = hack->m_NetMessages.m_Size;
-    INetMessage** messages = hack->m_NetMessages.m_pElements;
-    for (int i = 0; i < numMessages; ++i)
-    {
-        const INetMessage* msg = messages[i];
-        const int type = msg->GetType();
-        if (type == clc_VoiceData)
-        {
-            return msg;
-        }
-    }
-    return nullptr;
-}
-
 void ServerPlugin::ClientActive(edict_t* pEntity)
 {
     const int entIndex = pEntity->m_EdictIndex;
@@ -502,20 +451,6 @@ void ServerPlugin::ClientActive(edict_t* pEntity)
 
     mSizzlingVoice.ClientActive(pEntity);
     mRocketMode.ClientActive(pEntity);
-
-    //if (!sIsProximityHearingClientHook.GetThisPtr())
-    //{
-    //    //client->IsProximityHearingClient(0);
-    //    sIsProximityHearingClientHook.Hook(client, HookOffsets::IsProximityHearingClient, this, &ServerPlugin::IsProximityHearingClientHook);
-    //}
-
-    //if (!sProcessVoiceDataHook.GetThisPtr())
-    //{
-    //    const INetMessage* msg = GetCLCVoiceData(netChannel);
-    //    assert(msg);
-
-    //    sProcessVoiceDataHook.Hook(msg, HookOffsets::ProcessVoiceData, this, &ServerPlugin::ProcessVoiceDataHook);
-    //}
 
     assert(!mClientState[clientIndex]);
     delete mClientState[clientIndex];
@@ -843,13 +778,4 @@ void ClientState::SirenFx(float* samples, int numSamples)
             }
         }
     }
-}
-
-bool ServerPlugin::IsProximityHearingClientHook(int index)
-{
-    if (sSizzVoicePositional->GetInt() == 1)
-    {
-        return true;
-    }
-    return sIsProximityHearingClientHook.CallOriginalFn(this, index);
 }
