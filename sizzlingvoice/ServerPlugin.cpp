@@ -430,7 +430,7 @@ void ServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int clien
 void ServerPlugin::GameFrame(bool simulating)
 {
     mRocketMode.GameFrame(simulating);
-    //mSizzLauncherSpawner.GameFrme(simulating);
+    mSizzLauncherSpawner.GameFrme(simulating);
 }
 
 void ServerPlugin::LevelShutdown()
@@ -539,10 +539,10 @@ PLUGIN_RESULT ServerPlugin::ClientCommand(edict_t* pEntity, const CCommand& args
     {
         return PLUGIN_STOP;
     }
-    //else if (mSizzLauncherSpawner.ClientCommand(pEntity, args))
-    //{
-    //    return PLUGIN_STOP;
-    //}
+    else if (mSizzLauncherSpawner.ClientCommand(pEntity, args))
+    {
+        return PLUGIN_STOP;
+    }
     return PLUGIN_CONTINUE;
 }
 

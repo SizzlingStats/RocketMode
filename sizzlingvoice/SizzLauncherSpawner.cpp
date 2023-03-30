@@ -18,6 +18,7 @@
 #include "sourcesdk/game/shared/econ/econ_item_constants.h"
 #include "sourcesdk/game/shared/teamplayroundbased_gamerules.h"
 
+#include "sourcehelpers/CVarHelper.h"
 #include "sourcehelpers/EntityHelpers.h"
 #include "sourcehelpers/VStdlibRandom.h"
 #include "HookOffsets.h"
@@ -37,8 +38,10 @@ SizzLauncherSpawner::SizzLauncherSpawner() :
     mGlobals(nullptr),
     mGameRules(nullptr),
     mTfDroppedWeaponLifetime(nullptr),
-    mInitialSpawnIntervalTicks(0),
-    mSpawnIntervalTicks(0),
+    mSpawnInitialDelay(nullptr),
+    mSpawnInterval(nullptr),
+    mSpawnsEnabled(nullptr),
+    mSpawnCommandEnabled(nullptr),
     mNextSpawnTick(0),
     mRoundState(0)
 {
@@ -82,20 +85,25 @@ bool SizzLauncherSpawner::Init(CreateInterfaceFn interfaceFactory, CreateInterfa
         hudHintSound->SetValue(0);
     }
 
+    mSpawnInitialDelay = CVarHelper::CreateConVar("sizz_rocketmode_spawn_initialdelay", "15.0f", "Delay before spawning the first set of launchers after round start (seconds).");
+    mSpawnInterval = CVarHelper::CreateConVar("sizz_rocketmode_spawn_interval", "60.0f", "After initial spawns, periodically spawn launchers on this interval (seconds).");
+    mSpawnsEnabled = CVarHelper::CreateConVar("sizz_rocketmode_spawn_enabled", "0", "Enables periodic spawning of rocket mode rocket launchers (0/1).");
+    mSpawnCommandEnabled = CVarHelper::CreateConVar("sizz_rocketmode_spawn_command_enabled", "0", "Enables clients to spawn a launcher at their feet with 'spawnlauncher' (0/1)");
     return true;
 }
 
 void SizzLauncherSpawner::Shutdown()
 {
+    CVarHelper::DestroyConVar(mSpawnCommandEnabled);
+    CVarHelper::DestroyConVar(mSpawnsEnabled);
+    CVarHelper::DestroyConVar(mSpawnInterval);
+    CVarHelper::DestroyConVar(mSpawnInitialDelay);
     sDroppedWeaponSpawnHook.Unhook();
     sRocketLauncherSpawnHook.Unhook();
 }
 
 void SizzLauncherSpawner::LevelInit(const char* pMapName)
 {
-    mInitialSpawnIntervalTicks = static_cast<uint32_t>(sInitialSpawnIntervalSeconds / mGlobals->interval_per_tick);
-    mSpawnIntervalTicks = static_cast<uint32_t>(sSpawnIntervalSeconds / mGlobals->interval_per_tick);
-
     CBaseEntity* ent = mServerTools->CreateEntityByName("tf_weapon_rocketlauncher");
     if (ent)
     {
@@ -134,7 +142,7 @@ void SizzLauncherSpawner::ServerActivate(CGameRules* gameRules)
 
 void SizzLauncherSpawner::GameFrme(bool bSimulating)
 {
-    if (!bSimulating)
+    if (!bSimulating || !mSpawnsEnabled->IsEnabled())
     {
         return;
     }
@@ -155,12 +163,14 @@ void SizzLauncherSpawner::GameFrme(bool bSimulating)
             const uint32_t curTick = mGlobals->tickcount;
             if (roundStateChanged)
             {
-                mNextSpawnTick = curTick + mInitialSpawnIntervalTicks;
+                const uint32_t initialDelay = static_cast<uint32_t>(mSpawnInitialDelay->GetFloat() / mGlobals->interval_per_tick);
+                mNextSpawnTick = curTick + initialDelay;
             }
 
             if (curTick >= mNextSpawnTick)
             {
-                mNextSpawnTick = curTick + mSpawnIntervalTicks;
+                const uint32_t spawnInterval = static_cast<uint32_t>(mSpawnInterval->GetFloat() / mGlobals->interval_per_tick);
+                mNextSpawnTick = curTick + spawnInterval;
 
                 uint8_t redSpawnPoints[MAX_PLAYERS];
                 uint8_t bluSpawnPoints[MAX_PLAYERS];
@@ -289,14 +299,17 @@ static void ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverToo
 
 bool SizzLauncherSpawner::ClientCommand(edict_t* pEntity, const CCommand& args)
 {
-    const char* command = args.Arg(0);
-    if (!strcmp(command, "spawnlauncher"))
+    if (mSpawnCommandEnabled->IsEnabled())
     {
-        Vector origin;
-        mServerGameClients->ClientEarPosition(pEntity, &origin);
+        const char* command = args.Arg(0);
+        if (!strcmp(command, "spawnlauncher"))
+        {
+            Vector origin;
+            mServerGameClients->ClientEarPosition(pEntity, &origin);
 
-        SpawnLauncher(origin);
-        return true;
+            SpawnLauncher(origin);
+            return true;
+        }
     }
 
     return false;

@@ -58,12 +58,11 @@ private:
     CGameRules* mGameRules;
 
     ConVar* mTfDroppedWeaponLifetime;
+    ConVar* mSpawnInitialDelay;
+    ConVar* mSpawnInterval;
+    ConVar* mSpawnsEnabled;
+    ConVar* mSpawnCommandEnabled;
 
-    static constexpr float sInitialSpawnIntervalSeconds = 15.0f;
-    static constexpr float sSpawnIntervalSeconds = 60.0f;
-    uint32_t mInitialSpawnIntervalTicks;
-    uint32_t mSpawnIntervalTicks;
     uint32_t mNextSpawnTick;
-
     int32_t mRoundState;
 };
