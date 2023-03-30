@@ -344,6 +344,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
 void ServerPlugin::Unload(void)
 {
     mSizzlingVoice.Shutdown();
+    mSizzLauncherSpawner.Shutdown();
     mRocketMode.Shutdown();
 
     CVarHelper::DestroyConVar(sSizzVoiceEnabled);
