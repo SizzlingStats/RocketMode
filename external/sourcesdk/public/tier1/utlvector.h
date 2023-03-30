@@ -43,6 +43,7 @@ public:
     // Element removal
     void FastRemove(int elem);	// doesn't preserve order
     bool FindAndFastRemove(const T& src); // removes first occurrence of src, doesn't preserve order
+    void RemoveAll(); // doesn't deallocate memory
 
 protected:
     // Grows the vector
@@ -160,6 +161,17 @@ bool CUtlVector<T, A>::FindAndFastRemove(const T& src)
         return true;
     }
     return false;
+}
+
+template< typename T, class A >
+void CUtlVector<T, A>::RemoveAll()
+{
+    for (int i = m_Size; --i >= 0; )
+    {
+        // Global scope to resolve conflict with Scaleform 4.0
+        ::Destruct(&Element(i));
+    }
+    m_Size = 0;
 }
 
 //-----------------------------------------------------------------------------

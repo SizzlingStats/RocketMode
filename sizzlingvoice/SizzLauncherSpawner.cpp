@@ -353,12 +353,11 @@ void SizzLauncherSpawner::RocketLauncherSpawn(CBaseEntity* rocketLauncher)
         { CEconItemAttribute_vtable, 488, 1.0f },   // rocket_specialist - +15% rocket speed per point. On direct hits: rocket does maximum damage, stuns target, and blast radius increased +15% per point.
         //{ CEconItemAttribute_vtable, 521, 1.0f },   // use_large_smoke_explosion - sentrybuster explosion
         { CEconItemAttribute_vtable, 104, 0.5f },   // mult_projectile_speed - 0.5x rocket speed
-    };
 
-    CUtlVector<CEconItemAttribute>* attrLists[] =
-    {
-        &item.m_AttributeList.m_Attributes,
-        &item.m_NetworkedDynamicAttributesForDemos.m_Attributes
+        // these are from the m_NetworkedDynamicAttributesForDemos that we have to clear.
+        { CEconItemAttribute_vtable, 2025, 1.0f },  // killstreak_tier
+        { CEconItemAttribute_vtable, 724, 1.0f },   // weapon_stattrak_module_scale 1
+        { CEconItemAttribute_vtable, 692, 0.0f }    // limited_quantity_item
     };
 
     /*Debug::Msg("attributes: %s\n", BaseEntityHelpers::GetClassname(rocketLauncher));
@@ -372,22 +371,24 @@ void SizzLauncherSpawner::RocketLauncherSpawn(CBaseEntity* rocketLauncher)
         Debug::Msg("\n");
     }*/
 
-    for (CUtlVector<CEconItemAttribute>* attributes : attrLists)
+    CUtlVector<CEconItemAttribute>* attributes = &item.m_AttributeList.m_Attributes;
+    for (const CEconItemAttribute& attr : attrs)
     {
-        for (const CEconItemAttribute& attr : attrs)
+        const int index = attributes->Find(attr);
+        if (index >= 0)
         {
-            const int index = attributes->Find(attr);
-            if (index >= 0)
-            {
-                CEconItemAttribute& existingAttr = attributes->Element(index);
-                existingAttr.m_flValue = attr.m_flValue;
-            }
-            else
-            {
-                attributes->AddToTail(attr);
-            }
+            CEconItemAttribute& existingAttr = attributes->Element(index);
+            existingAttr.m_flValue = attr.m_flValue;
+        }
+        else
+        {
+            attributes->AddToTail(attr);
         }
     }
+    // To get min viewmodels working, we need
+    // m_NetworkedDynamicAttributesForDemos to be empty.
+    // The game will query static data in that case which has the offset string.
+    item.m_NetworkedDynamicAttributesForDemos.m_Attributes.RemoveAll();
 
     con->OnAttributeValuesChanged();
 }
