@@ -5,11 +5,14 @@
 #include <malloc.h>
 #include <assert.h>
 
-bool CVarHelper::Init(ICvar* cvarInterface)
+static ICvar* sCvar;
+static ConVar* sAnyConVar;
+
+bool CVarHelper::Initialize(ICvar* cvarInterface)
 {
-    mCvar = cvarInterface;
-    mAnyConVar = cvarInterface->FindVar("achievement_debug");
-    return mAnyConVar;
+    sCvar = cvarInterface;
+    sAnyConVar = cvarInterface->FindVar("achievement_debug");
+    return sAnyConVar;
 }
 
 // Note: GetDLLIdentifier is going to return the value of
@@ -31,11 +34,11 @@ static ConVar* AllocConvar(ConVar* AnyExistingConVar)
 
 ConVar* CVarHelper::CreateConVar(const char* name, const char* defaultValue, const char* description /*= ""*/)
 {
-    assert(mAnyConVar);
+    assert(sAnyConVar);
     assert(name);
     assert(defaultValue);
 
-    ConVar* convar = AllocConvar(mAnyConVar);
+    ConVar* convar = AllocConvar(sAnyConVar);
     convar->m_pParent = convar;
     convar->m_pszDefaultValue = defaultValue;
     convar->CreateBase(name, description, 0);
@@ -48,7 +51,7 @@ void CVarHelper::DestroyConVar(ConVar* convar)
 {
     if (convar)
     {
-        mCvar->UnregisterConCommand(convar);
+        sCvar->UnregisterConCommand(convar);
         convar->~ConVar();
         free(convar);
     }
@@ -56,7 +59,7 @@ void CVarHelper::DestroyConVar(ConVar* convar)
 
 void CVarHelper::UnhideAllCVars()
 {
-    ConCommandBase* command = mCvar->GetCommands();
+    ConCommandBase* command = sCvar->GetCommands();
     while (command)
     {
         command->m_nFlags &= ~(FCVAR_DEVELOPMENTONLY | FCVAR_HIDDEN);

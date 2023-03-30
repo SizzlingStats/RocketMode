@@ -4,18 +4,12 @@
 class ICvar;
 class ConVar;
 
-class CVarHelper
+namespace CVarHelper
 {
-public:
-    bool Init(ICvar* cvarInterface);
-    void Shutdown();
+    bool Initialize(ICvar* cvar);
 
     ConVar* CreateConVar(const char* name, const char* defaultValue, const char* description = "");
     void DestroyConVar(ConVar* convar);
 
     void UnhideAllCVars();
-
-private:
-    ICvar* mCvar;
-    ConVar* mAnyConVar;
-};
+}

@@ -151,8 +151,6 @@ private:
     IServerGameDLL* mServerGameDll;
     IBaseFileSystem* mFileSystem;
 
-    CVarHelper mCvarHelper;
-
     VAudioCeltCodecManager mCeltCodecManager;
 
     ClientState* mClientState[MAX_PLAYERS];
@@ -223,7 +221,6 @@ ServerPlugin::ServerPlugin() :
     mServerTools(nullptr),
     mServerGameDll(nullptr),
     mFileSystem(nullptr),
-    mCvarHelper(),
     mCeltCodecManager(),
     mClientState(),
     mSpeakerIR(),
@@ -300,7 +297,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
     }
 
     ICvar* cvar = (ICvar*)interfaceFactory(CVAR_INTERFACE_VERSION, nullptr);
-    if (!cvar || !mCvarHelper.Init(cvar))
+    if (!cvar || !CVarHelper::Initialize(cvar))
     {
         return false;
     }
@@ -314,18 +311,18 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
 
     AutoTalent::GlobalInit();
 
-    mCvarHelper.UnhideAllCVars();
-    sSizzVoiceEnabled = mCvarHelper.CreateConVar("sizz_voice_enabled", "1");
-    sSizzVoiceAutotune = mCvarHelper.CreateConVar("sizz_voice_autotune", "0");
-    sSizzVoiceWah = mCvarHelper.CreateConVar("sizz_voice_wah", "0");
-    sSizzVoicePhaser = mCvarHelper.CreateConVar("sizz_voice_phaser", "1");
-    sSizzVoiceBitCrush = mCvarHelper.CreateConVar("sizz_voice_bitcrush", "0");
-    sSizzVoicePositionalSteamID = mCvarHelper.CreateConVar("sizz_voice_positional_steamid", "");
-    sSizzVoicePositional = mCvarHelper.CreateConVar("sizz_voice_positional", "0",
+    CVarHelper::UnhideAllCVars();
+    sSizzVoiceEnabled = CVarHelper::CreateConVar("sizz_voice_enabled", "1");
+    sSizzVoiceAutotune = CVarHelper::CreateConVar("sizz_voice_autotune", "0");
+    sSizzVoiceWah = CVarHelper::CreateConVar("sizz_voice_wah", "0");
+    sSizzVoicePhaser = CVarHelper::CreateConVar("sizz_voice_phaser", "1");
+    sSizzVoiceBitCrush = CVarHelper::CreateConVar("sizz_voice_bitcrush", "0");
+    sSizzVoicePositionalSteamID = CVarHelper::CreateConVar("sizz_voice_positional_steamid", "");
+    sSizzVoicePositional = CVarHelper::CreateConVar("sizz_voice_positional", "0",
         "0 - Default non positional voice.\n"
         "1 - All player voices are positional.\n"
         "2 - Voice is emitted from the closest bot to the listener. (sizz_voice_positional_steamid)\n");
-    sSizzVoiceSirenFx = mCvarHelper.CreateConVar("sizz_voice_sirenfx", "3");
+    sSizzVoiceSirenFx = CVarHelper::CreateConVar("sizz_voice_sirenfx", "3");
 
     if (!mSpeakerIR.Load("addons/ir_siren.wav", mFileSystem))
     {
@@ -349,14 +346,14 @@ void ServerPlugin::Unload(void)
     mSizzlingVoice.Shutdown();
     mRocketMode.Shutdown();
 
-    mCvarHelper.DestroyConVar(sSizzVoiceEnabled);
-    mCvarHelper.DestroyConVar(sSizzVoiceAutotune);
-    mCvarHelper.DestroyConVar(sSizzVoiceWah);
-    mCvarHelper.DestroyConVar(sSizzVoicePhaser);
-    mCvarHelper.DestroyConVar(sSizzVoiceBitCrush);
-    mCvarHelper.DestroyConVar(sSizzVoicePositionalSteamID);
-    mCvarHelper.DestroyConVar(sSizzVoicePositional);
-    mCvarHelper.DestroyConVar(sSizzVoiceSirenFx);
+    CVarHelper::DestroyConVar(sSizzVoiceEnabled);
+    CVarHelper::DestroyConVar(sSizzVoiceAutotune);
+    CVarHelper::DestroyConVar(sSizzVoiceWah);
+    CVarHelper::DestroyConVar(sSizzVoicePhaser);
+    CVarHelper::DestroyConVar(sSizzVoiceBitCrush);
+    CVarHelper::DestroyConVar(sSizzVoicePositionalSteamID);
+    CVarHelper::DestroyConVar(sSizzVoicePositional);
+    CVarHelper::DestroyConVar(sSizzVoiceSirenFx);
 
     for (ClientState*& state : mClientState)
     {
