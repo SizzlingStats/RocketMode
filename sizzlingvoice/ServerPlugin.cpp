@@ -103,7 +103,7 @@ public:
     virtual void Unload(void);
     virtual void Pause(void) {}
     virtual void UnPause(void) {}
-    virtual const char* GetPluginDescription(void) { return "SizzlingVoice v0.9 by SizzlingCalamari - Compiled on " __DATE__; }
+    virtual const char* GetPluginDescription(void) { return "SizzlingVoice v0.9.4 by SizzlingCalamari - Compiled on " __DATE__; }
     virtual void LevelInit(char const* pMapName);
     virtual void ServerActivate(edict_t* pEdictList, int edictCount, int clientMax);
     virtual void GameFrame(bool simulating);
