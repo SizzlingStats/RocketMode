@@ -38,7 +38,7 @@
 #include "SizzLauncherInfo.h"
 #include <string.h>
 
-#define BOOSTER_LOOP "ambient/steam_drum.wav"
+#define BOOSTER_LOOP ")ambient/steam_drum.wav"
 #define CRIT_LOOP "weapons/crit_power.wav"
 
 string_t RocketMode::tf_projectile_rocket;
@@ -387,8 +387,8 @@ void RocketMode::OnEntityDeleted(CBaseEntity* pEntity)
     edict_t* rocketEdict = mServerGameEnts->BaseEntityToEdict(pEntity);
     if (rocketEdict)
     {
-        mEngineSound->StopSound(rocketEdict->m_EdictIndex, CHAN_WEAPON, BOOSTER_LOOP);
-        mEngineSound->StopSound(rocketEdict->m_EdictIndex, CHAN_STATIC, CRIT_LOOP);
+        mEngineSound->StopSound(rocketEdict->m_EdictIndex, CHAN_STATIC, BOOSTER_LOOP);
+        mEngineSound->StopSound(rocketEdict->m_EdictIndex, CHAN_BODY, CRIT_LOOP);
     }
 
     DetachFromRocket(pEntity);
@@ -524,7 +524,7 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
 
     RecipientFilter filter;
     filter.AddAllPlayers(mServer);
-    mEngineSound->EmitSound(filter, edict->m_EdictIndex, CHAN_WEAPON, BOOSTER_LOOP, 1.0f, SNDLVL_80dB);
+    mEngineSound->EmitSound(filter, edict->m_EdictIndex, CHAN_STATIC, BOOSTER_LOOP, 1.0f, SNDLVL_NORM);
 }
 
 void RocketMode::DetachFromRocket(CBaseEntity* rocketEnt)
@@ -776,7 +776,7 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
         {
             RecipientFilter filter;
             filter.AddAllPlayers(mServer);
-            mEngineSound->EmitSound(filter, state.rocket.GetEntryIndex(), CHAN_STATIC, CRIT_LOOP, 1.0f, SNDLVL_180dB);
+            mEngineSound->EmitSound(filter, state.rocket.GetEntryIndex(), CHAN_BODY, CRIT_LOOP, 1.0f, SNDLVL_NORM);
         }
     }
 
