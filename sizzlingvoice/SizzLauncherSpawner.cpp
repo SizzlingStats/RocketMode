@@ -156,8 +156,10 @@ void SizzLauncherSpawner::GameFrme(bool bSimulating)
             {
                 mNextSpawnTick = curTick + mSpawnIntervalTicks;
 
-                uint8_t elgibleSpawnPoints[MAX_PLAYERS];
-                int numElgibleSpawnPoints = 0;
+                uint8_t redSpawnPoints[MAX_PLAYERS];
+                uint8_t bluSpawnPoints[MAX_PLAYERS];
+                int numRedSpawnPoints = 0;
+                int numBluSpawnPoints = 0;
 
                 const int numClients = mServer->GetClientCount();
                 for (int i = 0; i < numClients; ++i)
@@ -174,14 +176,33 @@ void SizzLauncherSpawner::GameFrme(bool bSimulating)
                         !playerInfo->IsHLTV() && !playerInfo->IsReplay() &&
                         !playerInfo->IsDead() && !playerInfo->IsObserver())
                     {
-                        elgibleSpawnPoints[numElgibleSpawnPoints++] = entIndex;
+                        int team = playerInfo->GetTeamIndex();
+                        if (team == 2) // red
+                        {
+                            redSpawnPoints[numRedSpawnPoints++] = entIndex;
+                        }
+                        else if (team == 3) // blu
+                        {
+                            bluSpawnPoints[numBluSpawnPoints++] = entIndex;
+                        }
                     }
                 }
 
-                if (numElgibleSpawnPoints > 0)
+                if (numRedSpawnPoints > 0)
                 {
-                    const int spawnPointIndex = VStdlibRandom::RandomInt(0, numElgibleSpawnPoints - 1);
-                    const int spawnPointEnt = elgibleSpawnPoints[spawnPointIndex];
+                    const int spawnPointIndex = VStdlibRandom::RandomInt(0, numRedSpawnPoints - 1);
+                    const int spawnPointEnt = redSpawnPoints[spawnPointIndex];
+
+                    edict_t* edict = mVEngineServer->PEntityOfEntIndex(spawnPointEnt);
+
+                    Vector origin;
+                    mServerGameClients->ClientEarPosition(edict, &origin);
+                    SpawnLauncher(origin);
+                }
+                if (numBluSpawnPoints > 0)
+                {
+                    const int spawnPointIndex = VStdlibRandom::RandomInt(0, numBluSpawnPoints - 1);
+                    const int spawnPointEnt = bluSpawnPoints[spawnPointIndex];
 
                     edict_t* edict = mVEngineServer->PEntityOfEntIndex(spawnPointEnt);
 
