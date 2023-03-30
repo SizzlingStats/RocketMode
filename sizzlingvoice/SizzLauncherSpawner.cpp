@@ -76,6 +76,12 @@ bool SizzLauncherSpawner::Init(CreateInterfaceFn interfaceFactory, CreateInterfa
         return false;
     }
 
+    ConVar* hudHintSound = cvar->FindVar("sv_hudhint_sound");
+    if (hudHintSound)
+    {
+        hudHintSound->SetValue(0);
+    }
+
     return true;
 }
 
