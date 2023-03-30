@@ -886,7 +886,23 @@ void RocketMode::RocketChangeTeam(CBaseEntity* rocket, int oldTeam)
 
 bool RocketMode::RocketIsDeflectableHook()
 {
+    RocketMode* thisPtr = sIsDeflectableHook.GetThisPtr();
+    CBaseEntity* rocketEnt = reinterpret_cast<CBaseEntity*>(this);
+    if (thisPtr->RocketIsDeflectable(rocketEnt))
+    {
+        return sIsDeflectableHook.CallOriginalFn(this);
+    }
     return false;
+}
+
+bool RocketMode::RocketIsDeflectable(CBaseEntity* rocketEnt)
+{
+    CBaseHandle launcherHandle = TFBaseRocketHelpers::GetLauncher(rocketEnt);
+    CEconItemView* item = EntityHelpers::GetEconItemFromWeapon(launcherHandle, mServerTools);
+    assert(item);
+
+    // rocket mode rockets are not deflectable
+    return (item->m_iItemID != SizzLauncherInfo::ItemID);
 }
 
 void RocketMode::FuncRespawnRoomStartTouchHook(CBaseEntity* other)

@@ -69,6 +69,7 @@ private:
     void RocketChangeTeam(CBaseEntity* rocket, int oldTeam);
 
     bool RocketIsDeflectableHook();
+    bool RocketIsDeflectable(CBaseEntity* rocketEnt);
 
     void FuncRespawnRoomStartTouchHook(CBaseEntity* other);
     void FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity* other);
