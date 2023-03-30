@@ -952,9 +952,9 @@ void RocketMode::FireGameEvent(IGameEvent* event)
 
     // sent from CTFGameRules::DeathNotice
     const int victimEntIndex = event->GetInt("victim_entindex", -1);
-    if (victimEntIndex > 0 && victimEntIndex < MAX_PLAYERS)
+    const int victimClientIndex = victimEntIndex - 1;
+    if (victimClientIndex >= 0 && victimClientIndex < MAX_PLAYERS)
     {
-        const int victimClientIndex = victimEntIndex - 1;
         State& state = mClientStates[victimClientIndex];
         if (state.rocket.IsValid())
         {
