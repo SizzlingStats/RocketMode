@@ -13,4 +13,12 @@
 </Expand>
 </Type>
 
+<Type Name="CBaseHandle">
+	<DisplayString>{{ Index={m_Index &amp; ((1 &lt;&lt; 16) - 1)} }}</DisplayString>
+	<Expand>
+		<Item Name="[Index]">m_Index &amp; ((1 &lt;&lt; 16) - 1)</Item>
+		<Item Name="[Serial]">m_Index &gt;&gt; 16</Item>
+	</Expand>
+</Type>
+
 </AutoVisualizer>
