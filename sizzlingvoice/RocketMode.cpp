@@ -421,7 +421,7 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
 
     // if owner isn't a player
     const int ownerEntIndex = ownerEntHandle.GetEntryIndex();
-    if (ownerEntIndex <= 0 || ownerEntIndex >= mGlobals->maxClients)
+    if (ownerEntIndex <= 0 || ownerEntIndex > mGlobals->maxClients)
     {
         return;
     }
@@ -547,7 +547,7 @@ void RocketMode::DetachFromRocket(CBaseEntity* rocketEnt)
 
     // if owner is not a player
     const int ownerEntIndex = owner.GetEntryIndex();
-    if (ownerEntIndex <= 0 || ownerEntIndex >= mGlobals->maxClients)
+    if (ownerEntIndex <= 0 || ownerEntIndex > mGlobals->maxClients)
     {
         return;
     }
