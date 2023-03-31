@@ -168,7 +168,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
         return false;
     }
 
-    mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
+    //mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 
     return mServer;
 }
@@ -193,7 +193,7 @@ void ServerPlugin::LevelInit(char const* pMapName)
     mRocketMode.LevelInit(pMapName);
     mSizzLauncherSpawner.LevelInit(pMapName);
 
-    mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
+    //mVEngineServer->ServerCommand("exec sizzlingvoice/sizzlingvoice.cfg\n");
 }
 
 void ServerPlugin::ServerActivate(edict_t* pEdictList, int edictCount, int clientMax)
