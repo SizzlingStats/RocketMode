@@ -193,6 +193,7 @@ void RocketMode::GameFrame(bool simulating)
     }
 
     const int clientCount = mServer->GetClientCount();
+    const float weaponIdleTime = mGlobals->curtime + 0.1f;
 
     // Rocket mode roll angle update
     for (int i = 0; i < clientCount; ++i)
@@ -208,6 +209,14 @@ void RocketMode::GameFrame(bool simulating)
         if (!rocketEnt)
         {
             continue;
+        }
+
+        CBaseHandle launcherHandle = TFBaseRocketHelpers::GetLauncher(rocketEnt);
+        CBaseEntity* weapon = EntityHelpers::HandleToEnt(launcherHandle, mServerTools);
+        if (weapon)
+        {
+            BaseCombatWeaponHelpers::SetNextPrimaryAttack(weapon, weaponIdleTime, mServerGameEnts, mVEngineServer);
+            BaseCombatWeaponHelpers::SetIdleWeaponTime(weapon, weaponIdleTime, mServerGameEnts, mVEngineServer);
         }
 
         const QAngle& localAngVel = BaseEntityHelpers::GetLocalAngularVelocity(rocketEnt);

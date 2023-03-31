@@ -471,6 +471,34 @@ void BasePlayerHelpers::SetObserverTarget(CBaseEntity* player, const CBaseHandle
     }
 }
 
+int BaseCombatWeaponHelpers::sflNextPrimaryAttackOffset;
+int BaseCombatWeaponHelpers::sflTimeWeaponIdleOffset;
+
+void BaseCombatWeaponHelpers::InitializeOffsets(IServerGameDLL* serverGameDll)
+{
+    if (sflNextPrimaryAttackOffset > 0)
+    {
+        // already initialized
+        return;
+    }
+
+    ServerClass* baseCombatWeapon = EntityHelpers::GetServerClass(serverGameDll, "CBaseCombatWeapon");
+    assert(baseCombatWeapon);
+
+    SendTable* localActiveWeaponData = EntityHelpers::GetTable(baseCombatWeapon, "DT_LocalActiveWeaponData");
+    assert(localActiveWeaponData);
+
+    SendProp* nextPrimaryAttack = EntityHelpers::GetProp(localActiveWeaponData, "m_flNextPrimaryAttack");
+    assert(nextPrimaryAttack);
+    sflNextPrimaryAttackOffset = nextPrimaryAttack->GetOffset();
+    assert(sflNextPrimaryAttackOffset > 0);
+
+    SendProp* timeWeaponIdle = EntityHelpers::GetProp(localActiveWeaponData, "m_flTimeWeaponIdle");
+    assert(timeWeaponIdle);
+    sflTimeWeaponIdleOffset = timeWeaponIdle->GetOffset();
+    assert(sflTimeWeaponIdleOffset > 0);
+}
+
 int TFPlayerHelpers::sPlayerObjectsOffset;
 int TFPlayerHelpers::sObservableEntitiesOffset;
 

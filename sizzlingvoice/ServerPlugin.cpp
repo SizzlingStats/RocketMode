@@ -156,6 +156,7 @@ bool ServerPlugin::Load(CreateInterfaceFn interfaceFactory, CreateInterfaceFn ga
 
     CVarHelper::UnhideAllCVars();
 
+    BaseCombatWeaponHelpers::InitializeOffsets(mServerGameDll);
     TFPlayerHelpers::InitializeOffsets(mServerGameDll);
 
     if (!mRocketMode.Init(interfaceFactory, gameServerFactory))

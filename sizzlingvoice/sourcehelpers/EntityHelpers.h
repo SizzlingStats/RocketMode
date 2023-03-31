@@ -291,6 +291,33 @@ namespace BasePlayerHelpers
     }
 }
 
+// CBaseCombatWeapon
+namespace BaseCombatWeaponHelpers
+{
+    extern int sflNextPrimaryAttackOffset;  // m_flNextPrimaryAttack
+    extern int sflTimeWeaponIdleOffset;     // m_flTimeWeaponIdle
+
+    void InitializeOffsets(IServerGameDLL* serverGameDll);
+
+    inline void SetNextPrimaryAttack(CBaseEntity* weapon, float time, IServerGameEnts* gameEnts, IVEngineServer* engineServer)
+    {
+        assert(sflNextPrimaryAttackOffset > 0);
+        const int offset = sflNextPrimaryAttackOffset;
+        *(float*)((char*)weapon + offset) = time;
+
+        EntityHelpers::StateChanged(weapon, offset, gameEnts, engineServer);
+    }
+
+    inline void SetIdleWeaponTime(CBaseEntity* weapon, float time, IServerGameEnts* gameEnts, IVEngineServer* engineServer)
+    {
+        assert(sflTimeWeaponIdleOffset > 0);
+        const int offset = sflTimeWeaponIdleOffset;
+        *(float*)((char*)weapon + offset) = time;
+
+        EntityHelpers::StateChanged(weapon, offset, gameEnts, engineServer);
+    }
+}
+
 namespace TFPlayerHelpers
 {
     extern int sPlayerObjectsOffset;        // m_aObjects
