@@ -114,7 +114,6 @@ solution "sizzlingvoice"
         {
             "sourcesdk",
             "vectorclass",
-            "autotalent",
             "hde32"
         }
         add_tag("SDLCheck", "false", "sizzlingvoice")
@@ -123,5 +122,4 @@ solution "sizzlingvoice"
 
     dofile "sourcesdk.lua"
     dofile "vectorclass.lua"
-    dofile "autotalent.lua"
     dofile "hde32.lua"
