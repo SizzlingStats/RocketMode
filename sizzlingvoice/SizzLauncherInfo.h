@@ -14,5 +14,5 @@ namespace SizzLauncherInfo
     inline constexpr uint32_t AccountID = 28707326;
 
     inline constexpr int32_t InitialClip = 1;
-    inline constexpr int32_t InitialAmmoReserves = 10;
+    inline constexpr int32_t InitialAmmoReserves = 20;
 }
