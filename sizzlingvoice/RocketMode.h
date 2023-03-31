@@ -121,6 +121,8 @@ private:
             owner.Term();
             initialSpeed = 0.0f;
             rollAngle = 0.0f;
+            observerState.observerLastMode = 0;
+            observerState.observerTarget.Term();
         }
 
         float UpdateRoll(float dt, float target)
@@ -134,6 +136,13 @@ private:
         CBaseHandle owner;
         float initialSpeed = 0.0f;
         float rollAngle = 0.0f;
+
+        struct ObserverState
+        {
+            int observerLastMode = 0; // OBS_MODE_NONE
+            CBaseHandle observerTarget;
+        };
+        ObserverState observerState;
     };
     State mClientStates[MAX_PLAYERS];
 

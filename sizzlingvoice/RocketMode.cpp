@@ -479,6 +479,9 @@ void RocketMode::AttachToRocket(CBaseEntity* rocketEnt)
     CBaseEntity* ownerEnt = mServerTools->GetBaseEntityByEntIndex(ownerEntIndex);
     assert(ownerEnt);
 
+    state.observerState.observerLastMode = BasePlayerHelpers::GetObserverLastMode(ownerEnt);
+    state.observerState.observerTarget = BasePlayerHelpers::GetObserverTarget(ownerEnt);
+
     BasePlayerHelpers::SetObserverMode(ownerEnt, OBS_MODE_FIXED, mServerGameEnts, mVEngineServer);
     BasePlayerHelpers::SetObserverLastMode(ownerEnt, OBS_MODE_FIXED, mServerGameEnts, mVEngineServer);
     BasePlayerHelpers::SetObserverTarget(ownerEnt, rocketHandle, mServerGameEnts, mVEngineServer);
@@ -621,8 +624,8 @@ void RocketMode::DetachFromRocket(CBaseEntity* rocketEnt)
     assert(ownerEnt);
 
     BasePlayerHelpers::SetObserverMode(ownerEnt, OBS_MODE_NONE, mServerGameEnts, mVEngineServer);
-    BasePlayerHelpers::SetObserverLastMode(ownerEnt, OBS_MODE_NONE, mServerGameEnts, mVEngineServer);
-    BasePlayerHelpers::SetObserverTarget(ownerEnt, CBaseHandle(), mServerGameEnts, mVEngineServer);
+    BasePlayerHelpers::SetObserverLastMode(ownerEnt, state.observerState.observerLastMode, mServerGameEnts, mVEngineServer);
+    BasePlayerHelpers::SetObserverTarget(ownerEnt, state.observerState.observerTarget, mServerGameEnts, mVEngineServer);
     BasePlayerHelpers::SetForcedObserverMode(ownerEnt, false, mServerGameEnts, mVEngineServer);
 
     // Clear state, reset view
