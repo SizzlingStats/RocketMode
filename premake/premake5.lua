@@ -33,7 +33,7 @@ if srcds_path ~= nil then
     local copy_dll = "copy /Y \"$(TargetDir)" .. target_name .. "\" "
     postbuild_copy_dll = copy_dll .. "\"" .. srcds_path .. "tf/addons/" .. target_name .. "\""
 
-    local vdf_name = "sizzlingvoice.vdf"
+    local vdf_name = "rocketmode.vdf"
     local copy_vdf = "copy /Y \"$(TargetDir)" .. vdf_name .. "\" "
     postbuild_copy_vdf = copy_vdf .. "\"" .. srcds_path .. "tf/addons/" .. vdf_name .. "\""
 
@@ -42,11 +42,11 @@ if srcds_path ~= nil then
     postbuild_copy_wav = copy_wav .. "\"" .. srcds_path .. "tf/addons/\""
 end
 
-solution "sizzlingvoice"
+solution "rocketmode"
     basedir ".."
     location (_ACTION)
     targetdir "../addons"
-    startproject "sizzlingvoice"
+    startproject "rocketmode"
     debugdir "../addons"
     configurations { "Debug", "Release" }
 
@@ -89,7 +89,7 @@ solution "sizzlingvoice"
         linkoptions { "-Wl,--no-undefined,--no-allow-shlib-undefined,--gc-sections" }
     filter {}
 
-    project "sizzlingvoice"
+    project "rocketmode"
         kind "SharedLib"
         language "C++"
 
@@ -116,8 +116,8 @@ solution "sizzlingvoice"
             "vectorclass",
             "hde32"
         }
-        add_tag("SDLCheck", "false", "sizzlingvoice")
-        add_tag("ControlFlowGuard", "false", "sizzlingvoice")
+        add_tag("SDLCheck", "false", "rocketmode")
+        add_tag("ControlFlowGuard", "false", "rocketmode")
     project "*"
 
     dofile "sourcesdk.lua"
