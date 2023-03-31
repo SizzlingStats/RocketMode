@@ -64,6 +64,10 @@ solution "sizzlingvoice"
     pic "On"
     targetprefix ""
 
+    filter { "system:linux" }
+        toolset "clang"
+    filter {}
+
     --defines { "SDK_COMPAT" }
     defines { "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_WARNINGS", "INSTRSET=2" }
     configuration "Debug"
