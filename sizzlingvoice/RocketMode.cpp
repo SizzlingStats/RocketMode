@@ -869,7 +869,7 @@ void RocketMode::PlayerRunCommand(CBaseEntity* player, CUserCmd* ucmd, IMoveHelp
 
 void RocketMode::SetOwnerEntityHook(CBaseEntity* owner)
 {
-    RocketMode* thisPtr = sPlayerRunCommandHook.GetThisPtr();
+    RocketMode* thisPtr = sSetOwnerEntityHook.GetThisPtr();
     CBaseEntity* rocket = reinterpret_cast<CBaseEntity*>(this);
     thisPtr->SetOwnerEntity(rocket, owner);
     sSetOwnerEntityHook.CallOriginalFn(this, owner);
