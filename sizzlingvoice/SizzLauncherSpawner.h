@@ -36,6 +36,7 @@ public:
     bool ClientCommand(edict_t* pEntity, const CCommand& args);
 
 private:
+    void ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverTools);
     CBaseHandle SpawnLauncher(const Vector& origin);
 
     void RocketLauncherSpawnHook();
@@ -62,6 +63,11 @@ private:
     ConVar* mSpawnInterval;
     ConVar* mSpawnsEnabled;
     ConVar* mSpawnCommandEnabled;
+    ConVar* mRocketDamageMultiplier;
+    ConVar* mRocketMaxAmmoMult;
+    ConVar* mRocketSpecialistEnabled;
+    ConVar* mRocketSpeedMultiplier;
+    ConVar* mLauncherPickupLifetime;
 
     uint32_t mNextSpawnTick;
     int32_t mRoundState;

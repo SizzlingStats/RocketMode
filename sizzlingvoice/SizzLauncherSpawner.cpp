@@ -18,6 +18,7 @@
 #include "sourcesdk/game/shared/econ/econ_item_constants.h"
 #include "sourcesdk/game/shared/teamplayroundbased_gamerules.h"
 
+#include "base/math.h"
 #include "sourcehelpers/CVarHelper.h"
 #include "sourcehelpers/EntityHelpers.h"
 #include "sourcehelpers/VStdlibRandom.h"
@@ -42,6 +43,11 @@ SizzLauncherSpawner::SizzLauncherSpawner() :
     mSpawnInterval(nullptr),
     mSpawnsEnabled(nullptr),
     mSpawnCommandEnabled(nullptr),
+    mRocketDamageMultiplier(nullptr),
+    mRocketMaxAmmoMult(nullptr),
+    mRocketSpecialistEnabled(nullptr),
+    mRocketSpeedMultiplier(nullptr),
+    mLauncherPickupLifetime(nullptr),
     mNextSpawnTick(0),
     mRoundState(0)
 {
@@ -89,11 +95,22 @@ bool SizzLauncherSpawner::Init(CreateInterfaceFn interfaceFactory, CreateInterfa
     mSpawnInterval = CVarHelper::CreateConVar("sizz_rocketmode_spawn_interval", "60.0f", "After initial spawns, periodically spawn launchers on this interval (seconds).");
     mSpawnsEnabled = CVarHelper::CreateConVar("sizz_rocketmode_spawn_enabled", "0", "Enables periodic spawning of rocket mode rocket launchers (0/1).");
     mSpawnCommandEnabled = CVarHelper::CreateConVar("sizz_rocketmode_spawn_command_enabled", "0", "Enables clients to spawn a launcher at their feet with 'spawnlauncher' (0/1)");
+    mRocketDamageMultiplier = CVarHelper::CreateConVar("sizz_rocketmode_damagemult", "1.5f", "Damage multiplier over base rocket damage [0.1f, 10.0f].");
+    mRocketMaxAmmoMult = CVarHelper::CreateConVar("sizz_rocketmode_ammomult", "1.0f", "Reserve ammo multiplier over base rocket launcher [0.1f, 1.0f].");
+    mRocketSpecialistEnabled = CVarHelper::CreateConVar("sizz_rocketmode_rocketspecialist", "1", "Enables the Rocket Specialist attribute on sizz launchers (0/1).");
+    mRocketSpeedMultiplier = CVarHelper::CreateConVar("sizz_rocketmode_speedmult", "0.5f", "Speed multiplier over base rocket speed [0.1f, 10.0f].");
+    mLauncherPickupLifetime = CVarHelper::CreateConVar("sizz_rocketmode_pickup_lifetime", "60.0f", "tf_dropped_weapon_lifetime, but specific to sizz launchers (seconds).");
+    
     return true;
 }
 
 void SizzLauncherSpawner::Shutdown()
 {
+    CVarHelper::DestroyConVar(mLauncherPickupLifetime);
+    CVarHelper::DestroyConVar(mRocketSpeedMultiplier);
+    CVarHelper::DestroyConVar(mRocketSpecialistEnabled);
+    CVarHelper::DestroyConVar(mRocketMaxAmmoMult);
+    CVarHelper::DestroyConVar(mRocketDamageMultiplier);
     CVarHelper::DestroyConVar(mSpawnCommandEnabled);
     CVarHelper::DestroyConVar(mSpawnsEnabled);
     CVarHelper::DestroyConVar(mSpawnInterval);
@@ -256,7 +273,7 @@ struct CTFDroppedWeapon_Hack
     float m_flNextSecondaryAttack;
 };
 
-static void ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverTools)
+void SizzLauncherSpawner::ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverTools)
 {
     serverTools->SetKeyValue(ent, "targetname", "models/weapons/c_models/c_rocketlauncher/c_rocketlauncher.mdl");
     string_t modelName = BaseEntityHelpers::GetName(ent);
@@ -266,9 +283,11 @@ static void ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTools* serverToo
     TFDroppedWeaponHelpers::InitializeOffsets(ent);
     CEconItemView& item = TFDroppedWeaponHelpers::GetItem(ent);
 
+    const float maxAmmoMult = Math::Clamp(mRocketMaxAmmoMult->GetFloat(), 0.1f, 1.0f);
+
     CTFDroppedWeapon_Hack* tfDroppedWeapon = (CTFDroppedWeapon_Hack*)&item;
     tfDroppedWeapon->m_nClip = SizzLauncherInfo::InitialClip;
-    tfDroppedWeapon->m_nAmmo = SizzLauncherInfo::InitialAmmoReserves;
+    tfDroppedWeapon->m_nAmmo = SizzLauncherInfo::InitialAmmoReserves * maxAmmoMult;
 
     // my festive rocket launcher
     item.m_iItemDefinitionIndex = SizzLauncherInfo::ItemDefinitionIndex;
@@ -360,18 +379,23 @@ void SizzLauncherSpawner::RocketLauncherSpawn(CBaseEntity* rocketLauncher)
         }
     }
 
+    const float rocketDamageMult = Math::Clamp(mRocketDamageMultiplier->GetFloat(), 0.1f, 10.0f);
+    const float maxAmmoMult = Math::Clamp(mRocketMaxAmmoMult->GetFloat(), 0.1f, 1.0f);
+    const float rocketSpecialist = mRocketSpecialistEnabled->IsEnabled() ? 1.0f : 0.0f;
+    const float rocketSpeedMult = Math::Clamp(mRocketSpeedMultiplier->GetFloat(), 0.1f, 10.0f);
+
     // https://wiki.teamfortress.com/wiki/List_of_item_attributes
     // Or check items_game.txt
     const CEconItemAttribute attrs[] =
     {
-        { CEconItemAttribute_vtable, 2, 1.5f },     // mult_dmg - 1.5x damage
+        { CEconItemAttribute_vtable, 2, rocketDamageMult },     // mult_dmg - 1.5x damage
         { CEconItemAttribute_vtable, 3, 0.25f },    // mult_clipsize - clip size to 1
-        { CEconItemAttribute_vtable, 77, 0.5f },    // mult_maxammo_primary - 0.5x max primary ammo
+        { CEconItemAttribute_vtable, 77, maxAmmoMult },    // mult_maxammo_primary - 0.5x max primary ammo
         { CEconItemAttribute_vtable, 99, 2.0f },    // mult_explosion_radius - blast radius multiplier
         //{ CEconItemAttribute_vtable, 118, 0.5f },   // mult_dmg_falloff - splash damage removal
-        { CEconItemAttribute_vtable, 488, 1.0f },   // rocket_specialist - +15% rocket speed per point. On direct hits: rocket does maximum damage, stuns target, and blast radius increased +15% per point.
+        { CEconItemAttribute_vtable, 488, rocketSpecialist },   // rocket_specialist - +15% rocket speed per point. On direct hits: rocket does maximum damage, stuns target, and blast radius increased +15% per point.
         //{ CEconItemAttribute_vtable, 521, 1.0f },   // use_large_smoke_explosion - sentrybuster explosion
-        { CEconItemAttribute_vtable, 104, 0.5f },   // mult_projectile_speed - 0.5x rocket speed
+        { CEconItemAttribute_vtable, 104, rocketSpeedMult },   // mult_projectile_speed - 0.5x rocket speed
 
         // these are from the m_NetworkedDynamicAttributesForDemos that we have to clear.
         { CEconItemAttribute_vtable, 2025, 1.0f },  // killstreak_tier
@@ -429,7 +453,7 @@ void SizzLauncherSpawner::DroppedWeaponSpawn(CBaseEntity* droppedWeapon)
     CEconItemView& item = TFDroppedWeaponHelpers::GetItem(droppedWeapon);
     if (item.m_iItemID == SizzLauncherInfo::ItemID)
     {
-        mTfDroppedWeaponLifetime->m_pParent->m_fValue = 60.0f;
+        mTfDroppedWeaponLifetime->m_pParent->m_fValue = mLauncherPickupLifetime->GetFloat();
     }
     sDroppedWeaponSpawnHook.CallOriginalFn(reinterpret_cast<SizzLauncherSpawner*>(droppedWeapon));
 
