@@ -54,6 +54,9 @@ private:
 
     bool ModifyRocketAngularPrecision();
 
+    void WeaponEquipHook(CBaseEntity* weapon);
+    void WeaponEquip(CBaseEntity* player, CBaseEntity* weapon);
+
     int GetNextObserverSearchStartPointHook(bool bReverse);
     int GetNextObserverSearchStartPoint(CBaseEntity* player, bool bReverse);
 
@@ -79,6 +82,10 @@ private:
 
 private:
     static string_t tf_projectile_rocket;
+
+    // CBaseCombatCharacterHook
+    static VTableHook<decltype(&RocketMode::WeaponEquipHook)> sWeaponEquipHook;
+
     // CBasePlayer hooks
     static VTableHook<decltype(&RocketMode::GetNextObserverSearchStartPointHook)> sGetNextObserverSearchStartPointHook;
     static VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> sPlayerRunCommandHook;

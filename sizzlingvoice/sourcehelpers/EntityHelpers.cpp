@@ -332,14 +332,8 @@ CBaseEntity* EntityHelpers::HandleToEnt(const CBaseHandle& handle, IServerTools*
     return nullptr;
 }
 
-CEconItemView* EntityHelpers::GetEconItemFromWeapon(CBaseHandle weaponHandle, IServerTools* serverTools)
+CEconItemView* EntityHelpers::GetEconItemFromWeapon(CBaseEntity* weapon, IServerTools* serverTools)
 {
-    CBaseEntity* weapon = EntityHelpers::HandleToEnt(weaponHandle, serverTools);
-    if (!weapon)
-    {
-        return nullptr;
-    }
-
     IHasAttributes* attributeInterface = BaseEntityHelpers::GetAttribInterface(weapon);
     if (!attributeInterface)
     {

@@ -42,6 +42,7 @@
 #define CRIT_LOOP "weapons/crit_power.wav"
 
 string_t RocketMode::tf_projectile_rocket;
+VTableHook<decltype(&RocketMode::WeaponEquipHook)> RocketMode::sWeaponEquipHook;
 VTableHook<decltype(&RocketMode::GetNextObserverSearchStartPointHook)> RocketMode::sGetNextObserverSearchStartPointHook;
 VTableHook<decltype(&RocketMode::PlayerRunCommandHook)> RocketMode::sPlayerRunCommandHook;
 VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> RocketMode::sSetOwnerEntityHook;
@@ -135,6 +136,7 @@ void RocketMode::Shutdown()
     sFuncRespawnRoomStartTouchHook.Unhook();
     sIsDeflectableHook.Unhook();
     sGetNextObserverSearchStartPointHook.Unhook();
+    sWeaponEquipHook.Unhook();
     sRocketChangeTeamHook.Unhook();
     sSetOwnerEntityHook.Unhook();
     sPlayerRunCommandHook.Unhook();
@@ -348,6 +350,13 @@ bool RocketMode::ClientCommand(edict_t* pEntity, const CCommand& args)
 
 void RocketMode::ClientActive(edict_t* pEntity)
 {
+    if (!sWeaponEquipHook.GetThisPtr())
+    {
+        CBaseEntity* ent = mServerTools->GetBaseEntityByEntIndex(pEntity->m_EdictIndex);
+        assert(ent);
+
+        sWeaponEquipHook.Hook(ent, HookOffsets::Weapon_Equip, this, &RocketMode::WeaponEquipHook);
+    }
     if (!sGetNextObserverSearchStartPointHook.GetThisPtr())
     {
         CBaseEntity* ent = mServerTools->GetBaseEntityByEntIndex(pEntity->m_EdictIndex);
@@ -667,6 +676,31 @@ bool RocketMode::ModifyRocketAngularPrecision()
     return true;
 }
 
+void RocketMode::WeaponEquipHook(CBaseEntity* weapon)
+{
+    RocketMode* thisPtr = sWeaponEquipHook.GetThisPtr();
+    CBaseEntity* playerEnt = reinterpret_cast<CBaseEntity*>(this);
+    thisPtr->WeaponEquip(playerEnt, weapon);
+    sWeaponEquipHook.CallOriginalFn(this, weapon);
+}
+
+void RocketMode::WeaponEquip(CBaseEntity* player, CBaseEntity* weapon)
+{
+    const CBaseHandle& handle = player->GetRefEHandle();
+    const int entIndex = handle.GetEntryIndex();
+    const int clientIndex = entIndex - 1;
+
+    State& state = mClientStates[clientIndex];
+    if (state.rocket.IsValid())
+    {
+        CBaseEntity* rocketEnt = EntityHelpers::HandleToEnt(state.rocket, mServerTools);
+        if (rocketEnt)
+        {
+            DetachFromRocket(rocketEnt);
+        }
+    }
+}
+
 int RocketMode::GetNextObserverSearchStartPointHook(bool bReverse)
 {
     // This returns the next spec target after the current target (depending on bReverse).
@@ -853,8 +887,18 @@ void RocketMode::SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* newOwner)
 void RocketMode::RocketSpawn(CBaseEntity* rocket)
 {
     CBaseHandle launcherHandle = TFBaseRocketHelpers::GetLauncher(rocket);
-    CEconItemView* item = EntityHelpers::GetEconItemFromWeapon(launcherHandle, mServerTools);
-    assert(item);
+    CBaseEntity* weapon = EntityHelpers::HandleToEnt(launcherHandle, mServerTools);
+    if (!weapon)
+    {
+        // If the owner switches loadout while a rocket is in the air.
+        return;
+    }
+
+    CEconItemView* item = EntityHelpers::GetEconItemFromWeapon(weapon, mServerTools);
+    if (!item)
+    {
+        return;
+    }
 
     if (item->m_iItemID == SizzLauncherInfo::ItemID)
     {
@@ -898,8 +942,20 @@ bool RocketMode::RocketIsDeflectableHook()
 bool RocketMode::RocketIsDeflectable(CBaseEntity* rocketEnt)
 {
     CBaseHandle launcherHandle = TFBaseRocketHelpers::GetLauncher(rocketEnt);
-    CEconItemView* item = EntityHelpers::GetEconItemFromWeapon(launcherHandle, mServerTools);
-    assert(item);
+    CBaseEntity* weapon = EntityHelpers::HandleToEnt(launcherHandle, mServerTools);
+    if (!weapon)
+    {
+        // This can happen if the owner switches loadout while a rocket is in the air.
+        // The rocket will be deflectable in this case because we don't know if it was
+        // a rocket mode rocket or not.
+        return true;
+    }
+
+    CEconItemView* item = EntityHelpers::GetEconItemFromWeapon(weapon, mServerTools);
+    if (!item)
+    {
+        return true;
+    }
 
     // rocket mode rockets are not deflectable
     return (item->m_iItemID != SizzLauncherInfo::ItemID);

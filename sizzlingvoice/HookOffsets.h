@@ -31,6 +31,10 @@ namespace HookOffsets
     inline constexpr int IsDeflectableOffset[NUM_CONFIGS] = { 153, 158, 159 };
     inline constexpr int IsDeflectable = IsDeflectableOffset[OFFSET_INDEX];
 
+    // CBaseCombatCharacter
+    inline constexpr int Weapon_EquipOffsets[NUM_CONFIGS] = { -1, 271, 272 };
+    inline constexpr int Weapon_Equip = Weapon_EquipOffsets[OFFSET_INDEX];
+
     // CBasePlayer
     inline constexpr int GetNextObserverSearchStartPointOffsets[NUM_CONFIGS] = { 381, 390, 391 };
     inline constexpr int GetNextObserverSearchStartPoint = GetNextObserverSearchStartPointOffsets[OFFSET_INDEX];
