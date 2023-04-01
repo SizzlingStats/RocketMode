@@ -28,6 +28,9 @@ namespace HookOffsets
     inline constexpr int StartTouchOffsets[NUM_CONFIGS] = { 98, 103, 104 };
     inline constexpr int StartTouch = StartTouchOffsets[OFFSET_INDEX];
 
+    inline constexpr int EndTouchOffsets[NUM_CONFIGS] = { 100, 105, 106 };
+    inline constexpr int EndTouch = EndTouchOffsets[OFFSET_INDEX];
+
     inline constexpr int IsDeflectableOffset[NUM_CONFIGS] = { 153, 158, 159 };
     inline constexpr int IsDeflectable = IsDeflectableOffset[OFFSET_INDEX];
 

@@ -49,6 +49,7 @@ VTableHook<decltype(&RocketMode::SetOwnerEntityHook)> RocketMode::sSetOwnerEntit
 VTableHook<decltype(&RocketMode::RocketChangeTeamHook)> RocketMode::sRocketChangeTeamHook;
 VTableHook<decltype(&RocketMode::RocketIsDeflectableHook)> RocketMode::sIsDeflectableHook;
 VTableHook<decltype(&RocketMode::FuncRespawnRoomStartTouchHook)> RocketMode::sFuncRespawnRoomStartTouchHook;
+VTableHook<decltype(&RocketMode::FuncRespawnRoomEndTouchHook)> RocketMode::sFuncRespawnRoomEndTouchHook;
 
 inline float VectorLength(const Vector& v)
 {
@@ -134,6 +135,7 @@ void RocketMode::Shutdown()
         mGameEventManager->RemoveListener(this);
     }
     sFuncRespawnRoomStartTouchHook.Unhook();
+    sFuncRespawnRoomEndTouchHook.Unhook();
     sIsDeflectableHook.Unhook();
     sGetNextObserverSearchStartPointHook.Unhook();
     sWeaponEquipHook.Unhook();
@@ -181,6 +183,7 @@ void RocketMode::ServerActivate(CGameRules* gameRules)
         {
             BaseTriggerHelpers::InitializeOffsets(funcRespawnRoom);
             sFuncRespawnRoomStartTouchHook.Hook(funcRespawnRoom, HookOffsets::StartTouch, this, &RocketMode::FuncRespawnRoomStartTouchHook);
+            sFuncRespawnRoomEndTouchHook.Hook(funcRespawnRoom, HookOffsets::EndTouch, this, &RocketMode::FuncRespawnRoomEndTouchHook);
         }
     }
 }
@@ -1009,6 +1012,39 @@ void RocketMode::FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity
     {
         DetachFromRocket(other);
     }
+}
+
+void RocketMode::FuncRespawnRoomEndTouchHook(CBaseEntity* other)
+{
+    RocketMode* thisPtr = sFuncRespawnRoomEndTouchHook.GetThisPtr();
+    CBaseEntity* respawnRoom = reinterpret_cast<CBaseEntity*>(this);
+    thisPtr->FuncRespawnRoomEndTouch(respawnRoom, other);
+    sFuncRespawnRoomEndTouchHook.CallOriginalFn(this, other);
+}
+
+void RocketMode::FuncRespawnRoomEndTouch(CBaseEntity* respawnRoom, CBaseEntity* other)
+{
+    assert(tf_projectile_rocket);
+    const string_t classname = BaseEntityHelpers::GetClassname(other);
+    if (classname != tf_projectile_rocket)
+    {
+        return;
+    }
+
+    // should probably make this type safe by defining the whole CTeamplayRoundBasedRules hierarchy.
+    CTeamplayRoundBasedRules* rules = reinterpret_cast<CTeamplayRoundBasedRules*>(mGameRules);
+    const int roundState = TeamplayRoundBasedRulesHelpers::GetRoundState(rules);
+    if (roundState >= GR_STATE_TEAM_WIN)
+    {
+        return;
+    }
+
+    if (BaseTriggerHelpers::IsDisabled(respawnRoom))
+    {
+        return;
+    }
+
+    DetachFromRocket(other);
 }
 
 DEFINE_INHERITED_DESTRUCTOR(RocketMode, IGameEventListener2);

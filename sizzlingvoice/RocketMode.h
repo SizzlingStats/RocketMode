@@ -77,6 +77,9 @@ private:
     void FuncRespawnRoomStartTouchHook(CBaseEntity* other);
     void FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity* other);
 
+    void FuncRespawnRoomEndTouchHook(CBaseEntity* other);
+    void FuncRespawnRoomEndTouch(CBaseEntity* respawnRoom, CBaseEntity* other);
+
     DECL_INHERITED_DESTRUCTOR(IGameEventListener2);
     virtual void FireGameEvent(IGameEvent* event) override;
 
@@ -97,6 +100,7 @@ private:
 
     // CFuncRespawnRoom hooks
     static VTableHook<decltype(&RocketMode::FuncRespawnRoomStartTouchHook)> sFuncRespawnRoomStartTouchHook;
+    static VTableHook<decltype(&RocketMode::FuncRespawnRoomEndTouchHook)> sFuncRespawnRoomEndTouchHook;
 
 private:
     IVEngineServer* mVEngineServer;
