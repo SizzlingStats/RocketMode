@@ -93,7 +93,7 @@ bool SizzLauncherSpawner::Init(CreateInterfaceFn interfaceFactory, CreateInterfa
 
     mSpawnInitialDelay = CVarHelper::CreateConVar("sizz_rocketmode_spawn_initialdelay", "15.0f", "Delay before spawning the first set of launchers after round start (seconds).");
     mSpawnInterval = CVarHelper::CreateConVar("sizz_rocketmode_spawn_interval", "60.0f", "After initial spawns, periodically spawn launchers on this interval (seconds).");
-    mSpawnsEnabled = CVarHelper::CreateConVar("sizz_rocketmode_spawn_enabled", "0", "Enables periodic spawning of rocket mode rocket launchers (0/1).");
+    mSpawnsEnabled = CVarHelper::CreateConVar("sizz_rocketmode_spawn_enabled", "1", "Enables periodic spawning of rocket mode rocket launchers (0/1).");
     mSpawnCommandEnabled = CVarHelper::CreateConVar("sizz_rocketmode_spawn_command_enabled", "0", "Enables clients to spawn a launcher at their feet with 'spawnlauncher' (0/1)");
     mRocketDamageMultiplier = CVarHelper::CreateConVar("sizz_rocketmode_damagemult", "1.5f", "Damage multiplier over base rocket damage [0.1f, 10.0f].");
     mRocketMaxAmmoMult = CVarHelper::CreateConVar("sizz_rocketmode_ammomult", "1.0f", "Reserve ammo multiplier over base rocket launcher [0.1f, 1.0f].");
