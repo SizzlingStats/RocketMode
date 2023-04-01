@@ -10,6 +10,7 @@
 #include "sourcesdk/public/edict.h"
 #include "sourcesdk/public/icvar.h"
 #include "sourcesdk/public/iserver.h"
+#include "sourcesdk/public/tier1/bitbuf.h"
 #include "sourcesdk/public/tier1/convar.h"
 #include "sourcesdk/game/server/iplayerinfo.h"
 #include "sourcesdk/game/shared/econ/econ_item_view.h"
@@ -21,9 +22,11 @@
 #include "base/math.h"
 #include "sourcehelpers/CVarHelper.h"
 #include "sourcehelpers/EntityHelpers.h"
+#include "sourcehelpers/RecipientFilter.h"
 #include "sourcehelpers/VStdlibRandom.h"
 #include "HookOffsets.h"
 #include "SizzLauncherInfo.h"
+#include "Version.h"
 
 #include <string.h>
 
@@ -221,6 +224,17 @@ void SizzLauncherSpawner::GameFrme(bool bSimulating)
                     }
                 }
 
+                if (numRedSpawnPoints || numBluSpawnPoints)
+                {
+                    RecipientFilter filter;
+                    filter.AddAllPlayers(mServer);
+
+                    bf_write* buf = mVEngineServer->UserMessageBegin(&filter, 3); // SayText
+                    buf->WriteByte(0);
+                    buf->WriteString("\x05========================\n\x03" CREDITS "\n\x05========================\n");
+                    buf->WriteByte(0);
+                    mVEngineServer->MessageEnd();
+                }
                 if (numRedSpawnPoints > 0)
                 {
                     const int spawnPointIndex = VStdlibRandom::RandomInt(0, numRedSpawnPoints - 1);
