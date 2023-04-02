@@ -44,6 +44,14 @@ static void DataTable_ClearWriteFlags_R(SendTable* pTable)
     }
 }
 
+static void DataTable_ClearWriteFlags(ServerClass* pClasses)
+{
+    for (ServerClass* pCur = pClasses; pCur; pCur = pCur->m_pNext)
+    {
+        DataTable_ClearWriteFlags_R(pCur->m_pTable);
+    }
+}
+
 static bool SendTable_WriteInfos(SendTable* pTable, bf_write* pBuf)
 {
     pBuf->WriteString(pTable->GetName());
@@ -96,7 +104,7 @@ static void SV_MaybeWriteSendTable(SendTable* pTable, bf_write& pBuf, bool bNeed
 
     pTable->SetWriteFlag(true);
 
-    alignas(4) byte tmpbuf[4096];
+    alignas(4) byte tmpbuf[8192];
     bf_write dataOut;
     dataOut.StartWriting(tmpbuf, sizeof(tmpbuf));
 
@@ -132,7 +140,32 @@ static void SV_WriteSingleClassSendTables(ServerClass* pClass, bf_write& pBuf)
     SV_MaybeWriteSendTable_R(pClass->GetTable(), pBuf);
 }
 
-bool SendTablesFix::ReconstructFullSendTablesForModification(ServerClass* modifiedClass, IVEngineServer* engineServer)
+static void SV_WriteClassInfos(ServerClass* pClasses, bf_write& pBuf)
+{
+    int numClasses = 0;
+    for (ServerClass* pClass = pClasses; pClass; pClass = pClass->m_pNext)
+    {
+        numClasses += 1;
+    }
+
+    SVC_ClassInfo::class_t* classes = new SVC_ClassInfo::class_t[numClasses];
+    int i = 0;
+    for (ServerClass* pClass = pClasses; pClass; pClass = pClass->m_pNext)
+    {
+        SVC_ClassInfo::class_t& svclass = classes[i++];
+
+        svclass.classID = pClass->m_ClassID;
+        strncpy(svclass.datatablename, pClass->m_pTable->GetName(), sizeof(svclass.datatablename));
+        strncpy(svclass.classname, pClass->m_pNetworkName, sizeof(svclass.classname));
+    }
+    assert(i == numClasses);
+
+    SVC_ClassInfo::WriteToBuffer(pBuf, false, classes, numClasses);
+
+    delete[] classes;
+}
+
+bool SendTablesFix::ReconstructPartialSendTablesForModification(ServerClass* modifiedClass, IVEngineServer* engineServer)
 {
     // When sv_sendtables=1 and the server goes to build m_FullSendTables:
     // - In SV_MaybeWriteSendTable, CTFPlayer m_ConditionData overflows the 4096 byte buffer.
@@ -168,11 +201,29 @@ bool SendTablesFix::ReconstructFullSendTablesForModification(ServerClass* modifi
 
     // Create the rest of the tables from the client records.
     const bool createOnClient = true;
-    SVC_ClassInfo::WriteToBuffer(fullSendTables, createOnClient);
+    SVC_ClassInfo::WriteToBuffer(fullSendTables, createOnClient, nullptr, 0);
     if (fullSendTables.IsOverflowed())
     {
         return false;
     }
 
     return true;
+}
+
+bool SendTablesFix::WriteFullSendTables(IServerGameDLL* serverGameDll, bf_write& buf)
+{
+    ServerClass* serverClasses = serverGameDll->GetAllServerClasses();
+
+    DataTable_ClearWriteFlags(serverClasses);
+    for (ServerClass* serverClass = serverClasses; serverClass; serverClass = serverClass->m_pNext)
+    {
+        SV_MaybeWriteSendTable(serverClass->m_pTable, buf, true);
+    }
+    for (ServerClass* serverClass = serverClasses; serverClass; serverClass = serverClass->m_pNext)
+    {
+        SV_MaybeWriteSendTable_R(serverClass->m_pTable, buf);
+    }
+    SV_WriteClassInfos(serverClasses, buf);
+
+    return !buf.IsOverflowed();
 }

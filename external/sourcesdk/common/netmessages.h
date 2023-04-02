@@ -42,7 +42,14 @@ public:
 class SVC_ClassInfo// : public CNetMessage
 {
 public:
-    static bool WriteToBuffer(bf_write& buffer, bool bCreateOnClient);
+    struct class_t
+    {
+        int classID;
+        char datatablename[256];
+        char classname[256];
+    };
+
+    static bool WriteToBuffer(bf_write& buffer, bool bCreateOnClient, const class_t* classes, int numClasses);
 };
 
 class SVC_VoiceData : public CNetMessage

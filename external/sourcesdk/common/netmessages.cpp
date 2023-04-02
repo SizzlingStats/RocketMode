@@ -9,24 +9,50 @@ DEFINE_INHERITED_DESTRUCTOR(CNetMessage, INetMessage);
 bool SVC_SendTable::WriteToBuffer(bf_write& buffer, bool bNeedsDecoder, const bf_write& dataOut)
 {
     const int length = dataOut.GetNumBitsWritten();
-    assert(length <= 0x7FFF);
+    assert(length <= 0xFFFF);
 
     buffer.WriteUBitLong(svc_SendTable, NETMSG_TYPE_BITS);
     buffer.WriteOneBit(bNeedsDecoder ? 1 : 0);
-    buffer.WriteShort(length);
+    buffer.WriteWord(length);
     buffer.WriteBits(dataOut.GetData(), length);
 
     return !buffer.IsOverflowed();
 }
 
-bool SVC_ClassInfo::WriteToBuffer(bf_write& buffer, bool bCreateOnClient)
+static int Q_log2(int val)
 {
-    assert(bCreateOnClient);
+    int answer = 0;
+    while (val >>= 1)
+        answer++;
+    return answer;
+}
 
-    const int numServerClasses = 0;
+bool SVC_ClassInfo::WriteToBuffer(bf_write& buffer, bool bCreateOnClient, const class_t* classes, int numClasses)
+{
+    int numServerClasses = 0;
+    if (!bCreateOnClient)
+    {
+        assert(classes);
+        numServerClasses = numClasses;
+    }
+
     buffer.WriteUBitLong(svc_ClassInfo, NETMSG_TYPE_BITS);
     buffer.WriteShort(numServerClasses);
+    int serverClassBits = Q_log2(numServerClasses) + 1;
     buffer.WriteOneBit(bCreateOnClient ? 1 : 0);
+
+    if (bCreateOnClient)
+    {
+        return !buffer.IsOverflowed();
+    }
+
+    for (int i = 0; i < numServerClasses; ++i)
+    {
+        const class_t& serverClass = classes[i];
+        buffer.WriteUBitLong(serverClass.classID, serverClassBits);
+        buffer.WriteString(serverClass.classname);
+        buffer.WriteString(serverClass.datatablename);
+    }
 
     return !buffer.IsOverflowed();
 }

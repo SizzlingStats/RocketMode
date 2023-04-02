@@ -4,6 +4,7 @@
 #include "sourcehelpers/ClientHelpers.h"
 #include "sourcehelpers/EntityHelpers.h"
 
+#include "sourcesdk/engine/net.h"
 #include "sourcesdk/game/server/baseentity.h"
 #include "sourcesdk/game/server/iplayerinfo.h"
 #include "sourcesdk/game/shared/econ/econ_item_view.h"
@@ -20,6 +21,7 @@
 #include "sourcesdk/public/dt_send.h"
 #include "sourcesdk/public/edict.h"
 #include "sourcesdk/public/eiface.h"
+#include "sourcesdk/public/filesystem.h"
 #include "sourcesdk/public/gametrace.h"
 #include "sourcesdk/public/iclient.h"
 #include "sourcesdk/public/icvar.h"
@@ -122,6 +124,27 @@ bool RocketMode::Init(CreateInterfaceFn interfaceFactory, CreateInterfaceFn game
     {
         return false;
     }
+
+#if 0
+    IBaseFileSystem* fileSystem = (IBaseFileSystem*)interfaceFactory(BASEFILESYSTEM_INTERFACE_VERSION, nullptr);
+    if (fileSystem)
+    {
+        void* data = malloc(NET_MAX_PAYLOAD);
+        bf_write sendTables(data, NET_MAX_PAYLOAD);
+        bool bNoOverflow = SendTablesFix::WriteFullSendTables(mServerGameDll, sendTables);
+        assert(bNoOverflow);
+
+        FileHandle_t f = fileSystem->Open("rocketmodesendtables.bin", "wb");
+        if (f != FILESYSTEM_INVALID_HANDLE)
+        {
+            uint32_t numBitsWritten = sendTables.GetNumBitsWritten();
+            fileSystem->Write(&numBitsWritten, sizeof(numBitsWritten), f);
+            fileSystem->Write(sendTables.GetData(), sendTables.GetNumBytesWritten(), f);
+            fileSystem->Close(f);
+        }
+        free(data);
+    }
+#endif
 
     TeamplayRoundBasedRulesHelpers::InitializeOffsets(mServerGameDll);
 
@@ -325,7 +348,7 @@ void RocketMode::ClientConnect()
     // m_FullSendTables construction happens right after ServerActivate.
     // It's overkill to reconstruct at each ClientConnect, but better than handling state.
     mSendTables->SetValue(1);
-    SendTablesFix::ReconstructFullSendTablesForModification(mTFBaseRocketClass, mVEngineServer);
+    SendTablesFix::ReconstructPartialSendTablesForModification(mTFBaseRocketClass, mVEngineServer);
 }
 
 bool RocketMode::ClientCommand(edict_t* pEntity, const CCommand& args)
