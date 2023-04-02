@@ -3,7 +3,18 @@
 
 #include "iconvar.h"
 
+class ICommandCallback;
+class ICommandCompletionCallback;
+class CCommand;
+
 typedef int CVarDLLIdentifier_t;
+typedef void (*FnCommandCallbackVoid_t)(void);
+typedef void (*FnCommandCallback_t)(const CCommand& command);
+
+#define COMMAND_COMPLETION_MAXITEMS		64
+#define COMMAND_COMPLETION_ITEM_LENGTH	64
+
+typedef int (*FnCommandCompletionCallback)(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH]);
 
 class ConCommandBase
 {
@@ -81,6 +92,36 @@ private:
     char m_pArgSBuffer[COMMAND_MAX_LENGTH];
     char m_pArgvBuffer[COMMAND_MAX_LENGTH];
     const char* m_ppArgv[COMMAND_MAX_ARGC];
+};
+
+class ConCommand : public ConCommandBase
+{
+public:
+    // NOTE: To maintain backward compat, we have to be very careful:
+    // All public virtual methods must appear in the same order always
+    // since engine code will be calling into this code, which *does not match*
+    // in the mod code; it's using slightly different, but compatible versions
+    // of this class. Also: Be very careful about adding new fields to this class.
+    // Those fields will not exist in the version of this class that is instanced
+    // in mod code.
+
+    // Call this function when executing the command
+    union
+    {
+        FnCommandCallbackVoid_t m_fnCommandCallbackV1;
+        FnCommandCallback_t m_fnCommandCallback;
+        ICommandCallback* m_pCommandCallback;
+    };
+
+    union
+    {
+        FnCommandCompletionCallback	m_fnCompletionCallback;
+        ICommandCompletionCallback* m_pCommandCompletionCallback;
+    };
+
+    bool m_bHasCompletionCallback : 1;
+    bool m_bUsingNewCommandCallback : 1;
+    bool m_bUsingCommandCallbackInterface : 1;
 };
 
 class ConVar : public ConCommandBase, public IConVar
