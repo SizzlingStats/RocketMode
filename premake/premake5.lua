@@ -24,8 +24,9 @@ newoption
 
 local srcds_path = _OPTIONS["srcds-path"]
 local srcds_exe = nil
-local postbuild_move = nil
-local postbuild_move_vdf = nil
+local postbuild_copy_dll = nil
+local postbuild_copy_vdf = nil
+local postbuild_copy_wav = nil
 if srcds_path ~= nil then
     srcds_exe = srcds_path .. "srcds.exe"
 
