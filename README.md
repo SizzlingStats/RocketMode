@@ -1,5 +1,11 @@
 # RocketMode
 
+## Build Status
+| System | Compiler | Status |
+| ------ | -------- | ------ |
+| Ubuntu 20.04 | Clang-10 | [![Build status](https://ci.appveyor.com/api/projects/status/vij4rx4kfsfa73ai/branch/master?svg=true)](https://ci.appveyor.com/project/SizzlingCalamari/demboyz-linux/branch/master) |
+| Windows | VS2022 | [![Build status](https://ci.appveyor.com/api/projects/status/pc63pbl9b0t5tygl/branch/master?svg=true)](https://ci.appveyor.com/project/SizzlingCalamari/demboyz/branch/master) |
+
 ## About
 RocketMode By SizzlingCalamari
 
