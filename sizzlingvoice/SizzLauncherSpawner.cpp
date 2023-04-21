@@ -301,7 +301,7 @@ void SizzLauncherSpawner::ApplyFestiveRocketLauncher(CBaseEntity* ent, IServerTo
 
     CTFDroppedWeapon_Hack* tfDroppedWeapon = (CTFDroppedWeapon_Hack*)&item;
     tfDroppedWeapon->m_nClip = SizzLauncherInfo::InitialClip;
-    tfDroppedWeapon->m_nAmmo = SizzLauncherInfo::InitialAmmoReserves * maxAmmoMult;
+    tfDroppedWeapon->m_nAmmo = static_cast<int>(SizzLauncherInfo::InitialAmmoReserves * maxAmmoMult);
 
     // my festive rocket launcher
     item.m_iItemDefinitionIndex = SizzLauncherInfo::ItemDefinitionIndex;
