@@ -102,13 +102,13 @@ solution "rocketmode"
         configuration {}
         files
         {
-            "../sizzlingvoice/**.h",
-            "../sizzlingvoice/**.cpp",
-            "../sizzlingvoice/**.natvis"
+            "../rocketmode/**.h",
+            "../rocketmode/**.cpp",
+            "../rocketmode/**.natvis"
         }
         includedirs
         {
-            "../sizzlingvoice",
+            "../rocketmode",
             "../external"
         }
         links
