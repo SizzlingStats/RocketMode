@@ -88,6 +88,7 @@ solution "rocketmode"
     filter { "toolset:not msc*" }
         buildoptions { "-fvisibility=hidden", "-ffunction-sections", "-fdata-sections" }
         linkoptions { "-Wl,--no-undefined,--no-allow-shlib-undefined,--gc-sections" }
+        links { "dl" }
     filter {}
 
     project "rocketmode"
