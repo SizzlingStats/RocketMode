@@ -20,10 +20,9 @@ Video by Carthage (https://www.youtube.com/watch?v=zTmNzUM3mGY)
 srcds/
 ├── tf/
 │   ├── addons/
-│       ├── rocketmode/
-│           ├── rocketmode.vdf
-│           ├── rocketmode.dll (windows only)
-│           └── rocketmode.so  (linux only)
+│       ├── rocketmode.vdf
+│       ├── rocketmode.dll (windows only)
+│       └── rocketmode.so  (linux only)
 ```
 
 ## Cvars
