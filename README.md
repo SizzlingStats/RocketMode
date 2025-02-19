@@ -3,7 +3,7 @@
 ## Build Status
 | System | Compiler | Status |
 | ------ | -------- | ------ |
-| Ubuntu 20.04 | Clang-10 | [![Build status](https://ci.appveyor.com/api/projects/status/wu09gbyll5t0oabf?svg=true)](https://ci.appveyor.com/project/SizzlingCalamari/rocketmode-linux) |
+| Ubuntu 22.04 | Clang-14 | [![Build status](https://ci.appveyor.com/api/projects/status/wu09gbyll5t0oabf?svg=true)](https://ci.appveyor.com/project/SizzlingCalamari/rocketmode-linux) |
 | Windows | VS2022 | [![Build status](https://ci.appveyor.com/api/projects/status/5mda31hkqmpb3aos?svg=true)](https://ci.appveyor.com/project/SizzlingCalamari/rocketmode) |
 
 ## About
