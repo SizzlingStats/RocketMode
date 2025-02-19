@@ -2,6 +2,7 @@
 #include "SizzLauncherSpawner.h"
 
 #include "sourcesdk/game/server/baseentity.h"
+#include "sourcesdk/public/game/server/iplayerinfo.h"
 #include "sourcesdk/public/tier1/convar.h"
 #include "sourcesdk/public/toolframework/itoolentity.h"
 #include "sourcesdk/public/basehandle.h"
@@ -12,7 +13,6 @@
 #include "sourcesdk/public/iserver.h"
 #include "sourcesdk/public/tier1/bitbuf.h"
 #include "sourcesdk/public/tier1/convar.h"
-#include "sourcesdk/game/server/iplayerinfo.h"
 #include "sourcesdk/game/shared/econ/econ_item_view.h"
 #include "sourcesdk/game/shared/econ/ihasattributes.h"
 #include "sourcesdk/game/shared/econ/attribute_manager.h"
