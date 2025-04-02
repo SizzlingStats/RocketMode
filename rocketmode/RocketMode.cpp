@@ -916,7 +916,7 @@ void RocketMode::SetOwnerEntityHook(CBaseEntity* owner)
 void RocketMode::SetOwnerEntity(CBaseEntity* rocket, CBaseEntity* newOwner)
 {
     CBaseHandle ownerHandle = BaseEntityHelpers::GetOwnerEntity(rocket);
-    if (ownerHandle.IsValid() && (ownerHandle != newOwner->GetRefEHandle()))
+    if (ownerHandle.IsValid() && (!newOwner || (ownerHandle != newOwner->GetRefEHandle())))
     {
         DetachFromRocket(rocket);
     }
