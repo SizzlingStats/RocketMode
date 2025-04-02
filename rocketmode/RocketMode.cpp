@@ -1009,6 +1009,11 @@ void RocketMode::FuncRespawnRoomStartTouchHook(CBaseEntity* other)
 
 void RocketMode::FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity* other)
 {
+    if (!other)
+    {
+        return;
+    }
+
     assert(tf_projectile_rocket);
     const string_t classname = BaseEntityHelpers::GetClassname(other);
     if (classname != tf_projectile_rocket)
@@ -1047,6 +1052,11 @@ void RocketMode::FuncRespawnRoomEndTouchHook(CBaseEntity* other)
 
 void RocketMode::FuncRespawnRoomEndTouch(CBaseEntity* respawnRoom, CBaseEntity* other)
 {
+    if (!other)
+    {
+        return;
+    }
+
     assert(tf_projectile_rocket);
     const string_t classname = BaseEntityHelpers::GetClassname(other);
     if (classname != tf_projectile_rocket)
