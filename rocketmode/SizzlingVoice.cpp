@@ -98,7 +98,7 @@ void SizzlingVoice::ClientActive(edict_t* pEntity)
         const INetMessage* msg = GetCLCVoiceData(netChannel);
         assert(msg);
 
-        sCLCVoiceDataProcessHook.Hook(msg, HookOffsets::ProcessVoiceData, this, &SizzlingVoice::CLCVoiceDataProcessHook);
+        sCLCVoiceDataProcessHook.Hook(msg, HookOffsets::Process, this, &SizzlingVoice::CLCVoiceDataProcessHook);
     }
 }
 

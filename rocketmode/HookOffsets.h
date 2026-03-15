@@ -22,35 +22,32 @@ namespace HookOffsets
     inline constexpr int SpawnOffsets[NUM_CONFIGS] = { 22, 24, 25 };
     inline constexpr int Spawn = SpawnOffsets[OFFSET_INDEX];
 
-    inline constexpr int ChangeTeamOffsets[NUM_CONFIGS] = { 91, 96, 97 };
+    inline constexpr int ChangeTeamOffsets[NUM_CONFIGS] = { 91, 97, 98 };
     inline constexpr int ChangeTeam = ChangeTeamOffsets[OFFSET_INDEX];
 
-    inline constexpr int StartTouchOffsets[NUM_CONFIGS] = { 98, 103, 104 };
+    inline constexpr int StartTouchOffsets[NUM_CONFIGS] = { 98, 104, 105 };
     inline constexpr int StartTouch = StartTouchOffsets[OFFSET_INDEX];
 
-    inline constexpr int EndTouchOffsets[NUM_CONFIGS] = { 100, 105, 106 };
+    inline constexpr int EndTouchOffsets[NUM_CONFIGS] = { 100, 106, 107 };
     inline constexpr int EndTouch = EndTouchOffsets[OFFSET_INDEX];
 
-    inline constexpr int IsDeflectableOffset[NUM_CONFIGS] = { 153, 158, 159 };
+    inline constexpr int IsDeflectableOffset[NUM_CONFIGS] = { 153, 159, 160 };
     inline constexpr int IsDeflectable = IsDeflectableOffset[OFFSET_INDEX];
 
     // CBaseCombatCharacter
-    inline constexpr int Weapon_EquipOffsets[NUM_CONFIGS] = { -1, 271, 272 };
+    inline constexpr int Weapon_EquipOffsets[NUM_CONFIGS] = { -1, 272, 273 };
     inline constexpr int Weapon_Equip = Weapon_EquipOffsets[OFFSET_INDEX];
 
     // CBasePlayer
-    inline constexpr int GetNextObserverSearchStartPointOffsets[NUM_CONFIGS] = { 381, 390, 391 };
+    inline constexpr int GetNextObserverSearchStartPointOffsets[NUM_CONFIGS] = { 381, 391, 392 };
     inline constexpr int GetNextObserverSearchStartPoint = GetNextObserverSearchStartPointOffsets[OFFSET_INDEX];
 
-    inline constexpr int PlayerRunCommandOffsets[NUM_CONFIGS] = { 421, 430, 431 };
+    inline constexpr int PlayerRunCommandOffsets[NUM_CONFIGS] = { 421, 431, 432 };
     inline constexpr int PlayerRunCommand = PlayerRunCommandOffsets[OFFSET_INDEX];
 
-    // IClient
-    inline constexpr int IsProximityHearingClientOffsets[NUM_CONFIGS] = { 38, 38, 39 };
-    inline constexpr int IsProximityHearingClient = IsProximityHearingClientOffsets[OFFSET_INDEX];
-    
-    inline constexpr int ProcessVoiceDataOffsets[NUM_CONFIGS] = { 3, 3, 4 };
-    inline constexpr int ProcessVoiceData = ProcessVoiceDataOffsets[OFFSET_INDEX];
+    // INetMessage
+    inline constexpr int ProcessOffsets[NUM_CONFIGS] = { 3, 3, 4 };
+    inline constexpr int Process = ProcessOffsets[OFFSET_INDEX];
 
     // IScriptManager
     inline constexpr int CreateVMOffsets[NUM_CONFIGS] = { -1, 5, 6 };
