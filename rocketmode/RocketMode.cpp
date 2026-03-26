@@ -1042,6 +1042,7 @@ void RocketMode::FuncRespawnRoomStartTouch(CBaseEntity* respawnRoom, CBaseEntity
     const int rocketTeam = BaseEntityHelpers::GetTeam(other);
     if (respawnRoomTeam != rocketTeam)
     {
+        // Not allowed to guide into other team's respawn room.
         DetachFromRocket(other);
     }
 }
@@ -1087,6 +1088,7 @@ void RocketMode::FuncRespawnRoomEndTouch(CBaseEntity* respawnRoom, CBaseEntity* 
         return;
     }
 
+    // Not allowed to guide from inside your spawn room to out into the world.
     DetachFromRocket(other);
 }
 
