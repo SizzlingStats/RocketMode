@@ -172,6 +172,7 @@ void RocketMode::LevelInit(const char* pMapName)
     mEngineSound->PrecacheSound(BOOSTER_LOOP, true);
     mEngineSound->PrecacheSound(CRIT_LOOP, true);
 
+    assert(!tf_projectile_rocket);
     CBaseEntity* ent = mServerTools->CreateEntityByName("tf_projectile_rocket");
     if (ent)
     {
@@ -1060,7 +1061,13 @@ void RocketMode::FuncRespawnRoomEndTouch(CBaseEntity* respawnRoom, CBaseEntity* 
         return;
     }
 
-    assert(tf_projectile_rocket);
+    if (!tf_projectile_rocket || !mGameRules)
+    {
+        // LevelShutdown was already called.
+        // This can happen when using the 'quit' command, as it doesn't destroy entities before calling LevelShutdown.
+        return;
+    }
+
     const string_t classname = BaseEntityHelpers::GetClassname(other);
     if (classname != tf_projectile_rocket)
     {
